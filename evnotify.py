@@ -15,13 +15,15 @@ def sendCommand(command):
     ser.flush()
     if (command == '2105'): return
     return ser.readline()
-
+#set soc to not empty
+soc = 0
 def parseData(data):
     filtered = [byte.replace('\r', '') for byte in data]
     resolved = ''.join(filtered)
     print(resolved)
     block5 = resolved.find('7EC25')
     print(int(resolved[block5-2:block5], 16) / 2)
+    soc = int(resolved[block5-2:block5], 16) / 2
 
 initCMDs = ['ATD', 'ATZ', 'ATE0', 'ATL0', 'ATS0', 'ATH1', 'ATSP0', 'ATSTFF', 'ATFE', 'ATCRA7EC']
 
@@ -38,5 +40,6 @@ while True:
             print(curBytes)
             parseData(curBytes)
             break
-
-ser.close()
+    #exit when soc found, doesn't handle nothing found
+    if soc > 0:
+        break
