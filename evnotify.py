@@ -3,6 +3,16 @@ import re
 import time
 import string
 import io
+import json
+import importlib
+import evnotifyapi
+
+# load config
+with open('config.json', encoding='utf-8') as config_file:
+    config = json.loads(config_file.read())
+
+# load api lib
+EVNotify = evnotifyapi.EVNotify(config['akey'], config['token'])
 
 ser = serial.Serial("/dev/rfcomm0", timeout=5)
 ser.baudrate=9600
