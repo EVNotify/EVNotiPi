@@ -6,6 +6,8 @@ import io
 import json
 import importlib
 import evnotifyapi
+import IONIQ_BEV
+import KONA_EV
 
 # load config
 with open('config.json', encoding='utf-8') as config_file:
@@ -14,42 +16,28 @@ with open('config.json', encoding='utf-8') as config_file:
 # load api lib
 EVNotify = evnotifyapi.EVNotify(config['akey'], config['token'])
 
+# establish serial port
 ser = serial.Serial("/dev/rfcomm0", timeout=5)
 ser.baudrate=9600
-
-def sendCommand(command):
-    ser.flushInput()
-    cmd = command + '\r\n'
-    print(cmd)
-    ser.write(bytes(command + '\r\n'))
-    ser.flush()
-    if (command == '2105'): return
-    return ser.readline()
-#set soc to not empty
 soc = 0
-def parseData(data):
-    filtered = [byte.replace('\r', '') for byte in data]
-    resolved = ''.join(filtered)
-    print(resolved)
-    block5 = resolved.find('7EC25')
-    print(int(resolved[block5-2:block5], 16) / 2)
-    soc = int(resolved[block5-2:block5], 16) / 2
 
-initCMDs = ['ATD', 'ATZ', 'ATE0', 'ATL0', 'ATS0', 'ATH1', 'ATSP0', 'ATSTFF', 'ATFE', 'ATCRA7EC']
+# available cars
+class Cars:
+    def __init__(self):
+        self.IONIQ_BEV = IONIQ_BEV
+        self.KONA_EV = KONA_EV
 
-for cmd in initCMDs:
-    sendCommand(cmd)
+# instanciate the car instance
+car = getattr((getattr(Cars(), EVNotify.getSettings()['car'])), EVNotify.getSettings()['car'])()
+car.init()
 
-sendCommand('2105')
 curBytes = []
 while True:
     for byte in ser.read():
         curBytes.append(byte)
-        if str(byte).find('>') and str(byte).find('7EC25') and curBytes[-2:] == ['\r', '\r']:
-            print('Found end')
-            print(curBytes)
-            parseData(curBytes)
+        soc = car.parseData(curBytes)
+        if soc > 0:
+            curBytes = []
+            car.requestData()
+            EVNotify.setSOC(soc, soc)
             break
-    #exit when soc found, doesn't handle nothing found
-    if soc > 0:
-        break
