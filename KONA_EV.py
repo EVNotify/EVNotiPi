@@ -29,13 +29,15 @@ class KONA_EV:
         return self.ser.readline()
 
     def parseData(self, data):
-        filtered = [byte.replace('\r', '') for byte in data]
-        resolved = ''.join(filtered)
-        print(resolved)
-        block6 = resolved.find('7EC26')
-        soc = (int(resolved[block6+5:block6+7], 16) / 2)
-        print(soc + '%')
-        return soc
+        if str(data).find('>') and str(data).find('7EC25') and data[-2:] == ['\r', '\r']:
+            filtered = [byte.replace('\r', '') for byte in data]
+            resolved = ''.join(filtered)
+            print(resolved)
+            block6 = resolved.find('7EC26')
+            soc = (int(resolved[block6+5:block6+7], 16) / 2)
+            print(soc + '%')
+            return soc
+        return -1
 
     def getBaseData(self):
         return {
