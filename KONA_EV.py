@@ -29,7 +29,7 @@ class KONA_EV:
         return self.ser.readline()
 
     def parseData(self, data):
-        if str(data).find('>') and str(data).find('7EC25') and data[-2:] == ['\r', '\r']:
+        if str(data).find('>') and str(data).find('7EC26') and data[-2:] == ['\r', '\r']:
             filtered = [byte.replace('\r', '') for byte in data]
             resolved = ''.join(filtered)
             print(resolved)
