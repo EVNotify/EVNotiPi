@@ -16,6 +16,7 @@ Python Version of EVNotify
 - `pairable on`
 - `agent on`
 - `scan on`
+- Wait until you see a device called "OBDII"
 - `scan off`
 - `pair <MAC-of-Dongle>`
 - `trust <MAC-of-Dongle>`
