@@ -13,12 +13,14 @@ Python Version of EVNotify
 - `sudo apt-get install bluetooth blueman bluez-tools python python-serial`
 - `sudo bluetoothctl`
 - (Plug OBD2 Dongle in car), eventually you also need to start the car
+- `pairable on`
 - `agent on`
 - `scan on`
-- (Wait, until Dongle is found, abort with CTRL+C)
+- `scan off`
 - `pair <MAC-of-Dongle>`
 - `trust <MAC-of-Dongle>`
-- `sudo crontab -e` (insert the following and save: `@reboot rfcomm bind hci0 <MAC-of-Dongle> 1`
+- `exit`
+- `sudo crontab -e` (insert the following and save: `@reboot sleep 5 && rfcomm bind hci0 <MAC-of-Dongle> 1`
 - `sudo reboot`
 ### EVNotiPi
 - Copy `config.template.json` to `config.json`. Adjust the values for your needs
