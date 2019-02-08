@@ -19,6 +19,7 @@ Python Version of EVNotify
 - Wait until you see a device called "OBDII"
 - `scan off`
 - `pair <MAC-of-Dongle>`
+- PIN should be 1234
 - `trust <MAC-of-Dongle>`
 - `exit`
 - `sudo crontab -e` (insert the following and save: `@reboot sleep 5 && rfcomm bind hci0 <MAC-of-Dongle> 1`
