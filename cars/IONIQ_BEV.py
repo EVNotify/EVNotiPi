@@ -15,7 +15,7 @@ class IONIQ_BEV:
     def getData(self):
         raw = {}
 
-        ONLINE = False
+        ONLINE = True
 
         # Collect both parts of DC Current
         dcCurrent = [None,None]
