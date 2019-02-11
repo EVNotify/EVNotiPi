@@ -1,4 +1,9 @@
 {
     "akey": "akey",
-    "token": "token"
+    "token": "token",
+    "dongle": {
+	    "type": "ELM327",
+	    "port": "/dev/rfcomm0",
+	    "speed": 9600
+    }
 }

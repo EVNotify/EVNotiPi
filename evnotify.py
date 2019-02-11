@@ -1,13 +1,20 @@
-import serial
+#!/usr/bin/env python3
+
 import re
 import time
 import string
 import io
 import json
-import importlib
+#import importlib
+import sys
+from time import sleep
+
+sys.path.append('EVNotifyAPI/libs/python')
+sys.path.append('dongles')
+sys.path.append('cars')
+
 import evnotifyapi
-import IONIQ_BEV
-import KONA_EV
+
 
 # load config
 with open('config.json', encoding='utf-8') as config_file:
@@ -16,28 +23,30 @@ with open('config.json', encoding='utf-8') as config_file:
 # load api lib
 EVNotify = evnotifyapi.EVNotify(config['akey'], config['token'])
 
-# establish serial port
-ser = serial.Serial("/dev/rfcomm0", timeout=5)
-ser.baudrate=9600
-soc = 0
+# Init ODB2 adapter
+if config['dongle']['type'] == 'ELM327':
+    from ELM327 import ELM327 as DONGLE
+elif config['dongle']['type'] == 'PiOBD2Hat':
+    from PiOBD2Hat import PiOBD2Hat as DONGLE
+else:
+    raise Exception('Unknown dongle %s' % config['dongle']['type'])
 
-# available cars
-class Cars:
-    def __init__(self):
-        self.IONIQ_BEV = IONIQ_BEV
-        self.KONA_EV = KONA_EV
+dongle = DONGLE(config['dongle'])
 
-# instanciate the car instance
-car = getattr((getattr(Cars(), EVNotify.getSettings()['car'])), EVNotify.getSettings()['car'])()
-car.init()
+# Init car interface
+cartype = EVNotify.getSettings()['car']
+if cartype == 'IONIQ_BEV':
+    from IONIQ_BEV import IONIQ_BEV as CAR
+elif cartype == 'KONA_EV':
+    from KONA_EV import KONA_BEV as CAR
 
-curBytes = []
+car = CAR(dongle)
+
+
 while True:
-    for byte in ser.read():
-        curBytes.append(byte)
-        soc = car.parseData(curBytes)
-        if soc > 0:
-            curBytes = []
-            car.requestData()
-            EVNotify.setSOC(soc, soc)
-            break
+    data = car.getData()
+    print(data)
+    EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
+    EVNotify.setExtended(data['EXTENDED'])
+    sleep(2)
+
