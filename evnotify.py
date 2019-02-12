@@ -8,6 +8,8 @@ import json
 #import importlib
 import sys
 from time import sleep
+import threading
+import gps
 
 sys.path.append('EVNotifyAPI/libs/python')
 sys.path.append('dongles')
@@ -15,6 +17,30 @@ sys.path.append('cars')
 
 import evnotifyapi
 
+class GpsPoller(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.gps = gps
+        self.gpsd = None
+        self.fix = None
+
+    def run(self):
+        self.running = True
+        while self.running:
+            try:
+                if self.gpsd:
+                    self.gpsd.next()
+                    self.fix = self.gpsd.fix
+                else:
+                    self.gpsd = self.gps.gps(mode=self.gps.WATCH_ENABLE)
+            except (StopIteration, ConnectionResetError, OSError):
+                self.gpsd = None
+                self.fix = None
+                sleep(1)
+
+    def stop(self):
+        self.running = False
+        self.join()
 
 # load config
 with open('config.json', encoding='utf-8') as config_file:
@@ -37,16 +63,37 @@ dongle = DONGLE(config['dongle'])
 cartype = EVNotify.getSettings()['car']
 if cartype == 'IONIQ_BEV':
     from IONIQ_BEV import IONIQ_BEV as CAR
+    #from IONIQ_FAKE import IONIQ_FAKE as CAR
 elif cartype == 'KONA_EV':
     from KONA_EV import KONA_BEV as CAR
 
 car = CAR(dongle)
 
+gps = GpsPoller()
+gps.start()
+main_running = True
+try:
+    while main_running:
+        data = car.getData()
+        print(data)
+        EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
+        EVNotify.setExtended(data['EXTENDED'])
+        if gps.fix and gps.fix.mode > 1: # mode: GPS-fix quality
+            g ={
+                'latitude':  gps.fix.latitude,
+                'longitude': gps.fix.longitude,
+                'gps_speed': gps.fix.speed,
+                #'accuracy':  gps.fix.epx,
+                #'timestamp': strptime(gps.fix.time,'%Y-%m-%dT%H:%M:%S.000Z'),
+                }
+            print(g)
+            EVNotify.setLocation({'location': g})
 
-while True:
-    data = car.getData()
-    print(data)
-    EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
-    EVNotify.setExtended(data['EXTENDED'])
-    sleep(2)
+        if main_running: sleep(2)
+
+except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
+    main_running = False
+finally:
+    gps.stop()
+    print("Bye.")
 
