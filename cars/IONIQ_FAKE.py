@@ -4,7 +4,7 @@ def signedHex(txt):
     return (int(txt, 16) + 2**(bits-1)) % 2**bits - 2**(bits-1)
 
 
-class IONIQ_BEV:
+class IONIQ_FAKE:
 
     def __init__(self, dongle):
         self.dongle = dongle
@@ -15,11 +15,24 @@ class IONIQ_BEV:
     def getData(self):
         raw = {}
 
+        ONLINE = False
+
         # Collect both parts of DC Current
         dcCurrent = [None,None]
         data = {'EXTENDED': {}}
 
-        for line in self.dongle.sendCommand('2101'):
+        lines = self.dongle.sendCommand('2101') if ONLINE else [
+                b'7EC103D6101FFFFFFFF',
+                b'7EC217626482648A3FF',
+                b'7EC22970E3609080909',
+                b'7EC230808090007BD0D',
+                b'7EC24BD0A0000800001',
+                b'7EC25E4D90001E44A00',
+                b'7EC2600B2130000AC45',
+                b'7EC270054BFE909016B',
+                b'7EC280000000003E800']
+
+        for line in lines:
             can_id = line[:5]
             can_data = line[5:]
 
@@ -58,7 +71,16 @@ class IONIQ_BEV:
                 signedHex(b''.join(dcCurrent)) / 10.0
 
 
-        for line in self.dongle.sendCommand('2105'):
+        lines = self.dongle.sendCommand('2105') if ONLINE else [
+                b'7EC102D6105FFFFFFFF',
+                b'7EC2100000000000808',
+                b'7EC2209080808082648',
+                b'7EC2326480001500707',
+                b'7EC2403E81203E82B7A',
+                b'7EC2500310000000000',
+                b'7EC2600000000000000']
+
+        for line in lines:
             can_id = line[:5]
             can_data = line[5:]
 
