@@ -1,10 +1,12 @@
 from serial import Serial
-import logging
 from pexpect import fdpexpect
+
+class CAN_ERROR(Exception): pass
 
 class PiOBD2Hat:
 
     def __init__(self, dongle):
+        print("Init Dongle")
         self.serial = Serial(dongle['port'], baudrate=dongle['speed'], timeout=5)
         self.exp = fdpexpect.fdspawn(self.serial.fd)
         self.initDongle()
@@ -13,20 +15,23 @@ class PiOBD2Hat:
         expect = bytes(expect, 'utf-8')
         cmd = bytes(cmd, 'utf-8')
 
-        logging.info('Write %s' % str(cmd))
         self.exp.send(cmd + b'\r\n')
         self.exp.expect('>')
         ret = self.exp.before.strip(b'\r\n')
-        logging.debug('Got %s' % str(cmd))
+
         if expect not in ret:
             raise Exception('Expected %s, got %s' % (expect,ret))
 
     def sendCommand(self, cmd):
         cmd = bytes(cmd, 'utf-8')
-        logging.info('Write %s' % str(cmd))
+        print("Send Command "+str(cmd))
         self.exp.send(cmd + b'\r\n')
         self.exp.expect('>')
-        return self.exp.before.strip(b'\r\n').split(b'\r\n')
+        ret = self.exp.before.strip(b'\r\n')
+        if ret == b'CAN NO ACK':
+            raise CAN_ERROR(ret)
+
+        return ret.split(b'\r\n')
 
     def initDongle(self):
         cmds = [['ATZ','DIAMEX PI-OBD'],

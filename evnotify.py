@@ -74,22 +74,27 @@ gps.start()
 main_running = True
 try:
     while main_running:
-        data = car.getData()
-        print(data)
-        EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
-        EVNotify.setExtended(data['EXTENDED'])
-        if gps.fix and gps.fix.mode > 1: # mode: GPS-fix quality
-            g ={
-                'latitude':  gps.fix.latitude,
-                'longitude': gps.fix.longitude,
-                'gps_speed': gps.fix.speed,
-                #'accuracy':  gps.fix.epx,
-                #'timestamp': strptime(gps.fix.time,'%Y-%m-%dT%H:%M:%S.000Z'),
-                }
-            print(g)
-            EVNotify.setLocation({'location': g})
+        try:
+            data = car.getData()
+        except dongle.CAN_ERROR as e:
+            print(e)
 
-        if main_running: sleep(2)
+        else:
+            print(data)
+            EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
+            EVNotify.setExtended(data['EXTENDED'])
+            if gps.fix and gps.fix.mode > 1: # mode: GPS-fix quality
+                g ={
+                    'latitude':  gps.fix.latitude,
+                    'longitude': gps.fix.longitude,
+                    'gps_speed': gps.fix.speed,
+                    #'accuracy':  gps.fix.epx,
+                    #'timestamp': strptime(gps.fix.time,'%Y-%m-%dT%H:%M:%S.000Z'),
+                    }
+                print(g)
+                EVNotify.setLocation({'location': g})
+        finally:
+            if main_running: sleep(2)
 
 except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
     main_running = False
