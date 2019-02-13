@@ -30,9 +30,9 @@ class IONIQ_BEV:
                     'SOC_BMS':          int(can_data[0:2],16) / 2.0,
                     })
                 data['EXTENDED'].update({
-                    'charging':         chargingBits & 0x80 == 0x80,
-                    'rapidChargePort':  chargingBits & 0x40 == 0x40,
-                    'normalChargePort': chargingBits & 0x20 == 0x20,
+                    'charging':         1 if chargingBits & 0x80 == 0x80 else 0,
+                    'rapidChargePort':  1 if chargingBits & 0x40 == 0x40 else 0,
+                    'normalChargePort': 1 if chargingBits & 0x20 == 0x20 else 0,
                     })
 
             elif can_id == b'7EC22':

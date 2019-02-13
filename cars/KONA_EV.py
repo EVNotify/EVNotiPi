@@ -34,7 +34,7 @@ class KONA_EV:
                 chargingBits = int(can_data[2:4],16)
                 normalChargeBit = chargingBits & 0x02 == 0x02
                 data['EXTENDED'].update({
-                    'charging':                chargingBits & 0x01 == 0x01,
+                    'charging':                1 if chargingBits & 0x01 == 0x01 else 0,
                     'batteryMinTemperature':   signedHex(can_data[10:12]),
                     'batteryMaxTemperature':   signedHex(can_data[8:10]),
                     'dcBatteryCurrent':        signedHex(can_data[0:4]) / 10.0,
@@ -53,8 +53,8 @@ class KONA_EV:
 
 
         data['EXTENDED'].update({
-            'normalChargePort': normalChargeBit and normalChargePort,
-            'rapidChargePort':  normalChargeBit and not normalChargePort,
+            'normalChargePort': 1 if normalChargeBit and normalChargePort else 0,
+            'rapidChargePort':  1 if normalChargeBit and not normalChargePort else 0,
             })
 
         for line in self.dongle.sendCommand('220105'):
