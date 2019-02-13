@@ -76,7 +76,7 @@ try:
     while main_running:
         try:
             data = car.getData()
-        except dongle.CAN_ERROR as e:
+        except DONGLE.CAN_ERROR as e:
             print(e)
 
         else:

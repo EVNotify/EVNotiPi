@@ -1,9 +1,9 @@
 from serial import Serial
 from pexpect import fdpexpect
 
-class CAN_ERROR(Exception): pass
-
 class PiOBD2Hat:
+
+    class CAN_ERROR(Exception): pass
 
     def __init__(self, dongle):
         print("Init Dongle")
@@ -28,8 +28,9 @@ class PiOBD2Hat:
         self.exp.send(cmd + b'\r\n')
         self.exp.expect('>')
         ret = self.exp.before.strip(b'\r\n')
-        if ret == b'CAN NO ACK':
-            raise CAN_ERROR(ret)
+        print(ret)
+        if ret in [b'CAN NO ACK',b'NO DATA']:
+            raise PiOBD2Hat.CAN_ERROR(ret)
 
         return ret.split(b'\r\n')
 
@@ -62,4 +63,5 @@ class PiOBD2Hat:
 
     def setCANRxFilter(self, addr):
         self.sendAtCmd('ATCR' + str(addr))
+
 
