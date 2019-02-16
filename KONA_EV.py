@@ -23,7 +23,7 @@ class KONA_EV:
         self.ser.flushInput()
         cmd = command + '\r\n'
         print(cmd)
-        self.ser.write(bytes(command + '\r\n'))
+        self.ser.write(bytes(command + '\r\n', 'utf-8'))
         self.ser.flush()
         if (command == self.command): return
         return self.ser.readline()
