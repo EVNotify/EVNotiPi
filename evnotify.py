@@ -7,9 +7,11 @@ import io
 import json
 #import importlib
 import sys
-from time import sleep
+from time import sleep,time
 import threading
 import gps
+import RPi.GPIO as GPIO
+from subprocess import check_call
 
 sys.path.append('EVNotifyAPI/libs/python')
 sys.path.append('dongles')
@@ -71,9 +73,14 @@ car = CAR(dongle)
 
 gps = GpsPoller()
 gps.start()
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(21, GPIO.IN)
 main_running = True
+last_charging = time()
+
 try:
     while main_running:
+        now = time()
         try:
             data = car.getData()
         except DONGLE.CAN_ERROR as e:
@@ -93,7 +100,16 @@ try:
                     }
                 print(g)
                 EVNotify.setLocation({'location': g})
+
+            if data['EXTENDED']['charging'] == 1 or GPIO.input(21) == 0:
+                last_charging = now
+
         finally:
+            if now - last_charging > 300 and GPIO.input(21) == 1: # 5min
+                print("Not charging and ignition off => Shutdown")
+                main_running = False
+                check_call(['/usr/bin/systemctl','poweroff'])
+
             if main_running: sleep(2)
 
 except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
