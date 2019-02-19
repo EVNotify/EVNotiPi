@@ -8,8 +8,7 @@ import json
 #import importlib
 import sys
 from time import sleep,time
-import threading
-import gps
+from gpspoller import GpsPoller
 import RPi.GPIO as GPIO
 from subprocess import check_call
 
@@ -18,31 +17,6 @@ sys.path.append('dongles')
 sys.path.append('cars')
 
 import evnotifyapi
-
-class GpsPoller(threading.Thread):
-    def __init__(self):
-        threading.Thread.__init__(self)
-        self.gps = gps
-        self.gpsd = None
-        self.fix = None
-
-    def run(self):
-        self.running = True
-        while self.running:
-            try:
-                if self.gpsd:
-                    self.gpsd.next()
-                    self.fix = self.gpsd.fix
-                else:
-                    self.gpsd = self.gps.gps(mode=self.gps.WATCH_ENABLE)
-            except (StopIteration, ConnectionResetError, OSError):
-                self.gpsd = None
-                self.fix = None
-                sleep(1)
-
-    def stop(self):
-        self.running = False
-        self.join()
 
 # load config
 with open('config.json', encoding='utf-8') as config_file:
@@ -59,16 +33,21 @@ elif config['dongle']['type'] == 'PiOBD2Hat':
 else:
     raise Exception('Unknown dongle %s' % config['dongle']['type'])
 
-dongle = DONGLE(config['dongle'])
-
 # Init car interface
-cartype = EVNotify.getSettings()['car']
+try:
+    cartype = EVNotify.getSettings()['car']
+except EVNotify.CommunicationError as e:
+    print('Communication to server failed!')
+    print(e)
+    exit(1)
+
 if cartype == 'IONIQ_BEV':
     from IONIQ_BEV import IONIQ_BEV as CAR
     #from IONIQ_FAKE import IONIQ_FAKE as CAR
 elif cartype == 'KONA_EV':
     from KONA_EV import KONA_BEV as CAR
 
+dongle = DONGLE(config['dongle'])
 car = CAR(dongle)
 
 gps = GpsPoller()
@@ -88,18 +67,21 @@ try:
 
         else:
             print(data)
-            EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
-            EVNotify.setExtended(data['EXTENDED'])
-            if gps.fix and gps.fix.mode > 1: # mode: GPS-fix quality
-                g ={
-                    'latitude':  gps.fix.latitude,
-                    'longitude': gps.fix.longitude,
-                    'gps_speed': gps.fix.speed,
-                    #'accuracy':  gps.fix.epx,
-                    #'timestamp': strptime(gps.fix.time,'%Y-%m-%dT%H:%M:%S.000Z'),
-                    }
-                print(g)
-                EVNotify.setLocation({'location': g})
+            try:
+                EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
+                EVNotify.setExtended(data['EXTENDED'])
+                if gps.fix and gps.fix.mode > 1: # mode: GPS-fix quality
+                    g ={
+                        'latitude':  gps.fix.latitude,
+                        'longitude': gps.fix.longitude,
+                        'gps_speed': gps.fix.speed,
+                        #'accuracy':  gps.fix.epx,
+                        #'timestamp': strptime(gps.fix.time,'%Y-%m-%dT%H:%M:%S.000Z'),
+                        }
+                    print(g)
+                    EVNotify.setLocation({'location': g})
+            except evnotifyapi.CommunicationError as e:
+                print(e)
 
             if data['EXTENDED']['charging'] == 1 or GPIO.input(21) == 0:
                 last_charging = now
