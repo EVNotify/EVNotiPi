@@ -18,6 +18,10 @@ sys.path.append('cars')
 
 import evnotifyapi
 
+PIN_IGN   = 21
+PIN_12VOK = 20
+LOOP_DELAY = 2
+
 # load config
 with open('config.json', encoding='utf-8') as config_file:
     config = json.loads(config_file.read())
@@ -34,12 +38,13 @@ else:
     raise Exception('Unknown dongle %s' % config['dongle']['type'])
 
 # Init car interface
-try:
-    cartype = EVNotify.getSettings()['car']
-except EVNotify.CommunicationError as e:
-    print('Communication to server failed!')
-    print(e)
-    exit(1)
+cartype = None
+while cartype == None:
+    try:
+        cartype = EVNotify.getSettings()['car']
+    except EVNotify.CommunicationError as e:
+        print("Waiting for network connectivity")
+        sleep(3s)
 
 if cartype == 'IONIQ_BEV':
     from IONIQ_BEV import IONIQ_BEV as CAR
@@ -53,7 +58,9 @@ car = CAR(dongle)
 gps = GpsPoller()
 gps.start()
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(21, GPIO.IN)
+GPIO.setup(PIN_IGN, GPIO.IN)
+GPIO.setup(PIN_12VOK, GPIO.IN)
+VCCstatCntr = 0
 main_running = True
 last_charging = time()
 
@@ -83,16 +90,28 @@ try:
             except evnotifyapi.CommunicationError as e:
                 print(e)
 
-            if data['EXTENDED']['charging'] == 1 or GPIO.input(21) == 0:
+            if data['EXTENDED']['charging'] == 1 or GPIO.input(PIN_IGN) == 0:
                 last_charging = now
 
         finally:
-            if now - last_charging > 300 and GPIO.input(21) == 1: # 5min
+            if GPIO.input(PIN_12VOK) == 1:
+                VCCstatCntr += 1
+            elif VCCstatCntr > 0:
+                VCCstatCntr -=1
+
+            if VCCstatCntr > 120 / LOOP_DELAY:    # If VCC is below warning for 2 minutes
+                print("12V check failed, shutting down")
+                main_running = False
+                check_call(['/usr/bin/systemctl','poweroff'])
+
+            if GPIO.input(PIN_IGN) == 1:
+                print("ignition off detected")
+            if now - last_charging > 300 and GPIO.input(PIN_IGN) == 1: # 5min
                 print("Not charging and ignition off => Shutdown")
                 main_running = False
                 check_call(['/usr/bin/systemctl','poweroff'])
 
-            if main_running: sleep(2)
+            if main_running: sleep(LOOP_DELAY)
 
 except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
     main_running = False
