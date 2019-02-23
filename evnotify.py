@@ -21,6 +21,7 @@ import evnotifyapi
 PIN_IGN   = 21
 PIN_12VOK = 20
 LOOP_DELAY = 2
+DATA_BUFFER_MAX_LEN = 256
 
 # load config
 with open('config.json', encoding='utf-8') as config_file:
@@ -57,36 +58,46 @@ car = CAR(dongle)
 
 gps = GpsPoller()
 gps.start()
+
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(PIN_IGN, GPIO.IN)
 GPIO.setup(PIN_12VOK, GPIO.IN)
+
 VCCstatCntr = 0
 main_running = True
 last_charging = time()
+data_buffer = []
 
 try:
     while main_running:
         now = time()
         try:
-            data = car.getData()
+            data_buffer.append([car.getData(), gps.fix])
+            if len(data_buffer) > DATA_BUFFER_MAX_LEN: del data_buffer[0]
         except DONGLE.CAN_ERROR as e:
             print(e)
 
         else:
-            print(data)
+            print(data_buffer[-1])
             try:
-                EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
-                EVNotify.setExtended(data['EXTENDED'])
-                if gps.fix and gps.fix.mode > 1: # mode: GPS-fix quality
-                    g ={
-                        'latitude':  gps.fix.latitude,
-                        'longitude': gps.fix.longitude,
-                        'gps_speed': gps.fix.speed,
-                        #'accuracy':  gps.fix.epx,
-                        #'timestamp': strptime(gps.fix.time,'%Y-%m-%dT%H:%M:%S.000Z'),
-                        }
-                    print(g)
-                    EVNotify.setLocation({'location': g})
+                while len(data_buffer) > 0:
+                    data,fix = data_buffer[0]
+
+                    EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
+                    EVNotify.setExtended(data['EXTENDED'])
+                    if fix and fix.mode > 1: # mode: GPS-fix quality
+                        g ={
+                            'latitude':  fix.latitude,
+                            'longitude': fix.longitude,
+                            'gps_speed': fix.speed,
+                            #'accuracy':  gps.fix.epx,
+                            #'timestamp': strptime(gps.fix.time,'%Y-%m-%dT%H:%M:%S.000Z'),
+                            }
+                        print(g)
+                        EVNotify.setLocation({'location': g})
+
+                    del data_buffer[0]
+
             except evnotifyapi.CommunicationError as e:
                 print(e)
 
