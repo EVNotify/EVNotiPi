@@ -45,7 +45,7 @@ while cartype == None:
         cartype = EVNotify.getSettings()['car']
     except EVNotify.CommunicationError as e:
         print("Waiting for network connectivity")
-        sleep(3s)
+        sleep(3)
 
 if cartype == 'IONIQ_BEV':
     from IONIQ_BEV import IONIQ_BEV as CAR
