@@ -6,7 +6,7 @@ After=network.target
 
 [Service]
 WorkingDirectory=/opt/EVNotiPi
-ExecStart=/opt/EVNotiPi/evnotify.py
+ExecStart=/opt/EVNotiPi/evnotipi.py
 RestartSec=5s
 Restart=on-failure
 
