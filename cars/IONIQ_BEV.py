@@ -1,9 +1,4 @@
 
-def signedHex(txt):
-    bits = len(txt) * 4
-    return (int(txt, 16) + 2**(bits-1)) % 2**bits - 2**(bits-1)
-
-
 class IONIQ_BEV:
 
     def __init__(self, dongle):
@@ -15,65 +10,45 @@ class IONIQ_BEV:
     def getData(self):
         raw = {}
 
-        # Collect both parts of DC Current
-        dcCurrent = [None,None]
-        data = {'EXTENDED': {}}
+        for cmd in [2101,2105]:
+            raw[cmd] = {}
+            for line in self.dongle.sendCommand(str(cmd)):
+                raw[cmd][int(line[:5],16)] = bytes.fromhex(str(line[5:],'ascii'))
 
-        for line in self.dongle.sendCommand('2101'):
-            can_id = line[:5]
-            can_data = line[5:]
+        chargingBits = raw[2101][0x7EC21][5] \
+                if 0x7EC21 in raw[2101] else None
+        dcBatteryCurrent = int.from_bytes(raw[2101][0x7EC21][6:7] + raw[2101][0x7EC22][0:1], byteorder='big', signed=True) / 10.0 \
+                if 0x7EC21 in raw[2101] and 0x7EC22 in raw[2101] else None
+        dcBatteryVoltage = int.from_bytes(raw[2101][0x7EC22][1:3], byteorder='big', signed=False) / 10.0 \
+                if 0x7EC22 in raw[2101] else None
 
-            if can_id == b'7EC21':
-                chargingBits = int(can_data[-4:-2],16)
-                dcCurrent[0] = can_data[12:14]
-                data.update({
-                    'SOC_BMS':          int(can_data[0:2],16) / 2.0,
-                    })
-                data['EXTENDED'].update({
-                    'charging':         1 if chargingBits & 0x80 == 0x80 else 0,
-                    'rapidChargePort':  1 if chargingBits & 0x40 == 0x40 else 0,
-                    'normalChargePort': 1 if chargingBits & 0x20 == 0x20 else 0,
-                    })
-
-            elif can_id == b'7EC22':
-                dcCurrent[1] = can_data[0:2]
-                data['EXTENDED'].update({
-                    'dcBatteryVoltage':        int(can_data[2:6],16) / 10.0,
-                    'batteryMinTemperature':   signedHex(can_data[8:10]),
-                    'batteryMaxTemperature':   signedHex(can_data[6:8]),
-                    })
-
-            elif can_id == b'7EC23':
-                data['EXTENDED'].update({
-                    'batteryInletTemperature': signedHex(can_data[4:6]),
-                    })
-
-            elif can_id == b'7EC24':
-                data['EXTENDED'].update({
-                    'auxBatteryVoltage': int(can_data[8:10],16) / 10.0,
-                    })
-
-
-        data['EXTENDED']['dcBatteryCurrent'] = \
-                signedHex(b''.join(dcCurrent)) / 10.0
-
-
-        for line in self.dongle.sendCommand('2105'):
-            can_id = line[:5]
-            can_data = line[5:]
-
-            if can_id == b'7EC24':
-                data.update({
-                    'SOC_DISPLAY': int(can_data[-2:],16) / 2.0,
-                    })
-                data['EXTENDED'].update({
-                    'soh': int(can_data[0:4],16) / 10.0,
-                    })
-
-
-        data['EXTENDED']['dcBatteryPower'] = \
-                data['EXTENDED']['dcBatteryVoltage'] * \
-                data['EXTENDED']['dcBatteryCurrent'] / 1000.0
+        data = {'SOC_BMS':      raw[2101][0x7EC21][0] / 2.0 \
+                    if 0x7EC21 in raw[2101] else None,
+                'SOC_DISPLAY':  raw[2105][0x7EC24][6] / 2.0 \
+                    if 0x7EC24 in raw[2105] else None,
+                'EXTENDED': {
+                    'auxBatteryVoltage':        raw[2101][0x7EC24][4] / 10.0 \
+                        if 0x7EC24 in raw[2105] else None,
+                    'batteryInletTemperature':  int.from_bytes(raw[2101][0x7EC23][2:3], byteorder='big', signed=True) \
+                        if 0x7EC23 in raw[2105] else None,
+                    'batteryMaxTemperature':    int.from_bytes(raw[2101][0x7EC22][3:4], byteorder='big', signed=True) \
+                        if 0x7EC22 in raw[2105] else None,
+                    'batteryMinTemperature':    int.from_bytes(raw[2101][0x7EC22][4:5], byteorder='big', signed=True) \
+                        if 0x7EC22 in raw[2105] else None,
+                    'charging':                 1 if chargingBits != None and \
+                            chargingBits & 0x80 == 0x80 else 0,
+                    'normalChargePort':         1 if chargingBits != None and \
+                            chargingBits & 0x20 == 0x20 else 0,
+                    'rapidChargePort':          1 if chargingBits != None and \
+                            chargingBits & 0x40 == 0x40 else 0,
+                    'dcBatteryCurrent':         dcBatteryCurrent,
+                    'dcBatteryPower':           dcBatteryCurrent * dcBatteryVoltage / 1000.0 \
+                        if dcBatteryCurrent!= None and dcBatteryVoltage != None else None,
+                    'dcBatteryVoltage':         dcBatteryVoltage,
+                    'soh':                      int.from_bytes(raw[2105][0x7EC24][0:2], byteorder='big', signed=False) / 10.0 \
+                        if 0x7EC24 in raw[2105] else None,
+                    }
+                }
 
         data.update(self.getBaseData())
 
@@ -86,3 +61,4 @@ class IONIQ_BEV:
             "NORMAL_SPEED": 4.6,
             "FAST_SPEED": 50
         }
+
