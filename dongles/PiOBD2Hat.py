@@ -16,7 +16,7 @@ class PiOBD2Hat:
         cmd = bytes(cmd, 'utf-8')
 
         self.exp.send(cmd + b'\r\n')
-        self.exp.expect('>')
+        self.exp.expect('>', timeout=5)
         ret = self.exp.before.strip(b'\r\n')
 
         if expect not in ret:
@@ -26,7 +26,7 @@ class PiOBD2Hat:
         cmd = bytes(cmd, 'utf-8')
         print("Send Command "+str(cmd))
         self.exp.send(cmd + b'\r\n')
-        self.exp.expect('>')
+        self.exp.expect('>', timeout=5)
         ret = self.exp.before.strip(b'\r\n')
         print(ret)
         if ret in [b'CAN NO ACK',b'NO DATA']:

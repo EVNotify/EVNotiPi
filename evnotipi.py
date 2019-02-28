@@ -72,7 +72,7 @@ try:
     while main_running:
         now = time()
         try:
-            data_buffer.append([car.getData(), gps.fix])
+            data_buffer.append([car.getData(), gps.fix()])
             if len(data_buffer) > DATA_BUFFER_MAX_LEN: del data_buffer[0]
         except DONGLE.CAN_ERROR as e:
             print(e)

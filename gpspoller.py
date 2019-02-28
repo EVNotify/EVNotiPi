@@ -1,3 +1,5 @@
+import sys
+sys.path.append('/usr/local/lib/python3.7/site-packages')
 import gps
 import threading
 
@@ -6,7 +8,7 @@ class GpsPoller(threading.Thread):
         threading.Thread.__init__(self)
         self.gps = gps
         self.gpsd = None
-        self.fix = None
+        self.last_fix = None
 
     def run(self):
         self.running = True
@@ -14,13 +16,16 @@ class GpsPoller(threading.Thread):
             try:
                 if self.gpsd:
                     self.gpsd.next()
-                    self.fix = self.gpsd.fix
+                    self.last_fix = self.gpsd.fix
                 else:
                     self.gpsd = self.gps.gps(mode=self.gps.WATCH_ENABLE)
             except (StopIteration, ConnectionResetError, OSError):
                 self.gpsd = None
-                self.fix = None
+                self.last_fix = None
                 sleep(1)
+
+    def fix(self):
+        return self.last_fix
 
     def stop(self):
         self.running = False
