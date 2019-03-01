@@ -4,6 +4,7 @@ from pexpect import fdpexpect
 class PiOBD2Hat:
 
     class CAN_ERROR(Exception): pass
+    class NO_DATA(Exception): pass
 
     def __init__(self, dongle):
         print("Init Dongle")
@@ -34,8 +35,10 @@ class PiOBD2Hat:
             self.exp.expect('>', timeout=5)
             ret = self.exp.before.strip(b'\r\n')
             print(ret)
-            if ret in [b'CAN NO ACK',b'NO DATA']:
+            if ret in [b'CAN NO ACK']:
                 raise PiOBD2Hat.CAN_ERROR(ret)
+            elif ret == b'NO DATA':
+                raise PiOBD2Hat.NO_DATA(ret)
 
         except pexpect.exceptions.TIMEOUT:
             ret = b'TIMEOUT'

@@ -21,7 +21,11 @@ import evnotifyapi
 PIN_IGN   = 21
 PIN_12VOK = 20
 LOOP_DELAY = 2
-DATA_BUFFER_MAX_LEN = 256
+NO_DATA_DELAY = 600 # 10 min
+VCC_CHECK_DELAY = 60 # 1 min
+CHARGE_COOLDOWN_DELAY = 3600 * 6 # 6 h
+
+class POLL_DELAY(Exception): pass
 
 # load config
 with open('config.json', encoding='utf-8') as config_file:
@@ -66,35 +70,37 @@ GPIO.setup(PIN_12VOK, GPIO.IN)
 VCCstatCntr = 0
 main_running = True
 last_charging = time()
-data_buffer = []
+delay_poll_until = time()
 
 try:
     while main_running:
         now = time()
         try:
-            data_buffer.append([car.getData(), gps.fix()])
-            if len(data_buffer) > DATA_BUFFER_MAX_LEN: del data_buffer[0]
+            if delay_poll_until > now: raise POLL_DELAY()
+
+            data = car.getData()
+            fix = gps.fix()
         except DONGLE.CAN_ERROR as e:
             print(e)
+        except DONGLE.NO_DATA:
+            print("NO DATA - delay polling")
+            delay_poll_until = now + NO_DATA_DELAY
+        except POLL_DELAY:
+            pass
 
         else:
-            print(data_buffer[-1])
+            print(data)
             try:
-                while len(data_buffer) > 0:
-                    data,fix = data_buffer[0]
-
-                    EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
-                    EVNotify.setExtended(data['EXTENDED'])
-                    if fix and fix.mode > 1: # mode: GPS-fix quality
-                        g ={
-                            'latitude':  fix.latitude,
-                            'longitude': fix.longitude,
-                            'gps_speed': fix.speed,
-                            }
-                        print(g)
-                        EVNotify.setLocation({'location': g})
-
-                    del data_buffer[0]
+                EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
+                EVNotify.setExtended(data['EXTENDED'])
+                if fix and fix.mode > 1: # mode: GPS-fix quality
+                    g ={
+                        'latitude':  fix.latitude,
+                        'longitude': fix.longitude,
+                        'gps_speed': fix.speed,
+                        }
+                    print(g)
+                    EVNotify.setLocation({'location': g})
 
             except evnotifyapi.CommunicationError as e:
                 print(e)
@@ -108,16 +114,14 @@ try:
             elif VCCstatCntr > 0:
                 VCCstatCntr -=1
 
-            if VCCstatCntr > 120 / LOOP_DELAY:    # If VCC is below warning for 2 minutes
+            if VCCstatCntr > VCC_CHECK_DELAY / LOOP_DELAY:    # If VCC is below warning for 2 minutes
                 print("12V check failed, shutting down")
-                main_running = False
                 check_call(['/usr/bin/systemctl','poweroff'])
 
             if GPIO.input(PIN_IGN) == 1:
                 print("ignition off detected")
-            if now - last_charging > 300 and GPIO.input(PIN_IGN) == 1: # 5min
+            if now - last_charging > CHARGE_COOLDOWN_DELAY and GPIO.input(PIN_IGN) == 1:
                 print("Not charging and ignition off => Shutdown")
-                main_running = False
                 check_call(['/usr/bin/systemctl','poweroff'])
 
             if main_running: sleep(LOOP_DELAY)
