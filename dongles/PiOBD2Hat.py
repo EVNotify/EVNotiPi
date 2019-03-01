@@ -15,22 +15,30 @@ class PiOBD2Hat:
         expect = bytes(expect, 'utf-8')
         cmd = bytes(cmd, 'utf-8')
 
-        self.exp.send(cmd + b'\r\n')
-        self.exp.expect('>', timeout=5)
-        ret = self.exp.before.strip(b'\r\n')
+        try:
+            self.exp.send(cmd + b'\r\n')
+            self.exp.expect('>', timeout=5)
+            ret = self.exp.before.strip(b'\r\n')
 
-        if expect not in ret:
-            raise Exception('Expected %s, got %s' % (expect,ret))
+            if expect not in ret:
+                raise Exception('Expected %s, got %s' % (expect,ret))
+
+        except pexpect.exceptions.TIMEOUT:
+            ret = b'TIMEOUT'
 
     def sendCommand(self, cmd):
         cmd = bytes(cmd, 'utf-8')
         print("Send Command "+str(cmd))
-        self.exp.send(cmd + b'\r\n')
-        self.exp.expect('>', timeout=5)
-        ret = self.exp.before.strip(b'\r\n')
-        print(ret)
-        if ret in [b'CAN NO ACK',b'NO DATA']:
-            raise PiOBD2Hat.CAN_ERROR(ret)
+        try:
+            self.exp.send(cmd + b'\r\n')
+            self.exp.expect('>', timeout=5)
+            ret = self.exp.before.strip(b'\r\n')
+            print(ret)
+            if ret in [b'CAN NO ACK',b'NO DATA']:
+                raise PiOBD2Hat.CAN_ERROR(ret)
+
+        except pexpect.exceptions.TIMEOUT:
+            ret = b'TIMEOUT'
 
         return ret.split(b'\r\n')
 
