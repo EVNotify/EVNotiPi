@@ -1,0 +1,15 @@
+[Unit]
+Description=EVNotify Python Service
+Wants=gpsd.service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+WorkingDirectory=/opt/EVNotiPi
+ExecStart=/opt/EVNotiPi/evnotipi.py
+RestartSec=5s
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+
