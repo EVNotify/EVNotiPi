@@ -76,7 +76,8 @@ try:
     while main_running:
         now = time()
         try:
-            if delay_poll_until > now: raise POLL_DELAY()
+            if delay_poll_until > now and GPIO.input(PIN_IGN) == 1:
+                raise POLL_DELAY()      # Skip delay if car on
 
             data = car.getData()
             fix = gps.fix()
@@ -97,7 +98,7 @@ try:
                     g ={
                         'latitude':  fix.latitude,
                         'longitude': fix.longitude,
-                        'gps_speed': fix.speed,
+                        'speed': fix.speed,
                         }
                     print(g)
                     EVNotify.setLocation({'location': g})
@@ -124,11 +125,14 @@ try:
                 print("Not charging and ignition off => Shutdown")
                 check_call(['/usr/bin/systemctl','poweroff'])
 
+            sys.stdout.flush()
+
             if main_running: sleep(LOOP_DELAY)
 
 except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
     main_running = False
 finally:
+    print("Exiting ...")
     gps.stop()
     print("Bye.")
 
