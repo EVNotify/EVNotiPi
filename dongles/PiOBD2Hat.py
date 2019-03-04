@@ -1,4 +1,5 @@
 from serial import Serial
+import pexpect
 from pexpect import fdpexpect
 
 class PiOBD2Hat:
