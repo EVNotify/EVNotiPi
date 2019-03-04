@@ -9,6 +9,7 @@ import json
 import sys
 from time import sleep,time
 from gpspoller import GpsPoller
+from wifi_ctrl import WiFiCtrl
 import RPi.GPIO as GPIO
 from subprocess import check_call
 
@@ -61,6 +62,8 @@ car = CAR(dongle)
 gps = GpsPoller()
 gps.start()
 
+wifi = WiFiCtrl()
+
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(PIN_IGN, GPIO.IN)
 
@@ -104,6 +107,9 @@ try:
 
             if data['EXTENDED']['charging'] == 1 or GPIO.input(PIN_IGN) == 0:
                 last_charging = now
+                wifi.enable()
+            else:
+                wifi.disable()
 
         finally:
             if GPIO.input(PIN_IGN) == 1:
