@@ -23,6 +23,7 @@ PIN_IGN   = 21
 LOOP_DELAY = 2
 NO_DATA_DELAY = 600 # 10 min
 CHARGE_COOLDOWN_DELAY = 3600 * 6 # 6 h
+WIFI_SHUTDOWN_DELAY = 300 # 5 min
 
 class POLL_DELAY(Exception): pass
 
@@ -107,13 +108,20 @@ try:
 
             if data['EXTENDED']['charging'] == 1 or GPIO.input(PIN_IGN) == 0:
                 last_charging = now
-                wifi.enable()
-            else:
-                wifi.disable()
 
         finally:
             if GPIO.input(PIN_IGN) == 1:
                 print("ignition off detected")
+
+            if now - last_charging > WIFI_SHUTDOWN_DELAY and GPIO.input(PIN_IGN) == 1:
+                if wifi.state == True:
+                    print("Disable WiFi")
+                    wifi.disable()
+            else:
+                if wifi.state == False:
+                    print("Enable Wifi")
+                    wifi.enable()
+
             if now - last_charging > CHARGE_COOLDOWN_DELAY and GPIO.input(PIN_IGN) == 1:
                 print("Not charging and ignition off => Shutdown")
                 check_call(['/usr/bin/systemctl','poweroff'])
