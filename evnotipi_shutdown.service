@@ -1,0 +1,10 @@
+[Unit]
+Description=EVNotiPi voltage watcher
+
+[Service]
+WorkingDirectory=/opt/EVNotiPi
+ExecStart=/opt/EVNotiPi/shutdown.py
+
+[Install]
+WantedBy=multi-user.target
+
