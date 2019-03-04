@@ -120,6 +120,7 @@ except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
     main_running = False
 finally:
     print("Exiting ...")
+    GPIO.cleanup()
     gps.stop()
     print("Bye.")
 
