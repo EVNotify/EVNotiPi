@@ -7,11 +7,11 @@ class WiFiCtrl:
 
     def enable(self):
         if self.state != True:
-            check_call(['/usr/bin/systemctl','start','hostapd'])
+            check_call(['/bin/systemctl','start','hostapd'])
             self.state = True
 
     def disable(self):
         if self.state != False:
-            check_call(['/usr/bin/systemctl','stop','hostapd'])
+            check_call(['/bin/systemctl','stop','hostapd'])
             self.state = False
 

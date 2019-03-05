@@ -47,7 +47,7 @@ while cartype == None:
         sleep(3)
 
 # Only accept a few characters, do not trust stuff from the Internet
-if re.match('^[a-zA-Z0-9_-]$',cartype) == None:
+if re.match('^[a-zA-Z0-9_-]+$',cartype) == None:
     raise Exception('Invalid characters in cartype')
 
 if not "{}.py".format(cartype) in os.listdir('cars'):
@@ -124,7 +124,7 @@ try:
 
             if now - last_charging > CHARGE_COOLDOWN_DELAY and GPIO.input(PIN_IGN) == 1:
                 print("Not charging and ignition off => Shutdown")
-                check_call(['/usr/bin/systemctl','poweroff'])
+                check_call(['/bin/systemctl','poweroff'])
 
             sys.stdout.flush()
 
