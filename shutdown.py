@@ -12,7 +12,7 @@ PIN_12VOK = 24
 
 GPIO.setmode(GPIO.BCM)
 
-GPIO.setup(PIN_12VOK, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(PIN_12VOK, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 try:
     while True:
         button1_state = GPIO.wait_for_edge(PIN_12VOK, GPIO.RISING)
