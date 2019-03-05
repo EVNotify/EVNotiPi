@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EVNotify PlugAndPlay</title>
+    <script type="text/javascript" src="EVNotifyAPI/libs/javascript/evnotify.js"></script>
+</head>
+<body>
+    <h1>Konfiguration</h1>
+
+    <form>
+        <h2>Authentifizierung</h2>
+        <fieldset>
+            <input type="radio" id="loginTypeLogin" name="loginType" value="login" checked onchange="showSection(this.value)">
+            <label for="loginTypeLogin">Mit bestehendem Account anmelden</label>
+            <input type="radio" id="loginTypeRegister" name="loginType" value="register" onchange="showSection(this.value)">
+            <label for="loginTypeRegister">Neuen Account erstellen</label>
+        </fieldset>
+        <div id="loginSection">
+            <fieldset>
+                <label for="loginAKey">AKey</label>
+                <input type="text" id="loginAKey">
+            </fieldset>
+            <fieldset>
+                <label for="loginPassword">Passwort</label>
+                <input type="password" id="loginPassword">
+            </fieldset>
+            <button type="button" onclick="login()">Anmelden</button>
+        </div>
+        <div id="registerSection" style="display: none">
+            <fieldset>
+                <label for="registerPassword">Passwort</label>
+                <input type="password" id="registerPassword">
+            </fieldset>
+            <fieldset>
+                <label for="registerPasswordRepeat">Passwort wiederholen</label>
+                <input type="password" id="registerPasswordRepeat">
+            </fieldset>
+            <button type="button" onclick="register()">Registrieren</button>
+        </div>
+    </form>
+</body>
+
+<script type="text/javascript">
+    window.evnotify = new EVNotify();
+
+    function showSection(section) {
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('registerSection').style.display = 'none';
+        document.getElementById(section + 'Section').style.display = 'block';
+    }
+    
+    function login() {
+        evnotify.login(document.getElementById('loginAKey').value, document.getElementById('loginPassword').value, function (err) {
+            console.log(err, evnotify);
+            // TODO show messages, get settings, show them, set car if available
+        });
+    }
+
+    function register() {
+        // TODO register
+    }
+</script>
+</html>
