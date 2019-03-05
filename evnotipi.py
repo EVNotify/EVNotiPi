@@ -16,8 +16,8 @@ import sys
 PIN_IGN   = 21
 LOOP_DELAY = 2
 NO_DATA_DELAY = 600 # 10 min
-CHARGE_COOLDOWN_DELAY = 3600 * 6 # 6 h
-WIFI_SHUTDOWN_DELAY = 300 # 5 min
+CHARGE_COOLDOWN_DELAY = 3600 * 6 # 6 h  set to None to disable auto shutdown
+WIFI_SHUTDOWN_DELAY = 300 # 5 min       set to None to disable Wifi control
 
 class POLL_DELAY(Exception): pass
 
@@ -112,18 +112,20 @@ try:
             if GPIO.input(PIN_IGN) == 1:
                 print("ignition off detected")
 
-            if now - last_charging > WIFI_SHUTDOWN_DELAY and GPIO.input(PIN_IGN) == 1:
-                if wifi.state == True:
-                    print("Disable WiFi")
-                    wifi.disable()
-            else:
-                if wifi.state == False:
-                    print("Enable Wifi")
-                    wifi.enable()
+            if WIFI_SHUTDOWN_DELAY != None:
+                if now - last_charging > WIFI_SHUTDOWN_DELAY and GPIO.input(PIN_IGN) == 1:
+                    if wifi.state == True:
+                        print("Disable WiFi")
+                        wifi.disable()
+                else:
+                    if wifi.state == False:
+                        print("Enable Wifi")
+                        wifi.enable()
 
-            if now - last_charging > CHARGE_COOLDOWN_DELAY and GPIO.input(PIN_IGN) == 1:
-                print("Not charging and ignition off => Shutdown")
-                check_call(['/bin/systemctl','poweroff'])
+            if CHARGE_COOLDOWN_DELAY != None:
+                if now - last_charging > CHARGE_COOLDOWN_DELAY and GPIO.input(PIN_IGN) == 1:
+                    print("Not charging and ignition off => Shutdown")
+                    check_call(['/bin/systemctl','poweroff'])
 
             sys.stdout.flush()
 
