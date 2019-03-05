@@ -12,7 +12,6 @@ import os
 import re
 import string
 import sys
-import time
 
 PIN_IGN   = 21
 LOOP_DELAY = 2
