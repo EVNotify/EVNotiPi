@@ -13,6 +13,5 @@ class WiFiCtrl:
     def disable(self):
         if self.state != False:
             check_call(['/usr/bin/systemctl','stop','hostapd'])
-            check_call(['/bin/ip','link','set','down','dev','wlan0'])
             self.state = False
 
