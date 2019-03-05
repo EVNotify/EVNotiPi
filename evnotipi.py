@@ -1,23 +1,18 @@
 #!/usr/bin/env python3
 
-import re
-import time
-import string
-import io
-import json
-#import importlib
-import sys
-from time import sleep,time
 from gpspoller import GpsPoller
+from subprocess import check_call
+from time import sleep,time
 from wifi_ctrl import WiFiCtrl
 import RPi.GPIO as GPIO
-from subprocess import check_call
-
-sys.path.append('EVNotifyAPI/libs/python')
-sys.path.append('dongles')
-sys.path.append('cars')
-
 import evnotifyapi
+import io
+import json
+import os
+import re
+import string
+import sys
+import time
 
 PIN_IGN   = 21
 LOOP_DELAY = 2
@@ -34,13 +29,13 @@ with open('config.json', encoding='utf-8') as config_file:
 # load api lib
 EVNotify = evnotifyapi.EVNotify(config['akey'], config['token'])
 
+if not "{}.py".format(config['dongle']['type']) in os.listdir('dongles'):
+    raise Exception('Unknown dongle {}'.format(config['dongle']['type']))
+
 # Init ODB2 adapter
-if config['dongle']['type'] == 'ELM327':
-    from ELM327 import ELM327 as DONGLE
-elif config['dongle']['type'] == 'PiOBD2Hat':
-    from PiOBD2Hat import PiOBD2Hat as DONGLE
-else:
-    raise Exception('Unknown dongle %s' % config['dongle']['type'])
+sys.path.insert(0, 'dongles')
+exec("from {0} import {0} as DONGLE".format(config['dongle']['type']))
+sys.path.remove('dongles')
 
 # Init car interface
 cartype = None
@@ -51,11 +46,16 @@ while cartype == None:
         print("Waiting for network connectivity")
         sleep(3)
 
-if cartype == 'IONIQ_BEV':
-    from IONIQ_BEV import IONIQ_BEV as CAR
-    #from IONIQ_FAKE import IONIQ_FAKE as CAR
-elif cartype == 'KONA_EV':
-    from KONA_EV import KONA_BEV as CAR
+# Only accept a few characters, do not trust stuff from the Internet
+if re.match('^[a-zA-Z0-9_-]$',cartype) == None:
+    raise Exception('Invalid characters in cartype')
+
+if not "{}.py".format(cartype) in os.listdir('cars'):
+    raise Exception('Unknown car {}'.format(cartype))
+
+sys.path.insert(0, 'cars')
+exec("from {0} import {0} as CAR".format(cartype))
+sys.path.remove('cars')
 
 dongle = DONGLE(config['dongle'])
 car = CAR(dongle)
