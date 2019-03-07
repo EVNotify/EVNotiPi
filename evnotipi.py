@@ -74,7 +74,7 @@ delay_poll_until = time()
 
 chargingStartSOC = 0
 socThreshold = config['socThreshold']
-notificationSent = false
+notificationSent = False
 
 try:
     while main_running:
@@ -106,6 +106,7 @@ try:
                 if data['EXTENDED']['charging'] == 1 and chargingStartSOC < socThreshold and currentSOC >= socThreshold and !notificationSent:
                     print("Notification threshold reached")
                     EVNotify.sendNotification()
+                    notificationSent = True
                 if fix and fix.mode > 1: # mode: GPS-fix quality
                     g ={
                         'latitude':  fix.latitude,
