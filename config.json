@@ -1,0 +1,9 @@
+{
+    "akey": "12345678",
+    "token": "10067e01234567ea5ae",
+    "dongle": {
+	    "type": "PiOBD2Hat",
+	    "port": "/dev/ttyAMA0",
+	    "speed": 115200
+    }
+}
