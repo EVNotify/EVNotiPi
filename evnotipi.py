@@ -1,29 +1,23 @@
 #!/usr/bin/env python3
 
-import re
-import time
-import string
+from gpspoller import GpsPoller
+from subprocess import check_call
+from time import sleep,time
+from wifi_ctrl import WiFiCtrl
+import RPi.GPIO as GPIO
+import evnotifyapi
 import io
 import json
-#import importlib
+import os
+import re
+import string
 import sys
-from time import sleep,time
-from gpspoller import GpsPoller
-import RPi.GPIO as GPIO
-from subprocess import check_call
-
-sys.path.append('EVNotifyAPI/libs/python')
-sys.path.append('dongles')
-sys.path.append('cars')
-
-import evnotifyapi
 
 PIN_IGN   = 21
-PIN_12VOK = 20
 LOOP_DELAY = 2
 NO_DATA_DELAY = 600 # 10 min
-VCC_CHECK_DELAY = 60 # 1 min
-CHARGE_COOLDOWN_DELAY = 3600 * 6 # 6 h
+CHARGE_COOLDOWN_DELAY = 3600 * 6 # 6 h  set to None to disable auto shutdown
+WIFI_SHUTDOWN_DELAY = 300 # 5 min       set to None to disable Wifi control
 
 class POLL_DELAY(Exception): pass
 
@@ -34,28 +28,36 @@ with open('config.json', encoding='utf-8') as config_file:
 # load api lib
 EVNotify = evnotifyapi.EVNotify(config['akey'], config['token'])
 
-# Init ODB2 adapter
-if config['dongle']['type'] == 'ELM327':
-    from ELM327 import ELM327 as DONGLE
-elif config['dongle']['type'] == 'PiOBD2Hat':
-    from PiOBD2Hat import PiOBD2Hat as DONGLE
-else:
-    raise Exception('Unknown dongle %s' % config['dongle']['type'])
+if not "{}.py".format(config['dongle']['type']) in os.listdir('dongles'):
+    raise Exception('Unknown dongle {}'.format(config['dongle']['type']))
 
-# Init car interface
-cartype = None
-while cartype == None:
+# Init ODB2 adapter
+sys.path.insert(0, 'dongles')
+exec("from {0} import {0} as DONGLE".format(config['dongle']['type']))
+sys.path.remove('dongles')
+
+# get settings from backend
+settings = None
+while settings == None:
     try:
-        cartype = EVNotify.getSettings()['car']
+        settings = EVNotify.getSettings()
     except EVNotify.CommunicationError as e:
         print("Waiting for network connectivity")
         sleep(3)
 
-if cartype == 'IONIQ_BEV':
-    from IONIQ_BEV import IONIQ_BEV as CAR
-    #from IONIQ_FAKE import IONIQ_FAKE as CAR
-elif cartype == 'KONA_EV':
-    from KONA_EV import KONA_BEV as CAR
+# Init car interface
+cartype = settings['car']
+
+# Only accept a few characters, do not trust stuff from the Internet
+if re.match('^[a-zA-Z0-9_-]+$',cartype) == None:
+    raise Exception('Invalid characters in cartype')
+
+if not "{}.py".format(cartype) in os.listdir('cars'):
+    raise Exception('Unknown car {}'.format(cartype))
+
+sys.path.insert(0, 'cars')
+exec("from {0} import {0} as CAR".format(cartype))
+sys.path.remove('cars')
 
 dongle = DONGLE(config['dongle'])
 car = CAR(dongle)
@@ -63,18 +65,19 @@ car = CAR(dongle)
 gps = GpsPoller()
 gps.start()
 
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(PIN_IGN, GPIO.IN)
-GPIO.setup(PIN_12VOK, GPIO.IN)
+wifi = WiFiCtrl()
 
-VCCstatCntr = 0
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(PIN_IGN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
 main_running = True
 last_charging = time()
 delay_poll_until = time()
 
 chargingStartSOC = 0
-socThreshold = config['socThreshold']
+socThreshold = int(config['socThreshold']) if 'socThreshold' in config else int(settings['soc'])
 notificationSent = False
+print("Notification threshold: {}".format(socThreshold))
 
 try:
     while main_running:
@@ -92,21 +95,29 @@ try:
             delay_poll_until = now + NO_DATA_DELAY
         except POLL_DELAY:
             pass
+        except:
+            raise
 
         else:
             print(data)
             try:
-                currentSOC = data['SOC_DISPLAY'] or data['SOC_BMS']
                 EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
-                EVNotify.setExtended(data['EXTENDED'])
-                # track charging started
-                if data['EXTENDED']['charging'] == 1 and chargingStartSOC == 0:
-                    chargingStartSOC = currentSOC or 0
-                # check if notification threshold reached
-                if data['EXTENDED']['charging'] == 1 and chargingStartSOC < socThreshold and currentSOC >= socThreshold and !notificationSent:
-                    print("Notification threshold reached")
-                    EVNotify.sendNotification()
-                    notificationSent = True
+                currentSOC = data['SOC_DISPLAY'] or data['SOC_BMS']
+
+                if 'EXTENDED' in data:
+                    EVNotify.setExtended(data['EXTENDED'])
+                    is_charging = True if 'charging' in data['EXTENDED'] and data['EXTENDED']['charging'] == 1 else False
+                    # track charging started
+                    if is_charging and chargingStartSOC == 0:
+                        chargingStartSOC = currentSOC or 0
+                    # check if notification threshold reached
+                    elif is_charging and chargingStartSOC < socThreshold and currentSOC >= socThreshold and not notificationSent:
+                        print("Notification threshold reached")
+                        EVNotify.sendNotification()
+                        notificationSent = True
+                    elif not is_charging:   # Rearm notification
+                        notificationSent = False
+
                 if fix and fix.mode > 1: # mode: GPS-fix quality
                     g ={
                         'latitude':  fix.latitude,
@@ -118,25 +129,30 @@ try:
 
             except evnotifyapi.CommunicationError as e:
                 print(e)
+            except:
+                raise
 
-            if data['EXTENDED']['charging'] == 1 or GPIO.input(PIN_IGN) == 0:
+            if is_charging or GPIO.input(PIN_IGN) == 0:
                 last_charging = now
 
         finally:
-            if GPIO.input(PIN_12VOK) == 1:
-                VCCstatCntr += 1
-            elif VCCstatCntr > 0:
-                VCCstatCntr -=1
-
-            if VCCstatCntr > VCC_CHECK_DELAY / LOOP_DELAY:    # If VCC is below warning for 2 minutes
-                print("12V check failed, shutting down")
-                check_call(['/usr/bin/systemctl','poweroff'])
-
             if GPIO.input(PIN_IGN) == 1:
                 print("ignition off detected")
-            if now - last_charging > CHARGE_COOLDOWN_DELAY and GPIO.input(PIN_IGN) == 1:
-                print("Not charging and ignition off => Shutdown")
-                check_call(['/usr/bin/systemctl','poweroff'])
+
+            if WIFI_SHUTDOWN_DELAY != None:
+                if now - last_charging > WIFI_SHUTDOWN_DELAY and GPIO.input(PIN_IGN) == 1:
+                    if wifi.state == True:
+                        print("Disable WiFi")
+                        wifi.disable()
+                else:
+                    if wifi.state == False:
+                        print("Enable Wifi")
+                        wifi.enable()
+
+            if CHARGE_COOLDOWN_DELAY != None:
+                if now - last_charging > CHARGE_COOLDOWN_DELAY and GPIO.input(PIN_IGN) == 1:
+                    print("Not charging and ignition off => Shutdown")
+                    check_call(['/bin/systemctl','poweroff'])
 
             sys.stdout.flush()
 
@@ -144,8 +160,11 @@ try:
 
 except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
     main_running = False
+except:
+    raise
 finally:
     print("Exiting ...")
+    GPIO.cleanup()
     gps.stop()
     print("Bye.")
 

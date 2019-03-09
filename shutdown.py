@@ -6,16 +6,17 @@
 
 import RPi.GPIO as GPIO
 import time
+from subprocess import call
+
+PIN_12VOK = 24
 
 GPIO.setmode(GPIO.BCM)
 
-GPIO.setup(22, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(PIN_12VOK, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 try:
     while True:
-        button1_state = GPIO.input(22)
-        time.sleep(1)
+        button1_state = GPIO.wait_for_edge(PIN_12VOK, GPIO.RISING)
         if button1_state == False:
-            from subprocess import call
             call("sudo shutdown -h now", shell=True)
 except:
     GPIO.cleanup()
