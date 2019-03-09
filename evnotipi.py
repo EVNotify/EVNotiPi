@@ -68,7 +68,7 @@ gps.start()
 wifi = WiFiCtrl()
 
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(PIN_IGN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(PIN_IGN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 main_running = True
 last_charging = time()
