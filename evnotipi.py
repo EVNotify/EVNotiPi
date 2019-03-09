@@ -36,14 +36,17 @@ sys.path.insert(0, 'dongles')
 exec("from {0} import {0} as DONGLE".format(config['dongle']['type']))
 sys.path.remove('dongles')
 
-# Init car interface
-cartype = None
-while cartype == None:
+# get settings from backend
+settings = None
+while settings == None:
     try:
-        cartype = EVNotify.getSettings()['car']
+        settings = EVNotify.getSettings()
     except EVNotify.CommunicationError as e:
         print("Waiting for network connectivity")
         sleep(3)
+
+# Init car interface
+cartype = settings['car']
 
 # Only accept a few characters, do not trust stuff from the Internet
 if re.match('^[a-zA-Z0-9_-]+$',cartype) == None:
@@ -71,6 +74,11 @@ main_running = True
 last_charging = time()
 delay_poll_until = time()
 
+chargingStartSOC = 0
+socThreshold = int(config['socThreshold']) if 'socThreshold' in config else int(settings['soc'])
+notificationSent = False
+print("Notification threshold: {}".format(socThreshold))
+
 try:
     while main_running:
         now = time()
@@ -87,12 +95,29 @@ try:
             delay_poll_until = now + NO_DATA_DELAY
         except POLL_DELAY:
             pass
+        except:
+            raise
 
         else:
             print(data)
             try:
                 EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
-                EVNotify.setExtended(data['EXTENDED'])
+                currentSOC = data['SOC_DISPLAY'] or data['SOC_BMS']
+
+                if 'EXTENDED' in data:
+                    EVNotify.setExtended(data['EXTENDED'])
+                    is_charging = True if 'charging' in data['EXTENDED'] and data['EXTENDED']['charging'] == 1 else False
+                    # track charging started
+                    if is_charging and chargingStartSOC == 0:
+                        chargingStartSOC = currentSOC or 0
+                    # check if notification threshold reached
+                    elif is_charging and chargingStartSOC < socThreshold and currentSOC >= socThreshold and not notificationSent:
+                        print("Notification threshold reached")
+                        EVNotify.sendNotification()
+                        notificationSent = True
+                    elif not is_charging:   # Rearm notification
+                        notificationSent = False
+
                 if fix and fix.mode > 1: # mode: GPS-fix quality
                     g ={
                         'latitude':  fix.latitude,
@@ -104,8 +129,10 @@ try:
 
             except evnotifyapi.CommunicationError as e:
                 print(e)
+            except:
+                raise
 
-            if data['EXTENDED']['charging'] == 1 or GPIO.input(PIN_IGN) == 0:
+            if is_charging or GPIO.input(PIN_IGN) == 0:
                 last_charging = now
 
         finally:
@@ -133,6 +160,8 @@ try:
 
 except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
     main_running = False
+except:
+    raise
 finally:
     print("Exiting ...")
     GPIO.cleanup()
