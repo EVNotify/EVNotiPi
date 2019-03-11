@@ -18,5 +18,5 @@ try:
         button1_state = GPIO.wait_for_edge(PIN_12VOK, GPIO.RISING)
         if button1_state == False:
             call("sudo shutdown -h now", shell=True)
-except:
+finally:
     GPIO.cleanup()
