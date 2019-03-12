@@ -13,7 +13,6 @@ import sys
 
 LOOP_DELAY = 5
 CHARGE_COOLDOWN_DELAY = None # 6 h  set to None to disable auto shutdown
-GET_SETTINGS_DELAY = 300 # 5 min
 
 # load config
 with open('config.json', encoding='utf-8') as config_file:
@@ -66,7 +65,6 @@ gps.start()
 
 # Init some variables
 main_running = True
-last_settings_poll = 0
 
 # INit SOC notifications
 chargingStartSOC = 0
@@ -77,21 +75,6 @@ print("Notification threshold: {}".format(socThreshold))
 try:
     while main_running:
         now = time()
-
-        if 'socThreshold' not in config and \
-                now - last_settings_poll > GET_SETTINGS_DELAY:
-            last_settings_poll = now
-            try:
-                s = EVNotify.getSettings()
-            except EVNotify.CommunicationError:
-                pass
-            else:
-                if s['soc'] != socThreshold:
-                    print("New notification threshold: {}".format(s['soc']))
-
-                settings = s
-                socThreshold = int(settings['soc'])
-
         try:
             data = car.getData()
             fix = gps.fix()
@@ -112,6 +95,20 @@ try:
                     EVNotify.setExtended(data['EXTENDED'])
                     is_charging = True if 'charging' in data['EXTENDED'] and \
                             data['EXTENDED']['charging'] == 1 else False
+
+                    if is_charging and 'socThreshold' not in config:
+                        try:
+                            s = EVNotify.getSettings()
+                            # following only happens if getSettings is successful, else jumps into exception handler
+                            settings = s
+
+                            if s['soc'] != socThreshold:
+                                print("New notification threshold: {}".format(s['soc']))
+                                socThreshold = int(s['soc'])
+
+                        except EVNotify.CommunicationError:
+                            pass
+
                     # track charging started
                     if is_charging and chargingStartSOC == 0:
                         chargingStartSOC = currentSOC or 0
