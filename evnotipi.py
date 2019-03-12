@@ -23,7 +23,7 @@ EVNotify = evnotifyapi.EVNotify(config['akey'], config['token'])
 
 settings = None
 
-if config['cartype']:
+if 'cartype' in config:
     cartype = config['cartype']
 else:
     # get settings from backend
