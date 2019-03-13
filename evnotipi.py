@@ -103,8 +103,8 @@ try:
                             settings = s
 
                             if s['soc'] != socThreshold:
-                                print("New notification threshold: {}".format(s['soc']))
                                 socThreshold = int(s['soc'])
+                                print("New notification threshold: {}".format(socThreshold))
 
                         except EVNotify.CommunicationError:
                             pass
