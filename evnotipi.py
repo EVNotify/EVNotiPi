@@ -12,7 +12,6 @@ import string
 import sys
 
 LOOP_DELAY = 5
-CHARGE_COOLDOWN_DELAY = None # 6 h  set to None to disable auto shutdown
 
 # load config
 with open('config.json', encoding='utf-8') as config_file:
