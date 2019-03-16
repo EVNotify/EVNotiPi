@@ -3,6 +3,7 @@
 from gpspoller import GpsPoller
 from subprocess import check_call
 from time import sleep,time
+from wifi_ctrl import WiFiCtrl
 import RPi.GPIO as GPIO
 import evnotifyapi
 import io
@@ -16,6 +17,7 @@ PIN_IGN    = 21
 LOOP_DELAY = 5
 NO_DATA_DELAY = 600 # 10 min
 CHARGE_COOLDOWN_DELAY = 3600 * 6 # 6 h  set to None to disable auto shutdown
+WIFI_SHUTDOWN_DELAY = 300 # 5 min       set to None to disable Wifi control
 
 class POLL_DELAY(Exception): pass
 
@@ -71,6 +73,9 @@ GPIO.setup(PIN_IGN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 # Init GPS interface
 gps = GpsPoller()
 gps.start()
+
+# Init WiFi control
+wifi = WiFiCtrl()
 
 # Init some variables
 main_running = True
@@ -161,6 +166,16 @@ try:
                 if now - last_charging > CHARGE_COOLDOWN_DELAY and GPIO.input(PIN_IGN) == 1:
                     print("Not charging and ignition off => Shutdown")
                     check_call(['/bin/systemctl','poweroff'])
+
+            if WIFI_SHUTDOWN_DELAY != None:
+                if now - last_charging > WIFI_SHUTDOWN_DELAY and GPIO.input(PIN_IGN) == 1:
+                    if wifi.state == True:
+                        print("Disable WiFi")
+                        wifi.disable()
+                else:
+                    if wifi.state == False:
+                        print("Enable Wifi")
+                        wifi.enable()
 
             sys.stdout.flush()
 
