@@ -109,8 +109,8 @@ try:
             raise
 
         else:
-            print(data)
             if now - last_evn_transmit > EVN_DELAY:
+                print(data)
                 last_evn_transmit = now
                 try:
                     EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
