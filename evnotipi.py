@@ -69,11 +69,17 @@ main_running = True
 chargingStartSOC = 0
 socThreshold = int(config['socThreshold']) if 'socThreshold' in config else 0
 notificationSent = False
+abortSent = False
+lastResponse = 0
 print("Notification threshold: {}".format(socThreshold))
 
 try:
     while main_running:
         now = time()
+        if not abortSent and now - lastResponse > 300 and chargingStartSOC > 0:
+            print("No response detected, send abort notification")
+            EVNotify.sendNotification(true)
+            abortSent = True
         try:
             data = car.getData()
             fix = gps.fix()
@@ -89,6 +95,9 @@ try:
             try:
                 EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
                 currentSOC = data['SOC_DISPLAY'] or data['SOC_BMS']
+
+                if currentSOC:
+                    lastResponse = time()
 
                 if 'EXTENDED' in data:
                     EVNotify.setExtended(data['EXTENDED'])
@@ -118,6 +127,7 @@ try:
                         EVNotify.sendNotification()
                         notificationSent = True
                     elif not is_charging:   # Rearm notification
+                        chargingStartSOC = 0
                         notificationSent = False
 
                 if fix and fix.mode > 1: # mode: GPS-fix quality
