@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from gpspoller import GpsPoller
-from subprocess import check_call
+from subprocess import check_call, check_output
 from time import sleep,time
 from wifi_ctrl import WiFiCtrl
 import RPi.GPIO as GPIO
@@ -164,8 +164,12 @@ try:
 
             if CHARGE_COOLDOWN_DELAY != None:
                 if now - last_charging > CHARGE_COOLDOWN_DELAY and GPIO.input(PIN_IGN) == 1:
-                    print("Not charging and ignition off => Shutdown")
-                    check_call(['/bin/systemctl','poweroff'])
+                    usercnt = int(check_output(['who','-q']).split(b'\n')[1].split(b'=')[1])
+                    if usercnt == 0:
+                        print("Not charging and ignition off => Shutdown")
+                        check_call(['/bin/systemctl','poweroff'])
+                    else:
+                        print("Not charging and ignition off; Not shutting down, users connected")
 
             if WIFI_SHUTDOWN_DELAY != None:
                 if now - last_charging > WIFI_SHUTDOWN_DELAY and GPIO.input(PIN_IGN) == 1:
