@@ -15,8 +15,9 @@ class GpsPoller(threading.Thread):
         while self.running:
             try:
                 if self.gpsd:
-                    self.gpsd.next()
-                    self.last_fix = self.gpsd.fix
+                    if self.gpsd.waiting(timeout=1):
+                        self.gpsd.next()
+                        self.last_fix = self.gpsd.fix
                 else:
                     self.gpsd = self.gps.gps(mode=self.gps.WATCH_ENABLE)
             except (StopIteration, ConnectionResetError, OSError):
