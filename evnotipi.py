@@ -13,8 +13,8 @@ import re
 import string
 import sys
 
-PIN_IGN    = 21
-LOOP_DELAY = 5
+PIN_IGN = 21
+EVN_DELAY = 5
 NO_DATA_DELAY = 600 # 10 min
 CHARGE_COOLDOWN_DELAY = 3600 * 6 # 6 h  set to None to disable auto shutdown
 WIFI_SHUTDOWN_DELAY = 300 # 5 min       set to None to disable Wifi control
@@ -81,6 +81,7 @@ wifi = WiFiCtrl()
 main_running = True
 last_charging = time()
 delay_poll_until = time()
+last_evn_transmit = time()
 
 # Init SOC notifications
 chargingStartSOC = 0
@@ -109,54 +110,56 @@ try:
 
         else:
             print(data)
-            try:
-                EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
-                currentSOC = data['SOC_DISPLAY'] or data['SOC_BMS']
+            if now - last_evn_transmit > EVN_DELAY:
+                last_evn_transmit = now
+                try:
+                    EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
+                    currentSOC = data['SOC_DISPLAY'] or data['SOC_BMS']
 
-                if 'EXTENDED' in data:
-                    EVNotify.setExtended(data['EXTENDED'])
-                    is_charging = True if 'charging' in data['EXTENDED'] and \
-                            data['EXTENDED']['charging'] == 1 else False
+                    if 'EXTENDED' in data:
+                        EVNotify.setExtended(data['EXTENDED'])
+                        is_charging = True if 'charging' in data['EXTENDED'] and \
+                                data['EXTENDED']['charging'] == 1 else False
 
-                    if is_charging and 'socThreshold' not in config:
-                        try:
-                            s = EVNotify.getSettings()
-                            # following only happens if getSettings is
-                            # successful, else jumps into exception handler
-                            settings = s
+                        if is_charging and 'socThreshold' not in config:
+                            try:
+                                s = EVNotify.getSettings()
+                                # following only happens if getSettings is
+                                # successful, else jumps into exception handler
+                                settings = s
 
-                            if s['soc'] != socThreshold:
-                                socThreshold = int(s['soc'])
-                                print("New notification threshold: {}".format(socThreshold))
+                                if s['soc'] != socThreshold:
+                                    socThreshold = int(s['soc'])
+                                    print("New notification threshold: {}".format(socThreshold))
 
-                        except EVNotify.CommunicationError:
-                            pass
+                            except EVNotify.CommunicationError:
+                                pass
 
-                    # track charging started
-                    if is_charging and chargingStartSOC == 0:
-                        chargingStartSOC = currentSOC or 0
-                    # check if notification threshold reached
-                    elif is_charging and chargingStartSOC < socThreshold and \
-                            currentSOC >= socThreshold and not notificationSent:
-                        print("Notification threshold reached")
-                        EVNotify.sendNotification()
-                        notificationSent = True
-                    elif not is_charging:   # Rearm notification
-                        notificationSent = False
+                        # track charging started
+                        if is_charging and chargingStartSOC == 0:
+                            chargingStartSOC = currentSOC or 0
+                        # check if notification threshold reached
+                        elif is_charging and chargingStartSOC < socThreshold and \
+                                currentSOC >= socThreshold and not notificationSent:
+                            print("Notification threshold reached")
+                            EVNotify.sendNotification()
+                            notificationSent = True
+                        elif not is_charging:   # Rearm notification
+                            notificationSent = False
 
-                if fix and fix.mode > 1: # mode: GPS-fix quality
-                    g ={
-                        'latitude':  fix.latitude,
-                        'longitude': fix.longitude,
-                        'speed': fix.speed,
-                        }
-                    print(g)
-                    EVNotify.setLocation({'location': g})
+                    if fix and fix.mode > 1: # mode: GPS-fix quality
+                        g ={
+                            'latitude':  fix.latitude,
+                            'longitude': fix.longitude,
+                            'speed': fix.speed,
+                            }
+                        print(g)
+                        EVNotify.setLocation({'location': g})
 
-            except evnotifyapi.CommunicationError as e:
-                print(e)
-            except:
-                raise
+                except evnotifyapi.CommunicationError as e:
+                    print(e)
+                except:
+                    raise
 
         finally:
             if GPIO.input(PIN_IGN) == 1:
@@ -183,7 +186,7 @@ try:
 
             sys.stdout.flush()
 
-            if main_running: sleep(LOOP_DELAY)
+            if main_running: sleep(1)
 
 except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
     main_running = False
