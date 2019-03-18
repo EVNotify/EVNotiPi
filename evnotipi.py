@@ -118,6 +118,7 @@ try:
                         EVNotify.sendNotification()
                         notificationSent = True
                     elif not is_charging:   # Rearm notification
+                        chargingStartSOC = 0
                         notificationSent = False
 
                 if fix and fix.mode > 1: # mode: GPS-fix quality
