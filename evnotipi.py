@@ -145,7 +145,6 @@ try:
 
         finally:
             try:
-                print(abortNotificationSent,now-last_charging,chargingStartSOC)
                 if not abortNotificationSent and \
                         now - last_charging > ABORT_NOTIFICATION_DELAY and chargingStartSOC > 0:
                     print("No response detected, send abort notification")
