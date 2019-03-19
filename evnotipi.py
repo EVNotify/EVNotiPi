@@ -12,6 +12,7 @@ import string
 import sys
 
 LOOP_DELAY = 5
+ABORT_NOTIFICATION_DELAY = 60
 
 # load config
 with open('config.json', encoding='utf-8') as config_file:
@@ -65,10 +66,12 @@ gps.start()
 # Init some variables
 main_running = True
 
-# INit SOC notifications
+# Init SOC notifications
 chargingStartSOC = 0
 socThreshold = int(config['socThreshold']) if 'socThreshold' in config else 0
 notificationSent = False
+abortNotificationSent = False
+last_charging = time()
 print("Notification threshold: {}".format(socThreshold))
 
 try:
@@ -94,6 +97,11 @@ try:
                     EVNotify.setExtended(data['EXTENDED'])
                     is_charging = True if 'charging' in data['EXTENDED'] and \
                             data['EXTENDED']['charging'] == 1 else False
+                    is_connected = True if ('normalChargePort' in data['EXTENDED'] and data['EXTENDED']['normalChargePort'] == 1) \
+                            or ('rapidChargePort' in data['EXTENDED'] and data['EXTENDED']['rapidChargePort'] == 1) else False
+
+                    if is_charging:
+                        last_charging = now
 
                     if is_charging and 'socThreshold' not in config:
                         try:
@@ -117,7 +125,7 @@ try:
                         print("Notification threshold reached")
                         EVNotify.sendNotification()
                         notificationSent = True
-                    elif not is_charging:   # Rearm notification
+                    elif not is_connected:   # Rearm notification
                         chargingStartSOC = 0
                         notificationSent = False
 
@@ -130,12 +138,23 @@ try:
                     print(g)
                     EVNotify.setLocation({'location': g})
 
-            except evnotifyapi.CommunicationError as e:
+            except EVNotify.CommunicationError as e:
                 print(e)
             except:
                 raise
 
         finally:
+            try:
+                print(abortNotificationSent,now-last_charging,chargingStartSOC)
+                if not abortNotificationSent and \
+                        now - last_charging > ABORT_NOTIFICATION_DELAY and chargingStartSOC > 0:
+                    print("No response detected, send abort notification")
+                    EVNotify.sendNotification(True)
+                    abortNotificationSent = True
+
+            except EVNotify.CommunicationError as e:
+                print("Sending of notificatin failed! {}".format(e))
+
             sys.stdout.flush()
 
             if main_running: sleep(LOOP_DELAY)
