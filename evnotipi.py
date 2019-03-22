@@ -18,7 +18,7 @@ EVN_DELAY = 5
 NO_DATA_SLEEP = 600 # 10 min
 DATA_WAIT = 300
 ABORT_NOTIFICATION_DELAY = 60
-CHARGE_COOLDOWN_DELAY = 3600 # 6 h  set to None to disable auto shutdown
+SYSTEM_SHUTDOWN_DELAY = 3600 # 1 h  set to None to disable auto shutdown
 WIFI_SHUTDOWN_DELAY = 300 # 5 min       set to None to disable Wifi control
 
 class POLL_DELAY(Exception): pass
@@ -188,8 +188,8 @@ try:
             if GPIO.input(PIN_CARON) == 1:
                 print("car off detected")
 
-            if CHARGE_COOLDOWN_DELAY != None:
-                if now - last_data > CHARGE_COOLDOWN_DELAY and GPIO.input(PIN_CARON) == 1:
+            if SYSTEM_SHUTDOWN_DELAY != None:
+                if now - last_data > SYSTEM_SHUTDOWN_DELAY and GPIO.input(PIN_CARON) == 1:
                     usercnt = int(check_output(['who','-q']).split(b'\n')[1].split(b'=')[1])
                     if usercnt == 0:
                         print("Not charging and ignition off => Shutdown")
