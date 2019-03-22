@@ -16,6 +16,7 @@ import sys
 PIN_IGN = 21
 EVN_DELAY = 5
 NO_DATA_DELAY = 600 # 10 min
+DATA_WAIT = 300
 ABORT_NOTIFICATION_DELAY = 60
 CHARGE_COOLDOWN_DELAY = 3600 # 6 h  set to None to disable auto shutdown
 WIFI_SHUTDOWN_DELAY = 300 # 5 min       set to None to disable Wifi control
@@ -81,6 +82,7 @@ wifi = WiFiCtrl()
 # Init some variables
 main_running = True
 last_charging = time()
+last_data = time()
 delay_poll_until = time()
 last_evn_transmit = time()
 
@@ -95,11 +97,13 @@ try:
     while main_running:
         now = time()
         try:
-            if delay_poll_until > now and GPIO.input(PIN_IGN) == 1:
+            if delay_poll_until > now and now - last_data > DATA_WAIT \
+                    and GPIO.input(PIN_IGN) == 1:
                 raise POLL_DELAY()      # Skip delay if car on
 
             data = car.getData()
             fix = gps.fix()
+            last_data = now
         except DONGLE.CAN_ERROR as e:
             print(e)
         except DONGLE.NO_DATA:
@@ -182,10 +186,10 @@ try:
                 print("Sending of notificatin failed! {}".format(e))
 
             if GPIO.input(PIN_IGN) == 1:
-                print("ignition off detected")
+                print("car off detected")
 
             if CHARGE_COOLDOWN_DELAY != None:
-                if now - last_charging > CHARGE_COOLDOWN_DELAY and GPIO.input(PIN_IGN) == 1:
+                if now - last_data > CHARGE_COOLDOWN_DELAY and GPIO.input(PIN_IGN) == 1:
                     usercnt = int(check_output(['who','-q']).split(b'\n')[1].split(b'=')[1])
                     if usercnt == 0:
                         print("Not charging and ignition off => Shutdown")
@@ -194,7 +198,7 @@ try:
                         print("Not charging and ignition off; Not shutting down, users connected")
 
             if WIFI_SHUTDOWN_DELAY != None:
-                if now - last_charging > WIFI_SHUTDOWN_DELAY and GPIO.input(PIN_IGN) == 1:
+                if now - last_data > WIFI_SHUTDOWN_DELAY and GPIO.input(PIN_IGN) == 1:
                     if wifi.state == True:
                         print("Disable WiFi")
                         wifi.disable()
