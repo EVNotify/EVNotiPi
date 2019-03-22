@@ -15,7 +15,7 @@ import sys
 
 PIN_CARON = 21
 EVN_DELAY = 5
-NO_DATA_DELAY = 600 # 10 min
+NO_DATA_SLEEP = 600 # 10 min
 DATA_WAIT = 300
 ABORT_NOTIFICATION_DELAY = 60
 CHARGE_COOLDOWN_DELAY = 3600 # 6 h  set to None to disable auto shutdown
@@ -108,7 +108,7 @@ try:
             print(e)
         except DONGLE.NO_DATA:
             print("NO DATA - delay polling")
-            delay_poll_until = now + NO_DATA_DELAY
+            delay_poll_until = now + NO_DATA_SLEEP
         except POLL_DELAY:
             pass
         except:
