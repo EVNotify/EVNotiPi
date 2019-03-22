@@ -13,7 +13,7 @@ import re
 import string
 import sys
 
-PIN_IGN = 21
+PIN_CARON = 21
 EVN_DELAY = 5
 NO_DATA_DELAY = 600 # 10 min
 DATA_WAIT = 300
@@ -70,7 +70,7 @@ car = CAR(dongle)
 
 # Set up GPIOs
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(PIN_IGN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(PIN_CARON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 # Init GPS interface
 gps = GpsPoller()
@@ -98,7 +98,7 @@ try:
         now = time()
         try:
             if delay_poll_until > now and now - last_data > DATA_WAIT \
-                    and GPIO.input(PIN_IGN) == 1:
+                    and GPIO.input(PIN_CARON) == 1:
                 raise POLL_DELAY()      # Skip delay if car on
 
             data = car.getData()
@@ -185,11 +185,11 @@ try:
             except EVNotify.CommunicationError as e:
                 print("Sending of notificatin failed! {}".format(e))
 
-            if GPIO.input(PIN_IGN) == 1:
+            if GPIO.input(PIN_CARON) == 1:
                 print("car off detected")
 
             if CHARGE_COOLDOWN_DELAY != None:
-                if now - last_data > CHARGE_COOLDOWN_DELAY and GPIO.input(PIN_IGN) == 1:
+                if now - last_data > CHARGE_COOLDOWN_DELAY and GPIO.input(PIN_CARON) == 1:
                     usercnt = int(check_output(['who','-q']).split(b'\n')[1].split(b'=')[1])
                     if usercnt == 0:
                         print("Not charging and ignition off => Shutdown")
@@ -198,7 +198,7 @@ try:
                         print("Not charging and ignition off; Not shutting down, users connected")
 
             if WIFI_SHUTDOWN_DELAY != None:
-                if now - last_data > WIFI_SHUTDOWN_DELAY and GPIO.input(PIN_IGN) == 1:
+                if now - last_data > WIFI_SHUTDOWN_DELAY and GPIO.input(PIN_CARON) == 1:
                     if wifi.state == True:
                         print("Disable WiFi")
                         wifi.disable()
