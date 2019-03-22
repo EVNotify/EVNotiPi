@@ -17,7 +17,7 @@ PIN_IGN = 21
 EVN_DELAY = 5
 NO_DATA_DELAY = 600 # 10 min
 ABORT_NOTIFICATION_DELAY = 60
-CHARGE_COOLDOWN_DELAY = 3600 * 6 # 6 h  set to None to disable auto shutdown
+CHARGE_COOLDOWN_DELAY = 3600 # 6 h  set to None to disable auto shutdown
 WIFI_SHUTDOWN_DELAY = 300 # 5 min       set to None to disable Wifi control
 
 class POLL_DELAY(Exception): pass
@@ -89,7 +89,6 @@ chargingStartSOC = 0
 socThreshold = int(config['socThreshold']) if 'socThreshold' in config else 0
 notificationSent = False
 abortNotificationSent = False
-last_charging = time()
 print("Notification threshold: {}".format(socThreshold))
 
 try:
