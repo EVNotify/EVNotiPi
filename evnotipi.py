@@ -82,6 +82,7 @@ wifi = WiFiCtrl()
 # Init some variables
 main_running = True
 last_charging = time()
+last_charging_soc = 0
 last_data = time()
 delay_poll_until = time()
 last_evn_transmit = time()
@@ -131,6 +132,7 @@ try:
 
                         if is_charging:
                             last_charging = now
+                            last_charging_soc = currentSOC
 
                         if is_charging and 'socThreshold' not in config:
                             try:
@@ -176,8 +178,9 @@ try:
 
         finally:
             try:
-                if not abortNotificationSent and \
-                        now - last_charging > ABORT_NOTIFICATION_DELAY and chargingStartSOC > 0:
+                if not abortNotificationSent \
+                        and now - last_charging > ABORT_NOTIFICATION_DELAY \
+                        and chargingStartSOC > 0 and last_charging_soc < socThreshold:
                     print("No response detected, send abort notification")
                     EVNotify.sendNotification(True)
                     abortNotificationSent = True
