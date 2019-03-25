@@ -98,7 +98,9 @@ try:
                     is_charging = True if 'charging' in data['EXTENDED'] and \
                             data['EXTENDED']['charging'] == 1 else False
                     is_connected = True if ('normalChargePort' in data['EXTENDED'] and data['EXTENDED']['normalChargePort'] == 1) \
-                            or ('rapidChargePort' in data['EXTENDED'] and data['EXTENDED']['rapidChargePort'] == 1) else False
+                            or ('rapidChargePort' in data['EXTENDED'] and data['EXTENDED']['rapidChargePort'] == 1) \
+                            or ('slowChargePort' in data['EXTENDED'] and data['EXTENDED']['slowChargePort'] == 1) \
+                            else False
 
                     if is_charging:
                         last_charging = now
