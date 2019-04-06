@@ -36,13 +36,20 @@ class PiOBD2Hat:
             self.exp.expect('>', timeout=5)
             ret = self.exp.before.strip(b'\r\n')
             print(ret)
-            if ret in [b'CAN NO ACK']:
-                raise PiOBD2Hat.CAN_ERROR(ret)
-            elif ret == b'NO DATA':
-                raise PiOBD2Hat.NO_DATA(ret)
-
         except pexpect.exceptions.TIMEOUT:
             ret = b'TIMEOUT'
+
+        if ret in [b'NO DATA', b'TIMEOUT', b'CAN NO ACK']:
+            raise PiOBD2Hat.NO_DATA(ret)
+        elif ret in [b'INPUT TIMEOUT', b'NO INPUT CHAR', b'UNKNOWN COMMAND',
+                b'WRONG HEXCHAR COUNT', b'ILLEGAL COMMAND', b'SYNTAX ERROR',
+                b'WRONG VALUE/RANGE', b'UNABLE TO CONNECT', b'BUS BUSY',
+                b'NO FEEDBACK', b'NO SYNCBYTE', b'NO KEYBYTE',
+                b'NO ADDRESSBYTE', b'WRONG PROTOCOL', b'DATA ERROR',
+                b'CHECKSUM ERROR', b'NO ANSWER', b'COLLISION DETECT',
+                b'CAN NO ANSWER', b'PRTOTOCOL 8 OR 9 REQUIRED',
+                b'CAN ERROR']:
+            raise PiOBD2Hat.CAN_ERROR(ret)
 
         return ret.split(b'\r\n')
 
