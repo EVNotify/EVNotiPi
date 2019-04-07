@@ -197,6 +197,7 @@ try:
                     if usercnt == 0:
                         print("Not charging and ignition off => Shutdown")
                         check_call(['/bin/systemctl','poweroff'])
+                        sleep(5)
                     else:
                         print("Not charging and ignition off; Not shutting down, users connected")
 
