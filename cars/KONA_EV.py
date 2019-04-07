@@ -11,9 +11,7 @@ class KONA_EV:
         raw = {}
 
         for cmd in [220101,220105]:
-            raw[cmd] = {}
-            for line in self.dongle.sendCommand(str(cmd)):
-                raw[cmd][int(line[:5],16)] = bytes.fromhex(str(line[5:],'ascii'))
+            raw[cmd] = self.dongle.sendCommand(str(cmd))
 
         dchargingBits = raw[220101][0x7EC21][5] \
                 if 0x7EC21 in raw[220101] else None
@@ -21,7 +19,7 @@ class KONA_EV:
         normalChargePort = raw[220101][0x7EC21][6] == 3 \
                 if 0x7EC21 in raw[220101] else None
         normalChargeBit = chargingBits & 0x02 == 0x02
- 
+
         dcBatteryCurrent = int.from_bytes(raw[220101][0x7EC22][0:2], byteorder='big', signed=True) / 10.0 \
                 if 0x7EC22 in raw[220101] else None
 

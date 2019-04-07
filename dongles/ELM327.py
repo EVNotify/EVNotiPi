@@ -4,6 +4,9 @@ from pexpect import fdpexpect
 
 class ELM327:
 
+    class CAN_ERROR(Exception): pass
+    class NO_DATA(Exception): pass
+
     def __init__(self, dongle):
         self.serial = Serial(dongle['port'], baudrate=dongle['speed'], timeout=5)
         self.exp = fdpexpect.fdspawn(self.serial.fd)
@@ -24,9 +27,25 @@ class ELM327:
     def sendCommand(self, cmd):
         cmd = bytes(cmd, 'utf-8')
         logging.info('Write %s' % str(cmd))
-        self.exp.send(cmd + b'\r\n')
-        self.exp.expect('>')
-        return self.exp.before.strip(b'\r\n').split(b'\r\n')
+        try:
+            self.exp.send(cmd + b'\r\n')
+            self.exp.expect('>', timeout=5)
+            ret = self.exp.before.strip(b'\r\n')
+            print(ret)
+        except pexpect.exceptions.TIMEOUT:
+            ret = b'TIMEOUT'
+
+        if ret in [b'NO DATA', b'TIMEOUT', b'CAN NO ACK']:
+            raise ELM327.NO_DATA(ret)
+
+        try:
+            raw = {}
+            for line in ret.split(b'\r\n'):
+                raw[int(line[:5],16)] = bytes.fromhex(str(line[5:],'ascii'))
+        except ValueError:
+            raise ELM327.CAN_ERROR(ret)
+
+        return raw
 
     def initDongle(self):
         cmds = [['ATZ','OK'],
