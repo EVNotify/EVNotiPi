@@ -30,7 +30,6 @@ class PiOBD2Hat:
 
     def sendCommand(self, cmd):
         cmd = bytes(cmd, 'utf-8')
-        print("Send Command "+str(cmd))
         try:
             self.exp.send(cmd + b'\r\n')
             self.exp.expect('>', timeout=5)
@@ -49,14 +48,14 @@ class PiOBD2Hat:
                 b'CHECKSUM ERROR', b'NO ANSWER', b'COLLISION DETECT',
                 b'CAN NO ANSWER', b'PRTOTOCOL 8 OR 9 REQUIRED',
                 b'CAN ERROR']:
-            raise PiOBD2Hat.CAN_ERROR(ret)
+            raise PiOBD2Hat.CAN_ERROR("Failed Command {}\n{}".format(cmd,ret))
 
         try:
             raw = {}
             for line in ret.split(b'\r\n'):
                 raw[int(line[:5],16)] = bytes.fromhex(str(line[5:],'ascii'))
         except ValueError:
-            raise PiOBD2Hat.CAN_ERROR(ret)
+            raise PiOBD2Hat.CAN_ERROR("Failed Command {}\n{}".format(cmd,ret))
 
         return raw
 
