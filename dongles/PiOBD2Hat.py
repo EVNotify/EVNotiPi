@@ -51,7 +51,14 @@ class PiOBD2Hat:
                 b'CAN ERROR']:
             raise PiOBD2Hat.CAN_ERROR(ret)
 
-        return ret.split(b'\r\n')
+        try:
+            raw = {}
+            for line in ret.split(b'\r\n'):
+                raw[int(line[:5],16)] = bytes.fromhex(str(line[5:],'ascii'))
+        except ValueError:
+            raise PiOBD2Hat.CAN_ERROR(ret)
+
+        return raw
 
     def initDongle(self):
         cmds = [['ATZ','DIAMEX PI-OBD'],

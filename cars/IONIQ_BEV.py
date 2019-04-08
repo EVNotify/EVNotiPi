@@ -11,9 +11,7 @@ class IONIQ_BEV:
         raw = {}
 
         for cmd in [2101,2105]:
-            raw[cmd] = {}
-            for line in self.dongle.sendCommand(str(cmd)):
-                raw[cmd][int(line[:5],16)] = bytes.fromhex(str(line[5:],'ascii'))
+            raw[cmd] = self.dongle.sendCommand(str(cmd))
 
         chargingBits = raw[2101][0x7EC21][5] \
                 if 0x7EC21 in raw[2101] else None
