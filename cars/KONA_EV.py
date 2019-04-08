@@ -42,7 +42,7 @@ class KONA_EV:
                     'batteryMinTemperature':    int.from_bytes(raw[220101][0x7EC22][5:6], byteorder='big', signed=True) \
                         if 0x7EC22 in raw[220101] else None,
                     'charging':                 1 if chargingBits != None and \
-                            chargingBits True if 0000 1011 && 0x08 == 0x08 else False end,
+                            chargingBits 1 if 0000 1011 && 0x08 == 0x08 else 0 end,
                     'normalChargePort':         1 if normalChargeBit and normalChargePort else 0,
                     'rapidChargePort':          1 if normalChargeBit and not normalChargePort else 0,
                     'dcBatteryCurrent':         dcBatteryCurrent,
