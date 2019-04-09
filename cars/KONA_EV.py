@@ -13,8 +13,8 @@ class KONA_EV:
         for cmd in [220101,220105]:
             raw[cmd] = self.dongle.sendCommand(str(cmd))
 
-        dchargingBits = raw[220101][0x7EC21][5] \
-                if 0x7EC21 in raw[220101] else None
+        chargingBits = raw[220101][0x7EC27][6] \
+                if 0x7EC27 in raw[220101] else None
 
         normalChargePort = raw[220101][0x7EC21][6] == 3 \
                 if 0x7EC21 in raw[220101] else None
@@ -39,8 +39,7 @@ class KONA_EV:
                         if 0x7EC22 in raw[220101] else None,
                     'batteryMinTemperature':    int.from_bytes(raw[220101][0x7EC22][5:6], byteorder='big', signed=True) \
                         if 0x7EC22 in raw[220101] else None,
-                    'charging':                 1 if chargingBits != None and \
-                            chargingBits & 0x10 == 0x10 else 0,
+                    'charging':                 1 if chargingBits != None and chargingBits & 0x08 else 0,
                     'normalChargePort':         1 if normalChargeBit and normalChargePort else 0,
                     'rapidChargePort':          1 if normalChargeBit and not normalChargePort else 0,
                     'dcBatteryCurrent':         dcBatteryCurrent,
