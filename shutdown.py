@@ -6,7 +6,7 @@
 
 import RPi.GPIO as GPIO
 import time
-
+from subprocess import call
 GPIO.setmode(GPIO.BCM)
 
 GPIO.setup(24, GPIO.IN)
@@ -15,5 +15,6 @@ while True:
         from subprocess import call
         call("sudo shutdown -h now", shell=True)
     time.sleep(1);
+
 
 
