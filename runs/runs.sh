@@ -1,18 +1,21 @@
 #!/bin/bash
 date >> /tmp/logme
-cd /var/www/html/evnotipi/
-if pgrep -x "python3" > /dev/null
+cd /var/www/html/PlugAndPlay/
+if ! pgrep -x "python3" > /dev/null
 then
-	
-	if [[ $(find /tmp/lastrun -mmin  +5 -print) ]]; then
-		killall python3
-		sleep 3
-		/usr/bin/python3 /var/www/html/evnotipi/evnotify.py &
-		echo "killed and started" >> /tmp/logme
-	else
-		echo "not old enough" >> /tmp/logme	
-	fi
+        /usr/bin/python3 /var/www/html/PlugAndPlay/evnotipi.py &
+        echo "started" >> /tmp/logme
+fi
+if [ ! -d "/sys/class/net/eth0" ]; then
+        date >> /var/log/evnotipi.log
+        echo "is broken" >> /var/log/evnotipi.log
+        eth0stat=$(</tmp/eth0broken)
+        if (( eth0stat == 1 )) ; then
+                echo "reboot now" >> /var/log/evnotipi.log
+                /sbin/reboot
+        fi
+        echo "timer to 1" >> /var/log/evnotipi.log
+        echo 1 > /tmp/eth0broken
 else
-	/usr/bin/python3 /var/www/html/evnotipi/evnotify.py &
-	echo "started" >> /tmp/logme
+        echo 0 > /tmp/eth0broken
 fi
