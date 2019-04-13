@@ -1,8 +1,13 @@
 #!/bin/bash
-cp /var/www/html/PlugAndPlay/config.json /tmp/config.json
+cd /var/www/html/PlugAndPlay
+sudo cp /var/www/html/PlugAndPlay/config.json /tmp/config.json
 sudo git fetch origin
-sudo git fetch --hard origin/stable
-cp /tmp/config.json /var/www/html/PlugAndPlay/config.json 
-chmod 777 /var/www/html/PlugAndPlay/config.json
-chmod +x /var/www/html/PlugAndPlay/runs/*.sh
-
+sudo git reset --hard origin/master
+sudo cp /tmp/config.json /var/www/html/PlugAndPlay/config.json 
+sudo chmod 777 /var/www/html/PlugAndPlay/config.json 
+sudo chmod 777 /var/www/html/PlugAndPlay/runs/update.sh
+sudo chmod +x /var/www/html/PlugAndPlay/runs/*.sh
+uuid=$(</sys/class/net/eth0/address)
+curl -s -d "update="PlugAndPlay$uuid"" -H "Content-Type: application/x-www-form-urlencoded" -X POST http://openwb.de/tools/update.php
+sudo cp web/update.html ../
+sudo cp web/update.php ../
