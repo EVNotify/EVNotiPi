@@ -5,5 +5,5 @@
         exec("/var/www/html/PlugAndPlay/runs/update.sh");
 ?>
         <script type="text/javascript">
-            setTimeout(function() { window.location = "./index.html"; }, 30000);
+            setTimeout(function() { window.location = "./PlugAndPlay/index.html"; }, 30000);
         </script>
