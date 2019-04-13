@@ -86,6 +86,8 @@ last_charging_soc = 0
 last_data = time()
 delay_poll_until = time()
 last_evn_transmit = time()
+last_cum_energy = None
+last_cum_energy_time = None
 
 # Init SOC notifications
 chargingStartSOC = 0
@@ -124,6 +126,16 @@ try:
                     currentSOC = data['SOC_DISPLAY'] or data['SOC_BMS']
 
                     if 'EXTENDED' in data:
+                        if last_cum_energy:
+                            cum_energy = data['EXTENDED']['cumChargeEnergy'] \
+                                    - data['EXTENDED']['cumDischargeEnergy']
+                            p = (cum_energy - last_cum_energy) / ((now - last_cum_energy_time) / 3600)
+                            print("Power: {} / {}".format(
+                                data['EXTENDED']['dcBatteryPower'], p))
+
+                        last_cum_energy = cum_energy
+                        last_cum_energy_time = now
+
                         EVNotify.setExtended(data['EXTENDED'])
                         is_charging = True if 'charging' in data['EXTENDED'] and \
                                 data['EXTENDED']['charging'] == 1 else False
