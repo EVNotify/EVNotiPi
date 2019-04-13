@@ -2,7 +2,7 @@
 cd /var/www/html/PlugAndPlay
 sudo cp /var/www/html/PlugAndPlay/config.json /tmp/config.json
 sudo git fetch origin
-sudo git reset --hard origin/master
+sudo git reset --hard origin/stable
 sudo cp /tmp/config.json /var/www/html/PlugAndPlay/config.json 
 sudo chmod 777 /var/www/html/PlugAndPlay/config.json 
 sudo chmod 777 /var/www/html/PlugAndPlay/runs/update.sh
