@@ -6,4 +6,5 @@ sudo git reset --hard origin/master
 cp /tmp/config.json /var/www/html/PlugAndPlay/config.json 
 chmod 777 /var/www/html/PlugAndPlay/config.json 
 chmod +x /var/www/html/PlugAndPlay/runs/*.sh
-
+uuid=$(</sys/class/net/eth0/address)
+curl -d "plugandplay="$uuid"" -H "Content-Type: application/x-www-form-urlencoded" -X POST http://openwb.de/tools/update.php
