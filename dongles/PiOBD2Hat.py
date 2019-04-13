@@ -34,7 +34,6 @@ class PiOBD2Hat:
             self.exp.send(cmd + b'\r\n')
             self.exp.expect('>', timeout=5)
             ret = self.exp.before.strip(b'\r\n')
-            print(ret)
         except pexpect.exceptions.TIMEOUT:
             ret = b'TIMEOUT'
 
