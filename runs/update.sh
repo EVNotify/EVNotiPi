@@ -1,4 +1,5 @@
 #!/bin/bash
+cd /var/www/html/PlugAndPlay
 cp /var/www/html/PlugAndPlay/config.json /tmp/config.json
 sudo git fetch origin
 sudo git reset --hard origin/master
