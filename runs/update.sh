@@ -8,3 +8,5 @@ chmod 777 /var/www/html/PlugAndPlay/config.json
 chmod +x /var/www/html/PlugAndPlay/runs/*.sh
 uuid=$(</sys/class/net/eth0/address)
 curl -d "plugandplay="$uuid"" -H "Content-Type: application/x-www-form-urlencoded" -X POST http://openwb.de/tools/update.php
+cp web/update.html ./
+cp web/update.php ./
