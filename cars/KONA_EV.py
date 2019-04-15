@@ -16,14 +16,14 @@ class KONA_EV:
         data = self.getBaseData()
 
         if 0x7EC21 in raw[220101]:
-            data['SOC_BMS'] = raw[220101][0x7EC21][2] / 2.0
+            data['SOC_BMS'] = raw[220101][0x7EC21][1] / 2.0
         if 0x7EC25 in raw[220105]:
             data['SOC_DISPLAY'] = raw[220105][0x7EC25][0] / 2.0
 
-        if set([0x7EC21,0x7EC22,0x7EC23,0x7EC24]).issubset(raw[22101]) and \
+        if set([0x7EC21,0x7EC22,0x7EC23,0x7EC24,0x7EC27]).issubset(raw[22101]) and \
                 set([0x7EC24,0x7EC25]).issubset(raw[22105]):
 
-            chargingBits = raw[220101][0x7EC21][5]
+            chargingBits = raw[220101][0x7EC27][5]
             normalChargePort = raw[220101][0x7EC21][6] == 3
             normalChargeBit = chargingBits & 0x02 == 0x02
             dcBatteryCurrent = int.from_bytes(raw[220101][0x7EC22][0:2], byteorder='big', signed=True) / 10.0
@@ -34,7 +34,7 @@ class KONA_EV:
                     'batteryInletTemperature':  int.from_bytes(raw[220101][0x7EC23][5:6], byteorder='big', signed=True),
                     'batteryMaxTemperature':    int.from_bytes(raw[220101][0x7EC22][4:5], byteorder='big', signed=True),
                     'batteryMinTemperature':    int.from_bytes(raw[220101][0x7EC22][5:6], byteorder='big', signed=True),
-                    'charging':                 1 if chargingBits & 0x10 == 0x10 else 0,
+                    'charging':                 1 if chargingBits & 0x80 else 0,
                     'normalChargePort':         1 if normalChargeBit and normalChargePort else 0,
                     'rapidChargePort':          1 if normalChargeBit and not normalChargePort else 0,
                     'dcBatteryCurrent':         dcBatteryCurrent,
