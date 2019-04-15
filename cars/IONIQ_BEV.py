@@ -25,7 +25,7 @@ class IONIQ_BEV:
         if 0x7EC24 in raw[2105]:
             data['SOC_DISPLAY'] = raw[2105][0x7EC24][6] / 2.0
 
-        if set([0x7EC21,0x7EC22,0x7EC23]).issubset(raw[2101]) and \
+        if set([0x7EC21,0x7EC22,0x7EC23,0x7EC24]).issubset(raw[2101]) and \
                 set([0x7EC23,0x7EC24]).issubset(raw[2105]):
 
             chargingBits = raw[2101][0x7EC21][5]
