@@ -122,8 +122,9 @@ try:
                 print(data)
                 last_evn_transmit = now
                 try:
-                    EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
-                    currentSOC = data['SOC_DISPLAY'] or data['SOC_BMS']
+                    if 'SOC_DISPLAY' in data and 'SOC_BMS' in data:
+                        EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
+                        currentSOC = data['SOC_DISPLAY'] or data['SOC_BMS']
 
                     if 'EXTENDED' in data:
                         if last_cum_energy:
