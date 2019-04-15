@@ -97,10 +97,8 @@ try:
                     EVNotify.setExtended(data['EXTENDED'])
                     is_charging = True if 'charging' in data['EXTENDED'] and \
                             data['EXTENDED']['charging'] == 1 else False
-                    is_connected = True if ('normalChargePort' in data['EXTENDED'] and data['EXTENDED']['normalChargePort'] == 1) \
-                            or ('rapidChargePort' in data['EXTENDED'] and data['EXTENDED']['rapidChargePort'] == 1) \
-                            or ('slowChargePort' in data['EXTENDED'] and data['EXTENDED']['slowChargePort'] == 1) \
-                            else False
+                    # TODO: check if really connected, once connection detection is working in KONA module
+                    is_connected = True
 
                     if is_charging:
                         last_charging = now
