@@ -13,7 +13,7 @@ class KONA_EV:
         for cmd in [220101,220105]:
             raw[cmd] = self.dongle.sendCommand(str(cmd))
 
-        chargingBits = raw[220101][0x7EC27][6] \
+        chargingBits = raw[220101][0x7EC27][5] \
                 if 0x7EC27 in raw[220101] else None
 
         normalChargePort = raw[220101][0x7EC21][6] == 3 \
@@ -26,7 +26,7 @@ class KONA_EV:
         dcBatteryVoltage = int.from_bytes(raw[220101][0x7EC22][2:4], byteorder='big', signed=False) / 10.0 \
                 if 0x7EC22 in raw[220101] else None
 
-        data = {'SOC_BMS':      raw[220101][0x7EC21][2] / 2.0 \
+        data = {'SOC_BMS':      raw[220101][0x7EC21][1] / 2.0 \
                     if 0x7EC21 in raw[220101] else None,
                 'SOC_DISPLAY':  raw[220105][0x7EC25][0] / 2.0 \
                     if 0x7EC25 in raw[220105] else None,
