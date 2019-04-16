@@ -114,6 +114,8 @@ try:
             delay_poll_until = now + NO_DATA_SLEEP
         except POLL_DELAY:
             pass
+        except CAR.EMPTY_BLOCK as e:
+            print(e)
         except:
             raise
 

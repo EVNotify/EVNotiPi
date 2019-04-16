@@ -1,6 +1,8 @@
 
 class KONA_EV:
 
+    class NULL_BLOCK(Exception): pass
+
     def __init__(self, dongle):
         self.dongle = dongle
         self.dongle.setProtocol('CAN_11_500')
