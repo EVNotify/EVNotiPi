@@ -12,6 +12,7 @@ import string
 import sys
 
 LOOP_DELAY = 5
+EVN_SETTINGS_DELAY = 60
 ABORT_NOTIFICATION_DELAY = 60
 
 # load config
@@ -72,6 +73,7 @@ socThreshold = int(config['socThreshold']) if 'socThreshold' in config else 0
 notificationSent = False
 abortNotificationSent = False
 last_charging = time()
+last_evn_settings_poll = time()
 print("Notification threshold: {}".format(socThreshold))
 
 try:
@@ -106,11 +108,13 @@ try:
                     if is_charging:
                         last_charging = now
 
-                    if is_charging and 'socThreshold' not in config:
+                    if is_charging and 'socThreshold' not in config and \
+                            now - last_evn_settings_poll > EVN_SETTINGS_DELAY:
                         try:
                             s = EVNotify.getSettings()
                             # following only happens if getSettings is successful, else jumps into exception handler
                             settings = s
+                            last_evn_settings_poll = now
 
                             if s['soc'] != socThreshold:
                                 socThreshold = int(s['soc'])
