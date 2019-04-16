@@ -178,7 +178,7 @@ try:
                         print(g)
                         EVNotify.setLocation({'location': g})
 
-                except evnotifyapi.CommunicationError as e:
+                except EVNotify.CommunicationError as e:
                     print(e)
                 except:
                     raise
