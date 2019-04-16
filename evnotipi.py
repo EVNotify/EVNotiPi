@@ -15,6 +15,7 @@ import sys
 
 PIN_CARON = 21
 EVN_DELAY = 5
+EVN_SETTINGS_DELAY = 60
 NO_DATA_SLEEP = 600 # 10 min
 DATA_WAIT = 300
 ABORT_NOTIFICATION_DELAY = 60
@@ -86,6 +87,7 @@ last_charging_soc = 0
 last_data = time()
 delay_poll_until = time()
 last_evn_transmit = time()
+last_evn_settings_poll = time()
 last_cum_energy = None
 last_cum_energy_time = None
 
@@ -149,12 +151,14 @@ try:
                             last_charging = now
                             last_charging_soc = currentSOC
 
-                        if is_charging and 'socThreshold' not in config:
+                        if is_charging and 'socThreshold' not in config and \
+                                now - last_evn_settings_poll > EVN_SETTINGS_DELAY:
                             try:
                                 s = EVNotify.getSettings()
                                 # following only happens if getSettings is
                                 # successful, else jumps into exception handler
                                 settings = s
+                                last_evn_settings_poll = now
 
                                 if s['soc'] != socThreshold:
                                     socThreshold = int(s['soc'])
