@@ -84,6 +84,8 @@ try:
             print(e)
         except DONGLE.NO_DATA as e:
             print(e)
+        except CAR.EMPTY_BLOCK as e:
+            print(e)
         except:
             raise
 

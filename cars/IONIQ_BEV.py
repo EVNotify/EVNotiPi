@@ -1,6 +1,8 @@
 
 class IONIQ_BEV:
 
+    class NULL_BLOCK(Exception): pass
+
     def __init__(self, dongle):
         self.dongle = dongle
         self.dongle.setProtocol('CAN_11_500')
@@ -12,6 +14,9 @@ class IONIQ_BEV:
 
         for cmd in [2101,2105]:
             raw[cmd] = self.dongle.sendCommand(str(cmd))
+
+        if 0x7EC27 in raw[2101] and raw[2101][0x7EC27] == b'\x00\x00\x00\x00\x00\x00\x00':
+            raise IONIQ_BEV.NULL_BLOCK("Got Null Block!\n"+str(raw))
 
         data = self.getBaseData()
 
