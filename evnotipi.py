@@ -12,7 +12,7 @@ import string
 import sys
 
 LOOP_DELAY = 5
-EVN_SETTINGS_DELAY = 60
+EVN_SETTINGS_DELAY = 300
 ABORT_NOTIFICATION_DELAY = 60
 
 # load config
