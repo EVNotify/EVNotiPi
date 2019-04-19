@@ -1,7 +1,6 @@
+import car
 
-class KONA_EV:
-
-    class NULL_BLOCK(Exception): pass
+class KONA_EV(car.Car):
 
     def __init__(self, dongle):
         self.dongle = dongle

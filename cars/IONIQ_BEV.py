@@ -1,7 +1,6 @@
+import car
 
-class IONIQ_BEV:
-
-    class NULL_BLOCK(Exception): pass
+class IONIQ_BEV(car.Car):
 
     def __init__(self, dongle):
         self.dongle = dongle
