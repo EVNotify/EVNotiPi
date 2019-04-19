@@ -10,6 +10,7 @@ import os
 import re
 import string
 import sys
+import signal
 
 LOOP_DELAY = 5
 EVN_SETTINGS_DELAY = 300
@@ -75,6 +76,12 @@ abortNotificationSent = False
 last_charging = time()
 last_evn_settings_poll = time()
 print("Notification threshold: {}".format(socThreshold))
+
+# Set up signal handling
+def exit_gracefully(signum, frame):
+    sys.exit(0)
+
+signal.signal(signal.SIGTERM, exit_gracefully)
 
 try:
     while main_running:
