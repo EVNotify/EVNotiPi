@@ -119,6 +119,9 @@ try:
         except DONGLE.NO_DATA:
             print("NO DATA - delay polling")
             delay_poll_until = now + NO_DATA_SLEEP
+        except CAR.LOW_VOLTAGE as e:
+            print("Low Voltage ({}) - delay polling".format(e))
+            delay_poll_until = now + NO_DATA_SLEEP
         except POLL_DELAY:
             pass
         except CAR.NULL_BLOCK as e:

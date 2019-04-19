@@ -28,6 +28,8 @@ class PiOBD2Hat:
         except pexpect.exceptions.TIMEOUT:
             ret = b'TIMEOUT'
 
+        return ret
+
     def sendCommand(self, cmd):
         cmd = bytes(cmd, 'utf-8')
         try:
@@ -88,4 +90,7 @@ class PiOBD2Hat:
     def setCANRxFilter(self, addr):
         self.sendAtCmd('ATCR' + str(addr))
 
+    def getObdVoltage(self):
+        ret = self.sendAtCmd('AT!10')
+        return float(ret[:-1]) # strip the 'V'
 

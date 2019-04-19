@@ -77,3 +77,6 @@ class ELM327:
     def setCANRxFilter(self, addr):
         self.sendAtCmd('ATCRA' + str(addr))
 
+    def getObdVoltage(self):
+        return None
+
