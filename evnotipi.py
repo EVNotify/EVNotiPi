@@ -11,7 +11,7 @@ import re
 import string
 import sys
 
-LOOP_DELAY = 5
+LOOP_DELAY = 15
 EVN_SETTINGS_DELAY = 300
 ABORT_NOTIFICATION_DELAY = 60
 
@@ -86,6 +86,7 @@ try:
             print(e)
         except DONGLE.NO_DATA as e:
             print(e)
+	    time.sleep(120)
         except:
             raise
 
