@@ -12,6 +12,7 @@ import os
 import re
 import string
 import sys
+import signal
 
 PIN_CARON = 21
 EVN_DELAY = 5
@@ -95,6 +96,12 @@ socThreshold = int(config['socThreshold']) if 'socThreshold' in config else 0
 notificationSent = False
 abortNotificationSent = False
 print("Notification threshold: {}".format(socThreshold))
+
+# Set up signal handling
+def exit_gracefully(signum, frame):
+    sys.exit(0)
+
+signal.signal(signal.SIGTERM, exit_gracefully)
 
 try:
     while main_running:
