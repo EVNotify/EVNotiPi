@@ -1,7 +1,6 @@
+from car import *
 
-class IONIQ_BEV:
-
-    class NULL_BLOCK(Exception): pass
+class IONIQ_BEV(Car):
 
     def __init__(self, dongle):
         self.dongle = dongle
@@ -11,6 +10,10 @@ class IONIQ_BEV:
 
     def getData(self):
         raw = {}
+
+        volt = self.dongle.getObdVoltage()
+        if volt and volt < 13.0:
+            raise IONIQ_BEV.LOW_VOLTAGE(volt)
 
         for cmd in [2101,2105]:
             raw[cmd] = self.dongle.sendCommand(str(cmd))
