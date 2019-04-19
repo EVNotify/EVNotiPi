@@ -86,7 +86,7 @@ try:
             print(e)
         except DONGLE.NO_DATA as e:
             print(e)
-	    time.sleep(120)
+            sleep(120)
         except:
             raise
 
