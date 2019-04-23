@@ -92,15 +92,17 @@ try:
             print(e)
         except DONGLE.NO_DATA as e:
             print(e)
-            sleep(120)
+        except CAR.EMPTY_BLOCK as e:
+	    print(e)
         except:
             raise
 
         else:
             print(data)
             try:
-                EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
-                currentSOC = data['SOC_DISPLAY'] or data['SOC_BMS']
+                if 'SOC_DISPLAY' in data and 'SOC_BMS' in data:
+	            EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
+	            currentSOC = data['SOC_DISPLAY'] or data['SOC_BMS']
 
                 if 'EXTENDED' in data:
                     EVNotify.setExtended(data['EXTENDED'])
