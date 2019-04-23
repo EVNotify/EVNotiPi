@@ -55,8 +55,8 @@ class PiOBD2Hat:
             raw = {}
             for line in ret.split(b'\r\n'):
                 value = bytes.fromhex(str(line[5:],'ascii'))
-	            if value == b'\x00\x00\x00\x00\x00\x00\x00':
-	                raise ValueError
+                    if value == b'\x00\x00\x00\x00\x00\x00\x00':
+                        raise ValueError
 	
 	            raw[int(line[:5],16)] = value                
         except ValueError:
