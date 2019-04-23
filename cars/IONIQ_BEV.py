@@ -20,13 +20,13 @@ class IONIQ_BEV:
         data = self.getBaseData()
         if 0x7EC21 in raw[2101]:
 	        data['SOC_BMS']     = raw[2101][0x7EC21][0] / 2.0
-	    if 0x7EC24 in raw[2105]:
-	        data['SOC_DISPLAY'] = raw[2105][0x7EC24][6] / 2.0
+        if 0x7EC24 in raw[2105]:
+            data['SOC_DISPLAY'] = raw[2105][0x7EC24][6] / 2.0
         if set([0x7EC21,0x7EC22,0x7EC23,0x7EC24]).issubset(raw[2101]) and \
 	            set([0x7EC23,0x7EC24]).issubset(raw[2105]):                    
             chargingBits = raw[2101][0x7EC21][5]
-	    dcBatteryCurrent = int.from_bytes(raw[2101][0x7EC21][6:7] + raw[2101][0x7EC22][0:1], byteorder='big', signed=True) / 10.0
-	    dcBatteryVoltage = int.from_bytes(raw[2101][0x7EC22][1:3], byteorder='big', signed=False) / 10.0
+            dcBatteryCurrent = int.from_bytes(raw[2101][0x7EC21][6:7] + raw[2101][0x7EC22][0:1], byteorder='big', signed=True) / 10.0
+            dcBatteryVoltage = int.from_bytes(raw[2101][0x7EC22][1:3], byteorder='big', signed=False) / 10.0
             data['EXTENDED'] = {
 	                'auxBatteryVoltage':        raw[2101][0x7EC24][4] / 10.0,
 	                'batteryInletTemperature':  int.from_bytes(raw[2101][0x7EC23][2:3], byteorder='big', signed=True),
