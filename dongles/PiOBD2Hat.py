@@ -64,7 +64,7 @@ class PiOBD2Hat:
         return raw
 
     def initDongle(self):
-        cmds = [['ATZ','DIAMEX PI-OBD'],
+        cmds = [['ATZ','PI-OBD v1.0'],
                 ['ATE0','OK'],
                 ['ATL1','OK'],
                 ['ATOHS0','OK'],
