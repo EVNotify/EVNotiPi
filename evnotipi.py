@@ -10,8 +10,10 @@ import os
 import re
 import string
 import sys
+import signal
 
 LOOP_DELAY = 5
+EVN_SETTINGS_DELAY = 300
 ABORT_NOTIFICATION_DELAY = 60
 
 # load config
@@ -72,7 +74,14 @@ socThreshold = int(config['socThreshold']) if 'socThreshold' in config else 0
 notificationSent = False
 abortNotificationSent = False
 last_charging = time()
+last_evn_settings_poll = time()
 print("Notification threshold: {}".format(socThreshold))
+
+# Set up signal handling
+def exit_gracefully(signum, frame):
+    sys.exit(0)
+
+signal.signal(signal.SIGTERM, exit_gracefully)
 
 try:
     while main_running:
@@ -84,32 +93,35 @@ try:
             print(e)
         except DONGLE.NO_DATA as e:
             print(e)
+        except CAR.EMPTY_BLOCK as e:
+            print(e)
         except:
             raise
 
         else:
             print(data)
             try:
-                EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
-                currentSOC = data['SOC_DISPLAY'] or data['SOC_BMS']
+                if 'SOC_DISPLAY' in data and 'SOC_BMS' in data:
+                    EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
+                    currentSOC = data['SOC_DISPLAY'] or data['SOC_BMS']
 
                 if 'EXTENDED' in data:
                     EVNotify.setExtended(data['EXTENDED'])
                     is_charging = True if 'charging' in data['EXTENDED'] and \
                             data['EXTENDED']['charging'] == 1 else False
-                    is_connected = True if ('normalChargePort' in data['EXTENDED'] and data['EXTENDED']['normalChargePort'] == 1) \
-                            or ('rapidChargePort' in data['EXTENDED'] and data['EXTENDED']['rapidChargePort'] == 1) \
-                            or ('slowChargePort' in data['EXTENDED'] and data['EXTENDED']['slowChargePort'] == 1) \
-                            else False
+                    # TODO: check if really connected, once connection detection is working in KONA module
+                    is_connected = True
 
                     if is_charging:
                         last_charging = now
 
-                    if is_charging and 'socThreshold' not in config:
+                    if is_charging and 'socThreshold' not in config and \
+                            now - last_evn_settings_poll > EVN_SETTINGS_DELAY:
                         try:
                             s = EVNotify.getSettings()
                             # following only happens if getSettings is successful, else jumps into exception handler
                             settings = s
+                            last_evn_settings_poll = now
 
                             if s['soc'] != socThreshold:
                                 socThreshold = int(s['soc'])
