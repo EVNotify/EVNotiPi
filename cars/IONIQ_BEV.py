@@ -13,7 +13,8 @@ class IONIQ_BEV(Car):
         raw = {}
 
         volt = self.dongle.getObdVoltage()
-        if self.car_on_voltage and volt and volt < self.car_on_voltage:
+        if self.car_on_voltage and volt and volt < (self.car_on_voltage * 0.95):
+            print("Skip poll, Voltage indicates car off {}/{}".format(volt, self.car_on_voltage*0.95))
             raise IONIQ_BEV.LOW_VOLTAGE(volt)
 
         for cmd in [2101,2105]:
@@ -54,7 +55,8 @@ class IONIQ_BEV(Car):
                 }
 
             if data['EXTENDED']['auxBatteryVoltage'] > 13.0:
-                self.car_on_voltage = volt
+                if not self.car_on_voltage or self.car_on_voltage < volt:
+                    self.car_on_voltage = volt
 
 
         return data
