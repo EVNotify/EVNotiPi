@@ -39,7 +39,7 @@ class KONA_EV(Car):
                     'batteryInletTemperature':  int.from_bytes(raw[220101][0x7EC23][5:6], byteorder='big', signed=True),
                     'batteryMaxTemperature':    int.from_bytes(raw[220101][0x7EC22][4:5], byteorder='big', signed=True),
                     'batteryMinTemperature':    int.from_bytes(raw[220101][0x7EC22][5:6], byteorder='big', signed=True),
-                    'charging':                 1 if chargingBits & 0x10 == 0x10 else 0,
+                    'charging':                 1 if chargingBits & 0x10 else 0,
                     'normalChargePort':         1 if normalChargeBit and normalChargePort else 0,
                     'rapidChargePort':          1 if normalChargeBit and not normalChargePort else 0,
                     'dcBatteryCurrent':         dcBatteryCurrent,
