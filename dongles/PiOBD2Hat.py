@@ -93,6 +93,6 @@ class PiOBD2Hat:
         self.sendAtCmd('ATCR' + str(addr))
 
     def getObdVoltage(self):
-        ret = self.sendAtCmd('AT!10')
+        ret = self.sendAtCmd('AT!10','V')
         return float(ret[:-1]) # strip the 'V'
 
