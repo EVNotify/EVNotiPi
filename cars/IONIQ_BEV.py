@@ -7,12 +7,13 @@ class IONIQ_BEV(Car):
         self.dongle.setProtocol('CAN_11_500')
         self.dongle.setCANRxFilter('7EC')
         self.dongle.setCANRxMask('7FF')
+        self.car_on_voltage = None
 
     def getData(self):
         raw = {}
 
         volt = self.dongle.getObdVoltage()
-        if volt and volt < 13.0:
+        if self.car_on_voltage and volt and volt < self.car_on_voltage:
             raise IONIQ_BEV.LOW_VOLTAGE(volt)
 
         for cmd in [2101,2105]:
@@ -51,6 +52,10 @@ class IONIQ_BEV(Car):
                     'cumDischargeEnergy':   int.from_bytes(raw[2101][0x7EC26][3:7], byteorder='big', signed=False),
                     'driveMotorSpeed':      int.from_bytes(raw[2101][0x7EC28][0:2], byteorder='big', signed=True),
                 }
+
+            if data['EXTENDED']['auxBatteryVoltage'] > 13.0:
+                self.car_on_voltage = volt
+
 
         return data
 
