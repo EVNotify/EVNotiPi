@@ -54,10 +54,6 @@ class IONIQ_BEV(Car):
                     'driveMotorSpeed':      int.from_bytes(raw[2101][0x7EC28][0:2], byteorder='big', signed=True),
                 }
 
-            V1 = data['EXTENDED']['auxBatteryVoltage']
-            V2 = self.dongle.getObdVoltage()
-            print("Voltage OBD({}) HAT({}) {}".format(V1, V2, V1/V2))
-
             if data['EXTENDED']['auxBatteryVoltage'] > 13.0:
                 if not self.car_on_voltage or self.car_on_voltage < volt:
                     self.car_on_voltage = volt
