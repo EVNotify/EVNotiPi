@@ -14,14 +14,12 @@ class PiOBD2Hat:
         self.initDongle()
 
     def sendAtCmd(self, cmd, expect='OK'):
-        expect = bytes(expect, 'utf-8')
         cmd = bytes(cmd, 'utf-8')
-
+        expect = bytes(expect, 'utf-8')
         try:
             self.exp.send(cmd + b'\r\n')
             self.exp.expect('>', timeout=5)
             ret = self.exp.before.strip(b'\r\n')
-
             if expect not in ret:
                 raise Exception('Expected %s, got %s' % (expect,ret))
 
@@ -54,8 +52,11 @@ class PiOBD2Hat:
         try:
             raw = {}
             for line in ret.split(b'\r\n'):
+                if len(line) != 19:
+                    raise ValueError
                 raw[int(line[:5],16)] = bytes.fromhex(str(line[5:],'ascii'))
         except ValueError:
+            self.exp.expect([pexpect.TIMEOUT, pexpect.EOF, ".+"], timeout=10)   # Ensure buffers are empty
             raise PiOBD2Hat.CAN_ERROR("Failed Command {}\n{}".format(cmd,ret))
 
         return raw
