@@ -17,7 +17,12 @@ class IONIQ_BEV(Car):
             print("Skip poll, Voltage indicates car off {}/{} => {}".format(volt, self.car_on_voltage*0.95, volt * 0.7))
             raise IONIQ_BEV.LOW_VOLTAGE(volt)
 
+        self.dongle.setCANRxFilter('7EC')
         for cmd in [2101,2105]:
+            raw[cmd] = self.dongle.sendCommand(str(cmd))
+
+        self.dongle.setCANRxFilter('7EE')
+        for cmd in [2180]:
             raw[cmd] = self.dongle.sendCommand(str(cmd))
 
         if 0x7EC27 in raw[2101] and raw[2101][0x7EC27] == b'\x00\x00\x00\x00\x00\x00\x00':
@@ -52,6 +57,7 @@ class IONIQ_BEV(Car):
                     'cumulativeEnergyCharged':  int.from_bytes(raw[2101][0x7EC25][6:7] + raw[2101][0x7EC26][0:3], byteorder='big', signed=False) / 10.0,
                     'cumulativeEnergyDischarged': int.from_bytes(raw[2101][0x7EC26][3:7], byteorder='big', signed=False) / 10.0,
                     'driveMotorSpeed':          int.from_bytes(raw[2101][0x7EC28][0:2], byteorder='big', signed=True),
+                    'outsideTemp':              (raw[2180][0x7EE22][1] - 80) / 2,
                 }
 
             if data['EXTENDED']['auxBatteryVoltage'] > 13.0:
