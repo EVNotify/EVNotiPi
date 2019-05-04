@@ -93,7 +93,9 @@ try:
             print(e)
         except DONGLE.NO_DATA as e:
             print(e)
-        except CAR.EMPTY_BLOCK as e:
+        except CAR.LOW_VOLTAGE as e:
+            print('Low Voltage ({})'.format(e))
+        except CAR.NULL_BLOCK as e:
             print(e)
         except:
             raise

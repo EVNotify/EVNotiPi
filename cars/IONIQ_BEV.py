@@ -1,16 +1,21 @@
+from car import *
 
-class IONIQ_BEV:
-
-    class NULL_BLOCK(Exception): pass
+class IONIQ_BEV(Car):
 
     def __init__(self, dongle):
         self.dongle = dongle
         self.dongle.setProtocol('CAN_11_500')
         self.dongle.setCANRxFilter('7EC')
         self.dongle.setCANRxMask('7FF')
+        self.car_on_voltage = None
 
     def getData(self):
         raw = {}
+
+        volt = self.dongle.getObdVoltage()
+        if self.car_on_voltage and volt and volt < (self.car_on_voltage * 0.95):
+            print("Skip poll, Voltage indicates car off {}/{} => {}".format(volt, self.car_on_voltage*0.95, volt * 0.7))
+            raise IONIQ_BEV.LOW_VOLTAGE(volt)
 
         for cmd in [2101,2105]:
             raw[cmd] = self.dongle.sendCommand(str(cmd))
@@ -45,6 +50,11 @@ class IONIQ_BEV:
                     'dcBatteryVoltage':         dcBatteryVoltage,
                     'soh':                      int.from_bytes(raw[2105][0x7EC24][0:2], byteorder='big', signed=False) / 10.0,
                     }
+
+            if data['EXTENDED']['auxBatteryVoltage'] > 13.0:
+                if not self.car_on_voltage or self.car_on_voltage < volt:
+                    self.car_on_voltage = volt
+
 
         return data
 

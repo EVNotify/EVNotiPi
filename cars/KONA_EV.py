@@ -1,7 +1,6 @@
+from car import *
 
-class KONA_EV:
-
-    class NULL_BLOCK(Exception): pass
+class KONA_EV(Car):
 
     def __init__(self, dongle):
         self.dongle = dongle
@@ -11,6 +10,10 @@ class KONA_EV:
 
     def getData(self):
         raw = {}
+
+        volt = self.dongle.getObdVoltage()
+        if volt and volt < 13.0:
+            raise KONA_EV.LOW_VOLTAGE(volt)
 
         for cmd in [220101,220105]:
             raw[cmd] = self.dongle.sendCommand(str(cmd))
