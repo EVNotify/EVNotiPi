@@ -1,4 +1,5 @@
 from serial import Serial
+from time import sleep
 import pexpect
 from pexpect import fdpexpect
 
@@ -9,16 +10,20 @@ class PiOBD2Hat:
 
     def __init__(self, dongle):
         print("Init Dongle")
-        self.serial = Serial(dongle['port'], baudrate=dongle['speed'], timeout=5)
-        self.exp = fdpexpect.fdspawn(self.serial.fd)
+        self.serial = Serial(dongle['port'], baudrate=dongle['speed'])
+        self.exp = fdpexpect.fdspawn(self.serial)
         self.initDongle()
 
     def sendAtCmd(self, cmd, expect='OK'):
         cmd = bytes(cmd, 'utf-8')
         expect = bytes(expect, 'utf-8')
         try:
+            while self.serial.in_waiting:   # Clear the input buffer
+                print("Stray data in buffer: " + \
+                        str(self.serial.read(self.serial.in_waiting)))
+                sleep(0.2)
             self.exp.send(cmd + b'\r\n')
-            self.exp.expect('>', timeout=5)
+            self.exp.expect('>')
             ret = self.exp.before.strip(b'\r\n')
             if expect not in ret:
                 raise Exception('Expected %s, got %s' % (expect,ret))
@@ -26,13 +31,17 @@ class PiOBD2Hat:
         except pexpect.exceptions.TIMEOUT:
             ret = b'TIMEOUT'
 
-        return ret
+        return ret.split(b"\r\n")[-1]
 
     def sendCommand(self, cmd):
         cmd = bytes(cmd, 'utf-8')
         try:
+            while self.serial.in_waiting:   # Clear the input buffer
+                print("Stray data in buffer: " + \
+                        str(self.serial.read(self.serial.in_waiting)))
+                sleep(0.2)
             self.exp.send(cmd + b'\r\n')
-            self.exp.expect('>', timeout=5)
+            self.exp.expect('>')
             ret = self.exp.before.strip(b'\r\n')
         except pexpect.exceptions.TIMEOUT:
             ret = b'TIMEOUT'
@@ -56,18 +65,17 @@ class PiOBD2Hat:
                     raise ValueError
                 raw[int(line[:5],16)] = bytes.fromhex(str(line[5:],'ascii'))
         except ValueError:
-            self.exp.expect([pexpect.TIMEOUT, pexpect.EOF, ".+"], timeout=10)   # Ensure buffers are empty
             raise PiOBD2Hat.CAN_ERROR("Failed Command {}\n{}".format(cmd,ret))
 
         return raw
 
     def initDongle(self):
-        cmds = [['ATRST','DIAMEX PI-OBD'],
-                ['ATE0','OK'],
-                ['ATL1','OK'],
-                ['ATOHS0','OK'],
-                ['ATH1','OK'],
-                ['ATSTFF','OK']]
+        cmds = [['ATRST','DIAMEX PI-OBD'],  # Cold start
+                ['ATE0','OK'],              # Disable echo
+                ['ATL1','OK'],              # Use \r\n
+                ['ATOHS0','OK'],            # Disable space between HEX bytes
+                ['ATH1','OK'],              # Display header
+                ['ATST64','OK']]            # Input timeout (10 sec)
 
         for c,r in cmds:
             self.sendAtCmd(c, r)
@@ -79,6 +87,7 @@ class PiOBD2Hat:
     def setProtocol(self, prot):
         if prot == 'CAN_11_500':
             self.sendAtCmd('ATP6','6 = ISO 15765-4, CAN (11/500)')
+            self.sendAtCmd('ATONI1','OK')   # No init sequence
         else:
             raise Exception('Unsupported protocol %s' % prot)
 
