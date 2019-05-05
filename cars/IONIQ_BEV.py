@@ -61,8 +61,7 @@ class IONIQ_BEV(Car):
                 }
 
             if data['EXTENDED']['auxBatteryVoltage'] > 13.0:
-                if not self.car_on_voltage or self.car_on_voltage < volt:
-                    self.car_on_voltage = volt
+                self.car_on_voltage = volt
 
 
         return data
