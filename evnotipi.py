@@ -23,8 +23,6 @@ ABORT_NOTIFICATION_DELAY = 60
 SYSTEM_SHUTDOWN_DELAY = 3600 # 1 h  set to None to disable auto shutdown
 WIFI_SHUTDOWN_DELAY = 300 # 5 min       set to None to disable Wifi control
 
-class POLL_DELAY(Exception): pass
-
 # load config
 with open('config.json', encoding='utf-8') as config_file:
     config = json.loads(config_file.read())
@@ -86,7 +84,6 @@ main_running = True
 last_charging = time()
 last_charging_soc = 0
 last_data = time()
-delay_poll_until = time()
 last_evn_transmit = time()
 last_evn_settings_poll = time()
 
@@ -107,23 +104,15 @@ try:
     while main_running:
         now = time()
         try:
-            if delay_poll_until > now and now - last_data > DATA_WAIT \
-                    and GPIO.input(PIN_CARON) == 1:
-                raise POLL_DELAY()      # Skip delay if car on
-
             data = car.getData()
             fix = gps.fix()
             last_data = now
         except DONGLE.CAN_ERROR as e:
             print(e)
         except DONGLE.NO_DATA:
-            print("NO DATA - delay polling")
-            delay_poll_until = now + NO_DATA_SLEEP
+            print("NO DATA")
         except CAR.LOW_VOLTAGE as e:
-            print("Low Voltage ({}) - delay polling".format(e))
-            delay_poll_until = now + NO_DATA_SLEEP
-        except POLL_DELAY:
-            pass
+            print("Low Voltage ({})".format(e))
         except CAR.NULL_BLOCK as e:
             print(e)
         except:
