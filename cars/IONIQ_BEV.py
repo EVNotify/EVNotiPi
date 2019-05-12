@@ -1,4 +1,3 @@
-
 class IONIQ_BEV:
 
     def __init__(self, dongle):
@@ -75,4 +74,3 @@ class IONIQ_BEV:
             "NORMAL_SPEED": 4.6,
             "FAST_SPEED": 50
         }
-

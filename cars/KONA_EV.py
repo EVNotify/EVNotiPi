@@ -1,4 +1,3 @@
-
 class KONA_EV:
 
     def __init__(self, dongle):
@@ -62,3 +61,4 @@ class KONA_EV:
             "NORMAL_SPEED": 4.6,
             "FAST_SPEED": 50
         }
+

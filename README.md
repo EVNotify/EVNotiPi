@@ -1,5 +1,2 @@
-# EVNotiPi PlugAndPlay
-
-Productive running branch!
-
-
+#PlugAndPlay 
+stable version
