@@ -207,18 +207,15 @@ try:
             except EVNotify.CommunicationError as e:
                 print("Sending of notificatin failed! {}".format(e))
 
-            if GPIO.input(PIN_CARON) == 1:
-                print("car off detected")
-
             if SYSTEM_SHUTDOWN_DELAY != None:
                 if now - last_data > SYSTEM_SHUTDOWN_DELAY and GPIO.input(PIN_CARON) == 1:
                     usercnt = int(check_output(['who','-q']).split(b'\n')[1].split(b'=')[1])
                     if usercnt == 0:
-                        print("Not charging and ignition off => Shutdown")
+                        print("Not charging and car off => Shutdown")
                         check_call(['/bin/systemctl','poweroff'])
                         sleep(5)
                     else:
-                        print("Not charging and ignition off; Not shutting down, users connected")
+                        print("Not charging and car off; Not shutting down, users connected")
 
             if WIFI_SHUTDOWN_DELAY != None:
                 if now - last_data > WIFI_SHUTDOWN_DELAY and GPIO.input(PIN_CARON) == 1:
