@@ -2,9 +2,12 @@ import json
 import requests
 
 class EVNotify:
-    
+
+    class CommunicationError(Exception): pass
+
     def __init__(self, akey = None, token = None):
         self.RESTURL = 'https://app.evnotify.de/'
+        self.session = requests.Session()
         self.akey = akey
         self.token = token
 
@@ -12,8 +15,14 @@ class EVNotify:
         if useAuthentication:
             params['akey'] = self.akey
             params['token'] = self.token
-        if method == 'get': return getattr(requests, method)(self.RESTURL + fnc, params=params).json()
-        return getattr(requests, method)(self.RESTURL + fnc, json=params).json()
+        try:
+            if method == 'get':
+                return getattr(self.session, method)(self.RESTURL + fnc, params=params).json()
+            else:
+                return getattr(self.session, method)(self.RESTURL + fnc, json=params).json()
+
+        except requests.exceptions.ConnectionError:
+            raise EVNotify.CommunicationError()
 
     def getKey(self):
         return self.sendRequest('get', 'key')['akey']
