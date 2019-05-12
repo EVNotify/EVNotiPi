@@ -119,6 +119,7 @@ try:
             raise
 
         else:
+            is_charging = False
             if now - last_evn_transmit > EVN_DELAY:
                 print(data)
                 last_evn_transmit = now
@@ -181,6 +182,9 @@ try:
                     print(e)
                 except:
                     raise
+
+            if 'EXTENDED' in data and is_charging:
+                last_charging_soc = currentSOC
 
         finally:
             try:
