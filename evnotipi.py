@@ -90,8 +90,10 @@ last_evn_settings_poll = time()
 # Init SOC notifications
 chargingStartSOC = 0
 socThreshold = int(config['socThreshold']) if 'socThreshold' in config else 0
+abrpSocThreshold = None
 notificationSent = False
 abortNotificationSent = False
+currentSOC = None
 print("Notification threshold: {}".format(socThreshold))
 
 # Set up signal handling
@@ -120,10 +122,10 @@ try:
 
         else:
             is_charging = False
-            if now - last_evn_transmit > EVN_DELAY:
-                print(data)
-                last_evn_transmit = now
-                try:
+            try:
+                if now - last_evn_transmit > EVN_DELAY:
+                    print(data)
+                    last_evn_transmit = now
                     if 'SOC_DISPLAY' in data and 'SOC_BMS' in data:
                         EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
                         currentSOC = data['SOC_DISPLAY'] or data['SOC_BMS']
@@ -132,8 +134,10 @@ try:
                         EVNotify.setExtended(data['EXTENDED'])
                         is_charging = True if 'charging' in data['EXTENDED'] and \
                                 data['EXTENDED']['charging'] == 1 else False
-                        is_connected = True if ('normalChargePort' in data['EXTENDED'] and data['EXTENDED']['normalChargePort'] == 1) \
-                                or ('rapidChargePort' in data['EXTENDED'] and data['EXTENDED']['rapidChargePort'] == 1) else False
+                        is_connected = True if ('normalChargePort' in data['EXTENDED'] \
+                                and data['EXTENDED']['normalChargePort'] == 1) \
+                                or ('rapidChargePort' in data['EXTENDED'] \
+                                and data['EXTENDED']['rapidChargePort'] == 1) else False
 
                         if is_charging:
                             last_charging = now
@@ -159,11 +163,11 @@ try:
                         if is_charging and chargingStartSOC == 0:
                             chargingStartSOC = currentSOC or 0
                         # check if notification threshold reached
-                        elif is_charging and chargingStartSOC < socThreshold and \
-                                currentSOC >= socThreshold and not notificationSent:
-                            print("Notification threshold reached")
-                            EVNotify.sendNotification()
-                            notificationSent = True
+                        #elif is_charging and chargingStartSOC < socThreshold and \
+                        #        currentSOC >= socThreshold and not notificationSent:
+                        #    print("Notification threshold reached")
+                        #    EVNotify.sendNotification()
+                        #    notificationSent = True
                         elif not is_connected:   # Rearm notification
                             chargingStartSOC = 0
                             notificationSent = False
@@ -178,10 +182,15 @@ try:
                         print(g)
                         EVNotify.setLocation({'location': g})
 
-                except EVNotify.CommunicationError as e:
-                    print(e)
-                except:
-                    raise
+                if is_charging and \
+                        last_charging_soc < socThreshold and \
+                        currentSOC >= socThreshold:
+                    EVNotify.sendNotification()
+
+            except EVNotify.CommunicationError as e:
+                print(e)
+            except:
+                raise
 
             if 'EXTENDED' in data and is_charging:
                 last_charging_soc = currentSOC
