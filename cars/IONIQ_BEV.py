@@ -49,6 +49,8 @@ class IONIQ_BEV(Car):
                     'dcBatteryPower':           dcBatteryCurrent * dcBatteryVoltage / 1000.0,
                     'dcBatteryVoltage':         dcBatteryVoltage,
                     'soh':                      int.from_bytes(raw[2105][0x7EC24][0:2], byteorder='big', signed=False) / 10.0,
+                    'cumulativeEnergyCharged':  int.from_bytes(raw[2101][0x7EC25][6:7] + raw[2101][0x7EC26][0:3], byteorder='big', signed=False) / 10.0,
+                    'cumulativeEnergyDischarged': int.from_bytes(raw[2101][0x7EC26][3:7], byteorder='big', signed=False) / 10.0,
                     }
 
             if data['EXTENDED']['auxBatteryVoltage'] > 13.0:
