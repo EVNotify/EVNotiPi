@@ -125,7 +125,7 @@ try:
                             settings = s
                             last_evn_settings_poll = now
 
-                            if s['soc'] != socThreshold:
+                            if s['soc'] and s['soc'] != socThreshold:
                                 socThreshold = int(s['soc'])
                                 print("New notification threshold: {}".format(socThreshold))
 
