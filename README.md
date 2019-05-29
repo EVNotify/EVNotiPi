@@ -11,6 +11,8 @@ Python Version of EVNotify
 - Resistor 1,2MOhm 1/4W
 - some heat shrink tube
 - small wires in different colors
+- 4 screws M2,5x15 (to fix the OBD-Hat into the case)
+- 5 screws M2,5x8 self-cutting (for the case)
 - Case  https://www.thingiverse.com/thing:3660666 
 - LTE Stick Huawai E3372  https://www.amazon.de/gp/product/B011BRKPLE/
 
