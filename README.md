@@ -44,7 +44,7 @@ void loop() {
   delay(2000); 
   int sensorValue = analogRead(A0);
   float voltage = sensorValue * (15.88 / 1023.0);                  
-  if ( voltage > 13.9 )
+  if ( voltage > 12.75 )
   {
     if ( pistat == 0 )
     {
