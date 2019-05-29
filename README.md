@@ -9,6 +9,9 @@ Python Version of EVNotify
 - Wemos Ralay Shield  https://www.aliexpress.com/item/1PCS-NEW-Relay-Shield-for-Arduino-WeMos-D1-Mini-ESP8266-Development-Board-WeMos-D1-Relay-Module/32737849680.html?spm=a2g0o.productlist.0.0.2aae2b26AhbDEs&ws_ab_test=searchweb0_0%2Csearchweb201602_10%2Csearchweb201603_52&algo_pvid=5e7c779b-c82a-480b-bdb6-50121bd34f8a&btsid=84c71f9f-6e18-48a9-8f54-6813abeee7ff&algo_expid=5e7c779b-c82a-480b-bdb6-50121bd34f8a-0
 - Case printed with PETG  http.....
 
+## Drawings
+
+
 ## Prerequisites
 - Python 3
 - Python Serial
