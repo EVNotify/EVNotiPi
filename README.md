@@ -76,7 +76,7 @@ void loop() {
 
 ## Drawings
 
-![Drawing](url)
+![Drawing](https://evnotify.de/public/EVNotiPi/plan.jpg)
 
 ## Prerequisites
 - Python 3
