@@ -18,38 +18,46 @@ Python Version of EVNotify
 
 ## Wemos Sketch
 Use Arduino IDE to program the Wemos with the following sketch
-
+    
 /*
+  
   ESP8266 Wemos by Kevin Wieland for EVNotiPi
+  adjusted by Mario Mueller
   Recognizes voltage above 12.75V and turns Relay on (Rpi).
   Shutdown and turns off
   Relay Hat on Wemos D1 Mini.
-  D1 to GPIO24 Rpi
-  A0 with 1,2M resistor to +12V
+  D0 to GPIO24 Rpi
+  A0 with 1.2MOhm resistor to +12V
   
 */
 #include <ESP8266WiFi.h>
-const int rpiPin = D1;
-const int offPin = D0;
+const int relayPin = D1;
+const int shutdownPin = D0;
 int pistat = 0;
 int counter = 0;
 void setup() {
-  pinMode(rpiPin, OUTPUT);
-  pinMode(offPin, OUTPUT);
-  digitalWrite(offPin, LOW);
+  Serial.begin(9600);
+  pinMode(relayPin, OUTPUT);
+  pinMode(shutdownPin, OUTPUT);
+  digitalWrite(shutdownPin, LOW);
   WiFi.mode(WIFI_OFF);
   WiFi.forceSleepBegin();
 }
 void loop() {
   delay(2000); 
   int sensorValue = analogRead(A0);
-  float voltage = sensorValue * (15.88 / 1023.0);                  
+  float voltage = sensorValue * (0.0144);
+  Serial.print("Sensor Value: ");
+  Serial.println(sensorValue);
+  Serial.print("Voltage: ");
+  Serial.println(voltage);                  
   if ( voltage > 12.75 )
   {
     if ( pistat == 0 )
     {
       counter == 0;
-      digitalWrite(rpiPin, HIGH);
+      Serial.println("Power up Rpi");
+      digitalWrite(relayPin, HIGH);
       delay(60000 );
       pistat = 1;
     } 
@@ -59,14 +67,18 @@ void loop() {
       if ( pistat == 1)
       {
         counter = counter + 1;
+        Serial.print("Counter: ");
+        Serial.println(counter);
         if ( counter > 150 )
         {
-          digitalWrite(offPin, HIGH);
+          Serial.println("initiate sutdown");
+          digitalWrite(shutdownPin, HIGH);
           delay(3000);
-          digitalWrite(offPin, LOW);
+          digitalWrite(shutdownPin, LOW);
           delay(40000);
           counter = 0;
-          digitalWrite(rpiPin, LOW);
+          Serial.println("Rpi off"); 
+          digitalWrite(relayPin, LOW);
           pistat = 0;
         }
       }
