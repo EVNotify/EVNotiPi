@@ -18,7 +18,7 @@ Python Version of EVNotify
 
 ## Wemos Sketch
 Use Arduino IDE to program the Wemos with the following sketch
-````    
+```C
 /*
   
   ESP8266 Wemos by Kevin Wieland for EVNotiPi
@@ -84,7 +84,7 @@ void loop() {
       }
    }
 }
-````
+```
 
 ## Drawings
 
