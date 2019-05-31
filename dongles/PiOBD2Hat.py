@@ -41,7 +41,7 @@ class PiOBD2Hat:
         except pexpect.exceptions.TIMEOUT:
             ret = b'TIMEOUT'
 
-        if ret in [b'NO DATA', b'TIMEOUT', b'CAN NO ACK']:
+        if ret in [b'NO DATA', b'TIMEOUT']:
             raise PiOBD2Hat.NO_DATA(ret)
         elif ret in [b'INPUT TIMEOUT', b'NO INPUT CHAR', b'UNKNOWN COMMAND',
                 b'WRONG HEXCHAR COUNT', b'ILLEGAL COMMAND', b'SYNTAX ERROR',
@@ -50,7 +50,7 @@ class PiOBD2Hat:
                 b'NO ADDRESSBYTE', b'WRONG PROTOCOL', b'DATA ERROR',
                 b'CHECKSUM ERROR', b'NO ANSWER', b'COLLISION DETECT',
                 b'CAN NO ANSWER', b'PRTOTOCOL 8 OR 9 REQUIRED',
-                b'CAN ERROR']:
+                b'CAN ERROR', b'CAN NO ACK']:
             raise PiOBD2Hat.CAN_ERROR(ret)
 
         try:
