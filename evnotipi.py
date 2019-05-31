@@ -91,6 +91,7 @@ try:
             fix = gps.fix()
         except DONGLE.CAN_ERROR as e:
             print(e)
+            main_running = False
         except DONGLE.NO_DATA as e:
             print(e)
         except CAR.LOW_VOLTAGE as e:
