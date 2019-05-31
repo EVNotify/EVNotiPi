@@ -50,7 +50,7 @@ void setup() {
   WiFi.forceSleepBegin();
 }
 void loop() {
-  delay(2000);                                                //2000
+  delay(2000);                                                
   int sensorValue = analogRead(A0);
   float voltage = sensorValue * 0.0144 * ((100/displayedValue*trueValue)/100);
   Serial.print("Sensor Value: ");
@@ -61,14 +61,14 @@ void loop() {
   Serial.println(voltageLowCounter);
   Serial.print("voltageHighCounter: ");
   Serial.println(voltageHighCounter);              
-  if ( voltage > 12.75 )                                  // 12.75
+  if ( voltage > 12.75 )                           
   {
     if ( pistat == 0 )
     {
-      voltageLowCounter == 0;
+      voltageLowCounter = 0;
       Serial.println("Power up Rpi");
       digitalWrite(relayPin, HIGH);
-      delay(60000);                                         //60000
+      delay(60000);                                        
       pistat = 1;
     } 
     else                    
@@ -86,13 +86,13 @@ void loop() {
       {
         voltageLowCounter++;
         voltageHighCounter=0;
-        if ( voltageLowCounter > 150 )                         //150
+        if ( voltageLowCounter > 150 )                        
         {
           Serial.println("initiate sutdown");
           digitalWrite(shutdownPin, HIGH);
           delay(3000);                        
           digitalWrite(shutdownPin, LOW);
-          delay(40000);                                       //40000
+          delay(40000);                                    
           voltageLowCounter = 0;
           Serial.println("Rpi off"); 
           digitalWrite(relayPin, LOW);
