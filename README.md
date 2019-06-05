@@ -33,8 +33,14 @@ Use Arduino IDE to program the Wemos with the following sketch
 #include <ESP8266WiFi.h>
 const int relayPin = D1;
 const int shutdownPin = D0;
+//if you need to adjust the voltage reading - measure the voltage with a mulitmeter, connected and adjust these values
+const float trueValue=12.28;
+const float displayedValue=11.98;
+
 int pistat = 0;
-int counter = 0;
+int voltageLowCounter = 0;
+int voltageHighCounter = 0;
+
 void setup() {
   Serial.begin(9600);
   pinMode(relayPin, OUTPUT);
@@ -44,39 +50,50 @@ void setup() {
   WiFi.forceSleepBegin();
 }
 void loop() {
-  delay(2000); 
+  delay(2000);                                                
   int sensorValue = analogRead(A0);
-  float voltage = sensorValue * (0.0144);
+  float voltage = sensorValue * 0.0144 * ((100/displayedValue*trueValue)/100);
   Serial.print("Sensor Value: ");
   Serial.println(sensorValue);
   Serial.print("Voltage: ");
-  Serial.println(voltage);                  
-  if ( voltage > 12.75 )
+  Serial.println(voltage);    
+  Serial.print("voltageLowCounter: ");
+  Serial.println(voltageLowCounter);
+  Serial.print("voltageHighCounter: ");
+  Serial.println(voltageHighCounter);              
+  if ( voltage > 12.75 )                           
   {
     if ( pistat == 0 )
     {
-      counter == 0;
+      voltageLowCounter = 0;
       Serial.println("Power up Rpi");
       digitalWrite(relayPin, HIGH);
-      delay(60000 );
+      delay(60000);                                        
       pistat = 1;
     } 
+    else                    
+    {if (voltageHighCounter == 30)    //if voltage is High for a minute - reset voltageLowCounter
+        {voltageHighCounter=0;
+         voltageLowCounter=0;
+        }
+      voltageHighCounter++;
+    }
+    
   }
   else
   {
       if ( pistat == 1)
       {
-        counter = counter + 1;
-        Serial.print("Counter: ");
-        Serial.println(counter);
-        if ( counter > 150 )
+        voltageLowCounter++;
+        voltageHighCounter=0;
+        if ( voltageLowCounter > 150 )                        
         {
           Serial.println("initiate sutdown");
           digitalWrite(shutdownPin, HIGH);
-          delay(3000);
+          delay(3000);                        
           digitalWrite(shutdownPin, LOW);
-          delay(40000);
-          counter = 0;
+          delay(40000);                                    
+          voltageLowCounter = 0;
           Serial.println("Rpi off"); 
           digitalWrite(relayPin, LOW);
           pistat = 0;
