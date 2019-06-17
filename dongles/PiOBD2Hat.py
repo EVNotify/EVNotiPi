@@ -2,6 +2,7 @@ from serial import Serial
 from time import sleep
 import pexpect
 from pexpect import fdpexpect
+import math
 
 class PiOBD2Hat:
 
@@ -59,15 +60,46 @@ class PiOBD2Hat:
             raise PiOBD2Hat.CAN_ERROR("Failed Command {}\n{}".format(cmd,ret))
 
         try:
-            raw = {}
-            for line in ret.split(b'\r\n'):
+            data = {}
+            raw = ret.split(b'\r\n')
+            lines = None
+
+            for line in raw:
                 if len(line) != 19:
                     raise ValueError
-                raw[int(line[:5],16)] = bytes.fromhex(str(line[5:],'ascii'))
+
+                identifier = int(line[0:3],16)
+                frame_type = int(line[3:4],16)
+
+                if frame_type == 0:     # Single frame
+                    idx = 0
+                    lines = 1
+                elif frame_type == 1:   # First frame
+                    lines = math.ceil((int.from_bytes(bytes.fromhex(str(b'0' + line[4:7], 'ascii')),
+                        byteorder='big', signed=False) + 1) / 7)
+                    idx = 0
+                    if len(raw) != lines:
+                        raise ValueError
+                elif frame_type == 2:   # Consecutive frame
+                    idx = int(line[4:5],16)
+                else:                   # Unexpected frame
+                    raise ValueError
+
+                if not identifier in data:
+                    data[identifier] = [None] * lines
+
+                data[identifier][idx] = bytes.fromhex(str(line[5:],'ascii'))
+
+            # Check if all entries are filled
+            for d in data:
+                for i in d:
+                    if i == None:
+                        raise ValueError
+
         except ValueError:
             raise PiOBD2Hat.CAN_ERROR("Failed Command {}\n{}".format(cmd,ret))
 
-        return raw
+        return data
 
     def initDongle(self):
         cmds = [['ATRST','DIAMEX PI-OBD'],  # Cold start
