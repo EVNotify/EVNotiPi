@@ -91,8 +91,8 @@ class PiOBD2Hat:
                 data[identifier][idx] = bytes.fromhex(str(line[5:],'ascii'))
 
             # Check if all entries are filled
-            for d in data:
-                for i in d:
+            for key, val in data.items():
+                for i in val:
                     if i == None:
                         raise ValueError
 
