@@ -124,7 +124,7 @@ try:
             is_charging = False
             try:
                 if now - last_evn_transmit > EVN_DELAY:
-                    print(data)
+                    #print(data)
                     last_evn_transmit = now
                     if 'SOC_DISPLAY' in data and 'SOC_BMS' in data:
                         EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
@@ -179,7 +179,7 @@ try:
                             'longitude': fix.longitude,
                             'speed': fix.speed,
                             }
-                        print(g)
+                        #print(g)
                         EVNotify.setLocation({'location': g})
 
                 if is_charging and \
