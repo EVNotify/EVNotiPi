@@ -122,6 +122,17 @@ try:
 
         else:
             is_charging = False
+            if fix and fix.mode > 1:
+                location = {
+                        'latitude':  fix.latitude,
+                        'longitude': fix.longitude,
+                        'gps_speed': fix.speed
+                        }
+                if fix.mode > 2:
+                    location['altitude'] = fix.altitude
+            else:
+                location = None
+
             try:
                 if now - last_evn_transmit > EVN_DELAY:
                     #print(data)
@@ -173,14 +184,8 @@ try:
                             notificationSent = False
                             abortNotificationSent = False
 
-                    if fix and fix.mode > 1: # mode: GPS-fix quality
-                        g ={
-                            'latitude':  fix.latitude,
-                            'longitude': fix.longitude,
-                            'speed': fix.speed,
-                            }
-                        #print(g)
-                        EVNotify.setLocation({'location': g})
+                    if location:
+                        EVNotify.setLocation({'location': location})
 
                 if is_charging and \
                         last_charging_soc < socThreshold and \
