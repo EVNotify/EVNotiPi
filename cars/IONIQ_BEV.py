@@ -19,11 +19,11 @@ class IONIQ_BEV(Car):
 
         self.dongle.setCANRxFilter(0x7ec)
         for cmd in [0x2101,0x2105]:
-            raw[cmd] = self.dongle.sendCommand(str(cmd))
+            raw[cmd] = self.dongle.sendCommand(cmd)
 
         self.dongle.setCANRxFilter(0x7ee)
         for cmd in [0x2180]:
-            raw[cmd] = self.dongle.sendCommand(str(cmd))
+            raw[cmd] = self.dongle.sendCommand(cmd)
 
         if len(raw[0x2101][0x7ec]) != 9 or \
                 len(raw[0x2105][0x7ec]) != 7 or \

@@ -16,7 +16,7 @@ class KONA_EV(Car):
             raise KONA_EV.LOW_VOLTAGE(volt)
 
         for cmd in [0x220101,0x220105]:
-            raw[cmd] = self.dongle.sendCommand(str(cmd))
+            raw[cmd] = self.dongle.sendCommand(cmd)
 
         data = self.getBaseData()
 
