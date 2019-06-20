@@ -35,7 +35,11 @@ class PiOBD2Hat:
         return ret.split(b"\r\n")[-1]
 
     def sendCommand(self, cmd):
-        cmd = bytes(cmd, 'utf-8')
+        """
+        @cmd: should be hex-encoded
+        """
+
+        cmd = bytes(format(cmd, 'x'), 'utf-8')
         try:
             while self.serial.in_waiting:   # Clear the input buffer
                 print("Stray data in buffer: " + \
@@ -119,18 +123,33 @@ class PiOBD2Hat:
     def setProtocol(self, prot):
         if prot == 'CAN_11_500':
             self.sendAtCmd('ATP6','6 = ISO 15765-4, CAN (11/500)')
-            self.sendAtCmd('ATONI1','OK')   # No init sequence
+            self.sendAtCmd('ATONI1')   # No init sequence
         else:
             raise Exception('Unsupported protocol %s' % prot)
 
     def setIDFilter(self, filter):
-        self.sendAtCmd('ATSF' + str(filter))
+        if isinstance(filter, bytes):
+            filter = str(mask)
+        elif isinstance(filter, int):
+            filter = format(mask, 'X')
+
+        self.sendAtCmd('ATSF' + filter)
 
     def setCANRxMask(self, mask):
-        self.sendAtCmd('ATCM' + str(mask))
+        if isinstance(mask, bytes):
+            mask = str(mask)
+        elif isinstance(mask, int):
+            mask = format(mask, 'X')
+
+        self.sendAtCmd('ATCM' + mask)
 
     def setCANRxFilter(self, addr):
-        self.sendAtCmd('ATCR' + str(addr))
+        if isinstance(addr, bytes):
+            addr = str(mask)
+        elif isinstance(addr, int):
+            addr = format(mask, 'X')
+
+        self.sendAtCmd('ATCR' + addr)
 
     def getObdVoltage(self):
         ret = self.sendAtCmd('AT!10','V')
