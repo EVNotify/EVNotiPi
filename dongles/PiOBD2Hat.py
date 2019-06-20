@@ -127,11 +127,11 @@ class PiOBD2Hat:
         else:
             raise Exception('Unsupported protocol %s' % prot)
 
-    def setIDFilter(self, filter):
-        if isinstance(filter, bytes):
-            filter = str(mask)
-        elif isinstance(filter, int):
-            filter = format(mask, 'X')
+    def setIDFilter(self, id_filter):
+        if isinstance(id_filter, bytes):
+            id_filter = str(id_filter)
+        elif isinstance(id_filter, int):
+            id_filter = format(id_filter, 'X')
 
         self.sendAtCmd('ATSF' + filter)
 
@@ -145,9 +145,9 @@ class PiOBD2Hat:
 
     def setCANRxFilter(self, addr):
         if isinstance(addr, bytes):
-            addr = str(mask)
+            addr = str(addr)
         elif isinstance(addr, int):
-            addr = format(mask, 'X')
+            addr = format(addr, 'X')
 
         self.sendAtCmd('ATCR' + addr)
 
