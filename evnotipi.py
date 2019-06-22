@@ -109,19 +109,8 @@ try:
             data = car.getData()
             fix = gps.fix()
             last_data = now
-        except DONGLE.CAN_ERROR as e:
-            print(e)
-        except DONGLE.NO_DATA:
-            print("NO DATA")
-        except CAR.LOW_VOLTAGE as e:
-            print("Low Voltage ({})".format(e))
-        except CAR.NULL_BLOCK as e:
-            print(e)
-        except:
-            raise
-
-        else:
             is_charging = False
+
             if fix and fix.mode > 1:
                 location = {
                         'latitude':  fix.latitude,
@@ -200,6 +189,16 @@ try:
             if 'EXTENDED' in data and is_charging:
                 last_charging_soc = currentSOC
 
+        except DONGLE.CAN_ERROR as e:
+            print(e)
+        except DONGLE.NO_DATA:
+            print("NO DATA")
+        except CAR.LOW_VOLTAGE as e:
+            print("Low Voltage ({})".format(e))
+        except CAR.NULL_BLOCK as e:
+            print(e)
+        except:
+            raise
         finally:
             try:
                 if not abortNotificationSent \
