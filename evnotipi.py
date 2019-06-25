@@ -233,7 +233,10 @@ try:
 
             sys.stdout.flush()
 
-            if main_running: sleep(1)
+            if main_running:
+                s = 1 - (time()-now)
+                print("sleep({})".format(s))
+                if s > 0: sleep(s)
 
 except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
     main_running = False
