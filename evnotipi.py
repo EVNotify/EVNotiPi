@@ -102,6 +102,9 @@ def exit_gracefully(signum, frame):
 
 signal.signal(signal.SIGTERM, exit_gracefully)
 
+loop_delay = 0
+
+print("Starting main loop")
 try:
     while main_running:
         now = time()
