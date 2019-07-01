@@ -79,6 +79,7 @@ class IONIQ_BEV(Car):
                 'cumulativeEnergyDischarged': int.from_bytes(raw[0x2101][0x7ec][6][3:7], byteorder='big', signed=False) / 10.0,
                 'driveMotorSpeed':          int.from_bytes(raw[0x2101][0x7ec][8][0:2], byteorder='big', signed=True),
                 'outsideTemp':              (raw[0x2180][0x7ee][2][1] - 80) / 2,
+                'auxBatteryVoltage2':       volt,
                 }
 
         if data['EXTENDED']['auxBatteryVoltage'] > 13.0:
