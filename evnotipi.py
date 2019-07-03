@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 from gpspoller import GpsPoller
-from subprocess import check_call
+from subprocess import check_call, check_output
 from time import sleep,time
+from wifi_ctrl import WiFiCtrl
+import RPi.GPIO as GPIO
 import evnotifyapi
 import io
 import json
@@ -28,7 +30,7 @@ settings = None
 if 'cartype' in config:
     cartype = config['cartype']
 else:
-    # get settings from backend
+    print("Get settings from backend")
     while settings == None:
         try:
             settings = EVNotify.getSettings()
@@ -61,20 +63,31 @@ sys.path.remove('cars')
 dongle = DONGLE(config['dongle'])
 car = CAR(dongle)
 
+# Set up GPIOs
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(PIN_CARON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
 # Init GPS interface
 gps = GpsPoller()
 gps.start()
 
+# Init WiFi control
+wifi = WiFiCtrl()
+
 # Init some variables
 main_running = True
+last_charging = time()
+last_charging_soc = 0
+last_data = time()
+last_evn_settings_poll = time()
 
 # Init SOC notifications
 chargingStartSOC = 0
 socThreshold = int(config['socThreshold']) if 'socThreshold' in config else 0
+abrpSocThreshold = None
 notificationSent = False
 abortNotificationSent = False
-last_charging = time()
-last_evn_settings_poll = time()
+currentSOC = None
 print("Notification threshold: {}".format(socThreshold))
 
 # Set up signal handling
@@ -83,27 +96,32 @@ def exit_gracefully(signum, frame):
 
 signal.signal(signal.SIGTERM, exit_gracefully)
 
+loop_delay = 0
+
+print("Starting main loop")
 try:
     while main_running:
         now = time()
         try:
             data = car.getData()
             fix = gps.fix()
-        except DONGLE.CAN_ERROR as e:
-            print(e)
-            main_running = False
-        except DONGLE.NO_DATA as e:
-            print(e)
-        except CAR.LOW_VOLTAGE as e:
-            print('Low Voltage ({})'.format(e))
-        except CAR.NULL_BLOCK as e:
-            print(e)
-        except:
-            raise
+            last_data = now
+            is_charging = False
 
-        else:
-            print(data)
+            if fix and fix.mode > 1:
+                location = {
+                        'latitude':  fix.latitude,
+                        'longitude': fix.longitude,
+                        'gps_speed': fix.speed
+                        }
+                if fix.mode > 2:
+                    location['altitude'] = fix.altitude
+            else:
+                location = None
+
             try:
+                #print(data)
+                last_evn_transmit = now
                 if 'SOC_DISPLAY' in data and 'SOC_BMS' in data:
                     EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
                     currentSOC = data['SOC_DISPLAY'] or data['SOC_BMS']
@@ -112,17 +130,21 @@ try:
                     EVNotify.setExtended(data['EXTENDED'])
                     is_charging = True if 'charging' in data['EXTENDED'] and \
                             data['EXTENDED']['charging'] == 1 else False
-                    # TODO: check if really connected, once connection detection is working in KONA module
-                    is_connected = True
+                    is_connected = True if ('normalChargePort' in data['EXTENDED'] \
+                            and data['EXTENDED']['normalChargePort'] == 1) \
+                            or ('rapidChargePort' in data['EXTENDED'] \
+                            and data['EXTENDED']['rapidChargePort'] == 1) else False
 
                     if is_charging:
                         last_charging = now
+                        last_charging_soc = currentSOC
 
                     if is_charging and 'socThreshold' not in config and \
                             now - last_evn_settings_poll > EVN_SETTINGS_DELAY:
                         try:
                             s = EVNotify.getSettings()
-                            # following only happens if getSettings is successful, else jumps into exception handler
+                            # following only happens if getSettings is
+                            # successful, else jumps into exception handler
                             settings = s
                             last_evn_settings_poll = now
 
@@ -142,28 +164,34 @@ try:
                         print("Notification threshold reached")
                         EVNotify.sendNotification()
                         notificationSent = True
-                    elif not is_charging:   # Rearm notification
+                    elif not is_connected:   # Rearm notification
                         chargingStartSOC = 0
                         notificationSent = False
+                        abortNotificationSent = False
 
-                if fix and fix.mode > 1: # mode: GPS-fix quality
-                    g ={
-                        'latitude':  fix.latitude,
-                        'longitude': fix.longitude,
-                        'speed': fix.speed,
-                        }
-                    print(g)
-                    EVNotify.setLocation({'location': g})
+                if location:
+                    EVNotify.setLocation({'location': location})
 
             except EVNotify.CommunicationError as e:
                 print(e)
             except:
                 raise
 
+        except DONGLE.CAN_ERROR as e:
+            print(e)
+        except DONGLE.NO_DATA:
+            print("NO DATA")
+        except CAR.LOW_VOLTAGE as e:
+            print("Low Voltage ({})".format(e))
+        except CAR.NULL_BLOCK as e:
+            print(e)
+        except:
+            raise
         finally:
             try:
-                if not abortNotificationSent and \
-                        now - last_charging > ABORT_NOTIFICATION_DELAY and chargingStartSOC > 0:
+                if not abortNotificationSent \
+                        and now - last_charging > ABORT_NOTIFICATION_DELAY \
+                        and chargingStartSOC > 0 and last_charging_soc < socThreshold:
                     print("No response detected, send abort notification")
                     EVNotify.sendNotification(True)
                     abortNotificationSent = True
@@ -173,7 +201,9 @@ try:
 
             sys.stdout.flush()
 
-            if main_running: sleep(LOOP_DELAY)
+            if main_running:
+                s = LOOP_DELAY - (time()-now)
+                if s > 0: sleep(s)
 
 except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
     main_running = False
@@ -181,6 +211,7 @@ except:
     raise
 finally:
     print("Exiting ...")
+    GPIO.cleanup()
     gps.stop()
     print("Bye.")
 
