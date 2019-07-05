@@ -128,7 +128,7 @@ class ELM327:
         elif isinstance(id_filter, int):
             id_filter = format(id_filter, 'X')
 
-        self.sendAtCmd('ATCF' + filter)
+        self.sendAtCmd('ATCF' + id_filter)
 
     def setCANRxMask(self, mask):
         if isinstance(mask, bytes):
