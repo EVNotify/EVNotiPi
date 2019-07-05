@@ -23,7 +23,7 @@ class KONA_EV(Car):
         data['SOC_BMS'] = raw[0x220101][0x7ec][1][2] / 2.0
         data['SOC_DISPLAY'] = raw[0x220105][0x7ec][5][0] / 2.0
 
-        chargingBits = raw[0x220101][0x7ec][1][5]
+        chargingBits = raw[0x220101][0x7ec][7][5]
         normalChargePort = raw[0x220101][0x7ec][1][6] == 3
         normalChargeBit = chargingBits & 0x02 == 0x02
         dcBatteryCurrent = int.from_bytes(raw[0x220101][0x7ec][2][0:2], byteorder='big', signed=True) / 10.0
@@ -34,7 +34,7 @@ class KONA_EV(Car):
                 'batteryInletTemperature':  int.from_bytes(raw[0x220101][0x7ec][3][5:6], byteorder='big', signed=True),
                 'batteryMaxTemperature':    int.from_bytes(raw[0x220101][0x7ec][2][4:5], byteorder='big', signed=True),
                 'batteryMinTemperature':    int.from_bytes(raw[0x220101][0x7ec][2][5:6], byteorder='big', signed=True),
-                'charging':                 1 if chargingBits & 0x10 else 0,
+                'charging':                 1 if (chargingBits & 0xc) == 0x8 else 0,
                 'normalChargePort':         1 if normalChargeBit and normalChargePort else 0,
                 'rapidChargePort':          1 if normalChargeBit and not normalChargePort else 0,
                 'dcBatteryCurrent':         dcBatteryCurrent,
