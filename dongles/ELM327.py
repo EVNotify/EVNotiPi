@@ -122,7 +122,7 @@ class ELM327:
         else:
             raise Exception('Unsupported protocol %s' % prot)
 
-    def setIDFilter(self, filter):
+    def setIDFilter(self, id_filter):
         if isinstance(id_filter, bytes):
             id_filter = str(id_filter)
         elif isinstance(id_filter, int):
