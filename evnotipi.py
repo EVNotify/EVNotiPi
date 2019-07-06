@@ -154,7 +154,7 @@ try:
                     notificationSent = False
                     abortNotificationSent = False
 
-            if location:
+            if location and not is_charging and not is_connected:
                 EVNotify.setLocation({'location': location})
 
         except EVNotify.CommunicationError as e:
