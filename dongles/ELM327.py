@@ -1,6 +1,7 @@
 from serial import Serial
 import logging
 from pexpect import fdpexpect
+from binascii import hexlify
 
 class ELM327:
 
@@ -40,7 +41,7 @@ class ELM327:
         @cmd: should be hex-encoded
         """
 
-        cmd = bytes(format(cmd, 'x'), 'utf-8')
+        cmd = hexlify(cmd)
         try:
             while self.serial.in_waiting:   # Clear the input buffer
                 print("Stray data in buffer: " + \

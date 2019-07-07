@@ -2,6 +2,7 @@ from serial import Serial
 from time import sleep
 import pexpect
 from pexpect import fdpexpect
+from binascii import hexlify
 import math
 
 class PiOBD2Hat:
@@ -39,7 +40,7 @@ class PiOBD2Hat:
         @cmd: should be hex-encoded
         """
 
-        cmd = bytes(format(cmd, 'x'), 'utf-8')
+        cmd = hexlify(cmd)
         try:
             while self.serial.in_waiting:   # Clear the input buffer
                 print("Stray data in buffer: " + \
