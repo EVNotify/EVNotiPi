@@ -3,8 +3,8 @@ from time import time
 
 POLL_DELAY_2180 = 60    # Rate limit b2180 to once a minute
 b2101 = bytes.fromhex(hex(0x2102)[2:])
-b2105 = bytes.fromhex(hex(b2105)[2:])
-b2180 = bytes.fromhex(hex(b2180)[2:])
+b2105 = bytes.fromhex(hex(0x2105)[2:])
+b2180 = bytes.fromhex(hex(0x2180)[2:])
 
 class IONIQ_BEV(Car):
 
@@ -27,12 +27,14 @@ class IONIQ_BEV(Car):
             raise IONIQ_BEV.LOW_VOLTAGE(volt)
 
         self.dongle.setCANRxFilter(0x7ec)
+        self.dongle.setCanID(0x7e4)
         for cmd in [b2101,b2105]:
             raw[cmd] = self.dongle.sendCommand(cmd)
 
         if now - self.last_poll_2180 > POLL_DELAY_2180 or b2180 not in self.last_raw:
             self.last_poll_2180 = now
             self.dongle.setCANRxFilter(0x7ee)
+            self.dongle.setCanID(0x7e6)
             raw[b2180] = self.dongle.sendCommand(b2180)
         else:
             raw[b2180] = self.last_raw[b2180]

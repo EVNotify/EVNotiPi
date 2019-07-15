@@ -128,6 +128,14 @@ class PiOBD2Hat:
         else:
             raise Exception('Unsupported protocol %s' % prot)
 
+    def setCanID(self, can_id):
+        if isinstance(can_id, bytes):
+            can_id = str(can_id)
+        elif isinstance(can_id, int):
+            can_id = format(can_id, 'X')
+
+        self.sendAtCmd('ATCT' + can_id)
+
     def setIDFilter(self, id_filter):
         if isinstance(id_filter, bytes):
             id_filter = str(id_filter)

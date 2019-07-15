@@ -10,6 +10,7 @@ class KONA_EV(Car):
         self.dongle.setProtocol('CAN_11_500')
         self.dongle.setCANRxFilter(0x7ec)
         self.dongle.setCANRxMask(0x7ff)
+        self.dongle.setCanID(0x7e4)
 
     def getData(self):
         raw = {}
