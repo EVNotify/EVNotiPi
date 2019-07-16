@@ -36,10 +36,7 @@ class PiOBD2Hat:
         return ret.split(b"\r\n")[-1]
 
     def sendCommand(self, cmd):
-        """
-        @cmd: should be hex-encoded
-        """
-
+        # cmd is a byte array
         cmd = hexlify(cmd)
         try:
             while self.serial.in_waiting:   # Clear the input buffer
@@ -162,5 +159,5 @@ class PiOBD2Hat:
 
     def getObdVoltage(self):
         ret = self.sendAtCmd('AT!10','V')
-        return float(ret[:-1]) # strip the 'V'
+        return float(ret[:-1]) * 0.694 # strip the 'V'
 
