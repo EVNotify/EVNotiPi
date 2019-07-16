@@ -15,16 +15,12 @@ class KONA_EV(Car):
     def getData(self):
         raw = {}
 
-        volt = self.dongle.getObdVoltage()
-        if volt and volt < 13.0:
-            raise KONA_EV.LOW_VOLTAGE(volt)
-
         for cmd in [b220101,b220105]:
             raw[cmd] = self.dongle.sendCommand(cmd)
 
         data = self.getBaseData()
 
-        data['SOC_BMS'] = raw[b220101][0x7ec][1][2] / 2.0
+        data['SOC_BMS'] = raw[b220101][0x7ec][1][1] / 2.0
         data['SOC_DISPLAY'] = raw[b220105][0x7ec][5][0] / 2.0
 
         chargingBits = raw[b220101][0x7ec][7][5]
@@ -38,6 +34,8 @@ class KONA_EV(Car):
                 'batteryInletTemperature':  int.from_bytes(raw[b220101][0x7ec][3][5:6], byteorder='big', signed=True),
                 'batteryMaxTemperature':    int.from_bytes(raw[b220101][0x7ec][2][4:5], byteorder='big', signed=True),
                 'batteryMinTemperature':    int.from_bytes(raw[b220101][0x7ec][2][5:6], byteorder='big', signed=True),
+                'cumulativeEnergyCharged':  int.from_bytes(raw[b220101][0x7ec][6][0:4], byteorder='big', signed=False) / 10.0,
+                'cumulativeEnergyDischarged': int.from_bytes(raw[b220101][0x7ec][6][4:7] + raw[b220101][0x7ec][7][0:1], byteorder='big', signed=False) / 10.0,
                 'charging':                 1 if (chargingBits & 0xc) == 0x8 else 0,
                 'normalChargePort':         1 if normalChargeBit and normalChargePort else 0,
                 'rapidChargePort':          1 if normalChargeBit and not normalChargePort else 0,
