@@ -12,6 +12,9 @@ import signal
 LOOP_DELAY = 5
 EVN_SETTINGS_DELAY = 300
 ABORT_NOTIFICATION_DELAY = 60
+POLL_THRESHOLD_VOLT = 13
+
+class SKIP_POLL(Exception): pass
 
 # load config
 with open('config.json', encoding='utf-8') as config_file:
@@ -84,11 +87,20 @@ def exit_gracefully(signum, frame):
 
 signal.signal(signal.SIGTERM, exit_gracefully)
 
+car_off_skip_poll = False
+
 print("Starting main loop")
 try:
     while main_running:
         now = time()
         try:
+            if car_off_skip_poll:       # Skip polling until car on voltage is detected again
+                if dongle.getObdVoltage() < POLL_THRESHOLD_VOLT:
+                    raise SKIP_POLL
+                else:
+                    print("Car on detected. Resume polling.")
+                    car_off_skip_poll = False
+
             data = car.getData()
             fix = gps.fix()
             last_data = now
@@ -162,9 +174,13 @@ try:
         except DONGLE.CAN_ERROR as e:
             print(e)
         except DONGLE.NO_DATA:
-            print("NO DATA")
-        except CAR.LOW_VOLTAGE as e:
-            print("Low Voltage ({})".format(e))
+            print(e)
+            volt = dongle.getObdVoltage()
+            if volt and volt < POLL_THRESHOLD_VOLT:
+                print("Car off detected. Stop polling until car on.")
+                car_off_skip_poll = True
+        except SKIP_POLL as e:
+            pass
         except CAR.NULL_BLOCK as e:
             print(e)
 
