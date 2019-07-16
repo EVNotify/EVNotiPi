@@ -13,18 +13,12 @@ class IONIQ_BEV(Car):
         self.dongle.setProtocol('CAN_11_500')
         self.dongle.setCANRxFilter(0x7ec)
         self.dongle.setCANRxMask(0x7ff)
-        self.car_on_voltage = None
         self.last_raw = {}
         self.last_poll_2180 = 0
 
     def getData(self):
         now = time()
         raw = {}
-
-        volt = self.dongle.getObdVoltage() * 0.69
-        if self.car_on_voltage and volt and volt < (self.car_on_voltage * 0.94):
-            #print("Skip poll, Voltage indicates car off {}/{}".format(volt, self.car_on_voltage * 0.91))
-            raise IONIQ_BEV.LOW_VOLTAGE(volt)
 
         self.dongle.setCANRxFilter(0x7ec)
         self.dongle.setCanID(0x7e4)
@@ -44,7 +38,6 @@ class IONIQ_BEV(Car):
                 len(raw[b2180][0x7ee]) != 4:
             raise IONIQ_BEV.NULL_BLOCK("Got wrong count of frames!\n"+str(raw))
 
-
         if raw[b2101][0x7ec][7] == b'\x00\x00\x00\x00\x00\x00\x00':
             raise IONIQ_BEV.NULL_BLOCK("Got Null Block!\n"+str(raw))
 
@@ -54,7 +47,6 @@ class IONIQ_BEV(Car):
 
         data['SOC_BMS']     = raw[b2101][0x7ec][1][0] / 2.0
         data['SOC_DISPLAY'] = raw[b2105][0x7ec][4][6] / 2.0
-
 
         chargingBits = raw[b2101][0x7ec][1][5]
         dcBatteryCurrent = int.from_bytes(raw[b2101][0x7ec][1][6:7] + raw[b2101][0x7ec][2][0:1], byteorder='big', signed=True) / 10.0
@@ -93,14 +85,8 @@ class IONIQ_BEV(Car):
                 'soh':                      int.from_bytes(raw[b2105][0x7ec][4][0:2], byteorder='big', signed=False) / 10.0,
                 'cumulativeEnergyCharged':  int.from_bytes(raw[b2101][0x7ec][5][6:7] + raw[b2101][0x7ec][6][0:3], byteorder='big', signed=False) / 10.0,
                 'cumulativeEnergyDischarged': int.from_bytes(raw[b2101][0x7ec][6][3:7], byteorder='big', signed=False) / 10.0,
-                'driveMotorSpeed':          int.from_bytes(raw[b2101][0x7ec][8][0:2], byteorder='big', signed=True),
                 'outsideTemp':              (raw[b2180][0x7ee][2][1] - 80) / 2,
-                'auxBatteryVoltage2':       volt,
                 }
-
-        if data['EXTENDED']['auxBatteryVoltage'] > 13.0:
-            self.car_on_voltage = volt
-
 
         return data
 
