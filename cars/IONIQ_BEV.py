@@ -2,7 +2,7 @@ from car import *
 from time import time
 
 POLL_DELAY_2180 = 60    # Rate limit b2180 to once a minute
-b2101 = bytes.fromhex(hex(0x2102)[2:])
+b2101 = bytes.fromhex(hex(0x2101)[2:])
 b2105 = bytes.fromhex(hex(0x2105)[2:])
 b2180 = bytes.fromhex(hex(0x2180)[2:])
 
