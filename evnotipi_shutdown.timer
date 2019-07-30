@@ -1,0 +1,9 @@
+[Unit]
+Description=Start evnotipi_shutdown.service 5 minutes after boot
+
+[Timer]
+OnBootSec=5min
+Unit=evnotipi_shutdown.service
+
+[Install]
+WantedBy=timers.target

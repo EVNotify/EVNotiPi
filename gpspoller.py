@@ -2,6 +2,7 @@ import sys
 sys.path.append('/usr/local/lib/python3.7/site-packages')
 import gps
 import threading
+from time import time,sleep
 
 class GpsPoller(threading.Thread):
     def __init__(self):

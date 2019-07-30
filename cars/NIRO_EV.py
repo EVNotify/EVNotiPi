@@ -3,7 +3,7 @@ from car import *
 b220101 = bytes.fromhex(hex(b220101)[2:])
 b220105 = bytes.fromhex(hex(b220105)[2:])
 
-class KONA_EV(Car):
+class NIRO_EV(Car):
 
     def __init__(self, dongle):
         self.dongle = dongle

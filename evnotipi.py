@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 
 from gpspoller import GpsPoller
-from subprocess import check_call
 from time import sleep,time
 import evnotifyapi
-import io
 import json
 import os
 import re
-import string
 import sys
 import signal
 
 LOOP_DELAY = 5
 EVN_SETTINGS_DELAY = 300
 ABORT_NOTIFICATION_DELAY = 60
+POLL_THRESHOLD_VOLT = 13
+
+class SKIP_POLL(Exception): pass
 
 # load config
 with open('config.json', encoding='utf-8') as config_file:
@@ -28,7 +28,7 @@ settings = None
 if 'cartype' in config:
     cartype = config['cartype']
 else:
-    # get settings from backend
+    print("Get settings from backend")
     while settings == None:
         try:
             settings = EVNotify.getSettings()
@@ -67,14 +67,18 @@ gps.start()
 
 # Init some variables
 main_running = True
+now = time()
+last_charging = now
+last_charging_soc = 0
+last_data = now
+last_evn_settings_poll = now
 
 # Init SOC notifications
 chargingStartSOC = 0
+currentSOC = 0
 socThreshold = int(config['socThreshold']) if 'socThreshold' in config else 0
 notificationSent = False
 abortNotificationSent = False
-last_charging = time()
-last_evn_settings_poll = time()
 print("Notification threshold: {}".format(socThreshold))
 
 # Set up signal handling
@@ -83,87 +87,109 @@ def exit_gracefully(signum, frame):
 
 signal.signal(signal.SIGTERM, exit_gracefully)
 
+car_off_skip_poll = False
+
+print("Starting main loop")
 try:
     while main_running:
         now = time()
         try:
+            if car_off_skip_poll:       # Skip polling until car on voltage is detected again
+                if dongle.getObdVoltage() < POLL_THRESHOLD_VOLT:
+                    raise SKIP_POLL
+                else:
+                    print("Car on detected. Resume polling.")
+                    car_off_skip_poll = False
+
             data = car.getData()
             fix = gps.fix()
-        except DONGLE.CAN_ERROR as e:
-            print(e)
-            main_running = False
-        except DONGLE.NO_DATA as e:
-            print(e)
-        except CAR.LOW_VOLTAGE as e:
-            print('Low Voltage ({})'.format(e))
-        except CAR.NULL_BLOCK as e:
-            print(e)
-        except:
-            raise
+            last_data = now
+            is_charging = False
 
-        else:
-            print(data)
-            try:
-                if 'SOC_DISPLAY' in data and 'SOC_BMS' in data:
-                    EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
-                    currentSOC = data['SOC_DISPLAY'] or data['SOC_BMS']
-
-                if 'EXTENDED' in data:
-                    EVNotify.setExtended(data['EXTENDED'])
-                    is_charging = True if 'charging' in data['EXTENDED'] and \
-                            data['EXTENDED']['charging'] == 1 else False
-                    # TODO: check if really connected, once connection detection is working in KONA module
-                    is_connected = True
-
-                    if is_charging:
-                        last_charging = now
-
-                    if is_charging and 'socThreshold' not in config and \
-                            now - last_evn_settings_poll > EVN_SETTINGS_DELAY:
-                        try:
-                            s = EVNotify.getSettings()
-                            # following only happens if getSettings is successful, else jumps into exception handler
-                            settings = s
-                            last_evn_settings_poll = now
-
-                            if s['soc'] and s['soc'] != socThreshold:
-                                socThreshold = int(s['soc'])
-                                print("New notification threshold: {}".format(socThreshold))
-
-                        except EVNotify.CommunicationError:
-                            pass
-
-                    # track charging started
-                    if is_charging and chargingStartSOC == 0:
-                        chargingStartSOC = currentSOC or 0
-                    # check if notification threshold reached
-                    elif is_charging and chargingStartSOC < socThreshold and \
-                            currentSOC >= socThreshold and not notificationSent:
-                        print("Notification threshold reached")
-                        EVNotify.sendNotification()
-                        notificationSent = True
-                    elif not is_charging:   # Rearm notification
-                        chargingStartSOC = 0
-                        notificationSent = False
-
-                if fix and fix.mode > 1: # mode: GPS-fix quality
-                    g ={
+            if fix and fix.mode > 1:
+                location = {
                         'latitude':  fix.latitude,
                         'longitude': fix.longitude,
-                        'speed': fix.speed,
+                        'speed': fix.speed
                         }
-                    print(g)
-                    EVNotify.setLocation({'location': g})
+                if fix.mode > 2:
+                    location['altitude'] = fix.altitude
+            else:
+                location = None
 
-            except EVNotify.CommunicationError as e:
-                print(e)
-            except:
-                raise
+            #print(data)
+            last_evn_transmit = now
+            if 'SOC_DISPLAY' in data and 'SOC_BMS' in data:
+                EVNotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
+                currentSOC = data['SOC_DISPLAY'] or data['SOC_BMS']
+
+            if 'EXTENDED' in data:
+                EVNotify.setExtended(data['EXTENDED'])
+                is_charging = True if 'charging' in data['EXTENDED'] and \
+                        data['EXTENDED']['charging'] == 1 else False
+                is_connected = True if ('normalChargePort' in data['EXTENDED'] \
+                        and data['EXTENDED']['normalChargePort'] == 1) \
+                        or ('rapidChargePort' in data['EXTENDED'] \
+                        and data['EXTENDED']['rapidChargePort'] == 1) else False
+
+                if is_charging:
+                    last_charging = now
+                    last_charging_soc = currentSOC
+
+                if is_charging and 'socThreshold' not in config and \
+                        now - last_evn_settings_poll > EVN_SETTINGS_DELAY:
+                    try:
+                        s = EVNotify.getSettings()
+                        # following only happens if getSettings is
+                        # successful, else jumps into exception handler
+                        settings = s
+                        last_evn_settings_poll = now
+
+                        if s['soc'] and s['soc'] != socThreshold:
+                            socThreshold = int(s['soc'])
+                            print("New notification threshold: {}".format(socThreshold))
+
+                    except EVNotify.CommunicationError:
+                        pass
+
+                # track charging started
+                if is_charging and chargingStartSOC == 0:
+                    chargingStartSOC = currentSOC or 0
+                # check if notification threshold reached
+                elif is_charging and chargingStartSOC < socThreshold and \
+                        currentSOC >= socThreshold and not notificationSent:
+                    print("Notification threshold reached")
+                    EVNotify.sendNotification()
+                    notificationSent = True
+                elif not is_connected:   # Rearm notification
+                    chargingStartSOC = 0
+                    notificationSent = False
+                    abortNotificationSent = False
+
+            if location and not is_charging and not is_connected:
+                EVNotify.setLocation({'location': location})
+
+        except EVNotify.CommunicationError as e:
+            print(e)
+        except DONGLE.CAN_ERROR as e:
+            print(e)
+        except DONGLE.NO_DATA:
+            print(e)
+            volt = dongle.getObdVoltage()
+            if volt and volt < POLL_THRESHOLD_VOLT:
+                print("Car off detected. Stop polling until car on.")
+                car_off_skip_poll = True
+        except SKIP_POLL as e:
+            pass
+        except CAR.NULL_BLOCK as e:
+            print(e)
 
         finally:
             try:
-                if not abortNotificationSent and \
-                        now - last_charging > ABORT_NOTIFICATION_DELAY and chargingStartSOC > 0:
+                # Try to detect aborted charging
+                if not abortNotificationSent \
+                        and now - last_charging > ABORT_NOTIFICATION_DELAY \
+                        and chargingStartSOC > 0 and last_charging_soc < socThreshold:
                     print("No response detected, send abort notification")
                     EVNotify.sendNotification(True)
                     abortNotificationSent = True
@@ -171,14 +197,18 @@ try:
             except EVNotify.CommunicationError as e:
                 print("Sending of notificatin failed! {}".format(e))
 
+            # Flush the output buffer
             sys.stdout.flush()
 
-            if main_running: sleep(LOOP_DELAY)
+            if main_running:
+                # Compensate for the running time of the loop
+                loop_delay = LOOP_DELAY - (time() - now)
+                if loop_delay > 0:
+                    sleep(loop_delay)
 
 except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
     main_running = False
-except:
-    raise
+
 finally:
     print("Exiting ...")
     gps.stop()

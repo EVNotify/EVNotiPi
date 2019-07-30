@@ -1,19 +1,17 @@
 from serial import Serial
-from time import sleep
-import pexpect
+import logging
 from pexpect import fdpexpect
 from binascii import hexlify
-import math
 
-class PiOBD2Hat:
+class ELM327:
 
     class CAN_ERROR(Exception): pass
     class NO_DATA(Exception): pass
 
     def __init__(self, dongle):
         print("Init Dongle")
-        self.serial = Serial(dongle['port'], baudrate=dongle['speed'])
-        self.exp = fdpexpect.fdspawn(self.serial)
+        self.serial = Serial(dongle['port'], baudrate=dongle['speed'], timeout=5)
+        self.exp = fdpexpect.fdspawn(self.serial.fd)
         self.initDongle()
 
     def sendAtCmd(self, cmd, expect='OK'):
@@ -35,8 +33,14 @@ class PiOBD2Hat:
 
         return ret.split(b"\r\n")[-1]
 
+        expect = bytes(expect, 'utf-8')
+        cmd = bytes(cmd, 'utf-8')
+
     def sendCommand(self, cmd):
-        # cmd is a byte array
+        """
+        @cmd: should be hex-encoded
+        """
+
         cmd = hexlify(cmd)
         try:
             while self.serial.in_waiting:   # Clear the input buffer
@@ -49,17 +53,12 @@ class PiOBD2Hat:
         except pexpect.exceptions.TIMEOUT:
             ret = b'TIMEOUT'
 
-        if ret in [b'NO DATA', b'TIMEOUT', b'CAN NO ACK']:
-            raise PiOBD2Hat.NO_DATA(ret)
-        elif ret in [b'INPUT TIMEOUT', b'NO INPUT CHAR', b'UNKNOWN COMMAND',
-                b'WRONG HEXCHAR COUNT', b'ILLEGAL COMMAND', b'SYNTAX ERROR',
-                b'WRONG VALUE/RANGE', b'UNABLE TO CONNECT', b'BUS BUSY',
-                b'NO FEEDBACK', b'NO SYNCBYTE', b'NO KEYBYTE',
-                b'NO ADDRESSBYTE', b'WRONG PROTOCOL', b'DATA ERROR',
-                b'CHECKSUM ERROR', b'NO ANSWER', b'COLLISION DETECT',
-                b'CAN NO ANSWER', b'PRTOTOCOL 8 OR 9 REQUIRED',
-                b'CAN ERROR']:
-            raise PiOBD2Hat.CAN_ERROR("Failed Command {}\n{}".format(cmd,ret))
+        if ret in [b'NO DATA', b'DATA ERROR', b'ACT ALERT']:
+            raise ELM327.NO_DATA(ret)
+        elif ret in [b'BUFFER FULL', B'BUS BUSY', b'BUS ERROR', b'CAN ERROR',
+                b'ERR', b'FB ERROR', b'LP ALERT', b'LV RESET', b'STOPPED',
+                b'UNABLE TO CONNECT']:
+            raise ELM327.CAN_ERROR("Failed Command {}\n{}".format(cmd,ret))
 
         try:
             data = {}
@@ -99,29 +98,28 @@ class PiOBD2Hat:
                         raise ValueError
 
         except ValueError:
-            raise PiOBD2Hat.CAN_ERROR("Failed Command {}\n{}".format(cmd,ret))
+            raise ELM327.CAN_ERROR("Failed Command {}\n{}".format(cmd,ret))
 
         return data
 
     def initDongle(self):
-        cmds = [['ATRST','DIAMEX PI-OBD'],  # Cold start
-                ['ATE0','OK'],              # Disable echo
-                ['ATL1','OK'],              # Use \r\n
-                ['ATOHS0','OK'],            # Disable space between HEX bytes
-                ['ATH1','OK'],              # Display header
-                ['ATST64','OK']]            # Input timeout (10 sec)
+        cmds = [['ATZ','OK'],
+                ['ATE0','OK'],
+                ['ATL1','OK'],
+                ['ATS0','OK'],
+                ['ATH1','OK'],
+                ['ATSTFF','OK'],
+                ['ATFE','OK']]
 
         for c,r in cmds:
             self.sendAtCmd(c, r)
 
     def setAllowLongMessages(self, value):
-        #self.sendAtCmd('ATAL%i', value)
-        return True
+        self.sendAtCmd('ATAL%i' % value)
 
     def setProtocol(self, prot):
         if prot == 'CAN_11_500':
-            self.sendAtCmd('ATP6','6 = ISO 15765-4, CAN (11/500)')
-            self.sendAtCmd('ATONI1')   # No init sequence
+            self.sendAtCmd('ATSP6','6 = ISO 15765-4, CAN (11/500)')
         else:
             raise Exception('Unsupported protocol %s' % prot)
 
@@ -131,7 +129,7 @@ class PiOBD2Hat:
         elif isinstance(can_id, int):
             can_id = format(can_id, 'X')
 
-        self.sendAtCmd('ATCT' + can_id)
+        self.sendAtCmd('ATTA' + can_id)
 
     def setIDFilter(self, id_filter):
         if isinstance(id_filter, bytes):
@@ -139,7 +137,7 @@ class PiOBD2Hat:
         elif isinstance(id_filter, int):
             id_filter = format(id_filter, 'X')
 
-        self.sendAtCmd('ATSF' + id_filter)
+        self.sendAtCmd('ATCF' + id_filter)
 
     def setCANRxMask(self, mask):
         if isinstance(mask, bytes):
@@ -155,9 +153,8 @@ class PiOBD2Hat:
         elif isinstance(addr, int):
             addr = format(addr, 'X')
 
-        self.sendAtCmd('ATCR' + addr)
+        self.sendAtCmd('ATCRA' + addr)
 
     def getObdVoltage(self):
-        ret = self.sendAtCmd('AT!10','V')
-        return float(ret[:-1]) * 0.694 # strip the 'V'
+        return None
 
