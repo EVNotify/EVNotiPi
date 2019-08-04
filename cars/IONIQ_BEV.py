@@ -1,7 +1,6 @@
 from car import *
 from time import time
 
-POLL_DELAY_2180 = 60    # Rate limit b2180 to once a minute
 b2101 = bytes.fromhex(hex(0x2101)[2:])
 b2105 = bytes.fromhex(hex(0x2105)[2:])
 b2180 = bytes.fromhex(hex(0x2180)[2:])
@@ -13,8 +12,6 @@ class IONIQ_BEV(Car):
         self.dongle.setProtocol('CAN_11_500')
         self.dongle.setCANRxFilter(0x7ec)
         self.dongle.setCANRxMask(0x7ff)
-        self.last_raw = {}
-        self.last_poll_2180 = 0
 
     def getData(self):
         now = time()
@@ -25,13 +22,9 @@ class IONIQ_BEV(Car):
         for cmd in [b2101,b2105]:
             raw[cmd] = self.dongle.sendCommand(cmd)
 
-        if now - self.last_poll_2180 > POLL_DELAY_2180 or b2180 not in self.last_raw:
-            self.last_poll_2180 = now
-            self.dongle.setCANRxFilter(0x7ee)
-            self.dongle.setCanID(0x7e6)
-            raw[b2180] = self.dongle.sendCommand(b2180)
-        else:
-            raw[b2180] = self.last_raw[b2180]
+        self.dongle.setCANRxFilter(0x7ee)
+        self.dongle.setCanID(0x7e6)
+        raw[b2180] = self.dongle.sendCommand(b2180)
 
         if len(raw[b2101][0x7ec]) != 9 or \
                 len(raw[b2105][0x7ec]) != 7 or \
@@ -40,8 +33,6 @@ class IONIQ_BEV(Car):
 
         if raw[b2101][0x7ec][7] == b'\x00\x00\x00\x00\x00\x00\x00':
             raise IONIQ_BEV.NULL_BLOCK("Got Null Block!\n"+str(raw))
-
-        self.last_raw[b2180] = raw[b2180]
 
         data = self.getBaseData()
 

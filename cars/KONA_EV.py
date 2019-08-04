@@ -1,7 +1,7 @@
 from car import *
 
-b220101 = bytes.fromhex(hex(b220101)[2:])
-b220105 = bytes.fromhex(hex(b220105)[2:])
+b220101 = bytes.fromhex(hex(0x220101)[2:])
+b220105 = bytes.fromhex(hex(0x220105)[2:])
 
 class KONA_EV(Car):
 
