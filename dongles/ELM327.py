@@ -103,7 +103,7 @@ class ELM327:
         return data
 
     def initDongle(self):
-        cmds = [['ATZ','OK'],
+        cmds = [['ATZ','ELM327'],
                 ['ATE0','OK'],
                 ['ATL1','OK'],
                 ['ATS0','OK'],
