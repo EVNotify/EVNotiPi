@@ -1,7 +1,6 @@
 from serial import Serial
 from time import sleep
 import pexpect
-from pexpect import fdpexpect
 from binascii import hexlify
 import math
 
@@ -13,7 +12,7 @@ class PiOBD2Hat:
     def __init__(self, dongle):
         print("Init Dongle")
         self.serial = Serial(dongle['port'], baudrate=dongle['speed'])
-        self.exp = fdpexpect.fdspawn(self.serial)
+        self.exp = pexpect.fdpexpect.fdspawn(self.serial)
         self.initDongle()
 
     def sendAtCmd(self, cmd, expect='OK'):
