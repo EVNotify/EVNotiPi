@@ -1,6 +1,7 @@
 from serial import Serial
 import logging
-from pexpect import fdpexpect
+import math
+import pexpect
 from binascii import hexlify
 
 class ELM327:
@@ -11,7 +12,7 @@ class ELM327:
     def __init__(self, dongle):
         print("Init Dongle")
         self.serial = Serial(dongle['port'], baudrate=dongle['speed'], timeout=5)
-        self.exp = fdpexpect.fdspawn(self.serial.fd)
+        self.exp = pexpect.fdpexpect.fdspawn(self.serial.fd)
         self.initDongle()
 
     def sendAtCmd(self, cmd, expect='OK'):
@@ -119,7 +120,7 @@ class ELM327:
 
     def setProtocol(self, prot):
         if prot == 'CAN_11_500':
-            self.sendAtCmd('ATSP6','6 = ISO 15765-4, CAN (11/500)')
+            self.sendAtCmd('ATSP6','OK')
         else:
             raise Exception('Unsupported protocol %s' % prot)
 
@@ -129,15 +130,7 @@ class ELM327:
         elif isinstance(can_id, int):
             can_id = format(can_id, 'X')
 
-        self.sendAtCmd('ATTA' + can_id)
-
-    def setIDFilter(self, id_filter):
-        if isinstance(id_filter, bytes):
-            id_filter = str(id_filter)
-        elif isinstance(id_filter, int):
-            id_filter = format(id_filter, 'X')
-
-        self.sendAtCmd('ATCF' + id_filter)
+        self.sendAtCmd('ATSH' + can_id)
 
     def setCANRxMask(self, mask):
         if isinstance(mask, bytes):
@@ -153,8 +146,9 @@ class ELM327:
         elif isinstance(addr, int):
             addr = format(addr, 'X')
 
-        self.sendAtCmd('ATCRA' + addr)
+        self.sendAtCmd('ATCF' + addr)
 
     def getObdVoltage(self):
-        return None
+        ret = self.sendAtCmd('ATRV','V')
+        return float(ret[:-1]) # strip the 'V'
 

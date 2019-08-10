@@ -1,7 +1,6 @@
 from serial import Serial
 from time import sleep
 import pexpect
-from pexpect import fdpexpect
 from binascii import hexlify
 import math
 
@@ -13,7 +12,7 @@ class PiOBD2Hat:
     def __init__(self, dongle):
         print("Init Dongle")
         self.serial = Serial(dongle['port'], baudrate=dongle['speed'])
-        self.exp = fdpexpect.fdspawn(self.serial)
+        self.exp = pexpect.fdpexpect.fdspawn(self.serial)
         self.initDongle()
 
     def sendAtCmd(self, cmd, expect='OK'):
@@ -132,14 +131,6 @@ class PiOBD2Hat:
             can_id = format(can_id, 'X')
 
         self.sendAtCmd('ATCT' + can_id)
-
-    def setIDFilter(self, id_filter):
-        if isinstance(id_filter, bytes):
-            id_filter = str(id_filter)
-        elif isinstance(id_filter, int):
-            id_filter = format(id_filter, 'X')
-
-        self.sendAtCmd('ATSF' + id_filter)
 
     def setCANRxMask(self, mask):
         if isinstance(mask, bytes):
