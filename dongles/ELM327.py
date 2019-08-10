@@ -125,8 +125,12 @@ class ELM327:
             raise Exception('Unsupported protocol %s' % prot)
 
     def setCanID(self, can_id):
-        print("ELM327 cannot set can id")
-        return False
+        if isinstance(can_id, bytes):
+            can_id = str(can_id)
+        elif isinstance(can_id, int):
+            can_id = format(can_id, 'X')
+
+        self.sendAtCmd('ATSH' + can_id)
 
     def setCANRxMask(self, mask):
         if isinstance(mask, bytes):
