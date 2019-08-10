@@ -132,14 +132,6 @@ class PiOBD2Hat:
 
         self.sendAtCmd('ATCT' + can_id)
 
-    def setIDFilter(self, id_filter):
-        if isinstance(id_filter, bytes):
-            id_filter = str(id_filter)
-        elif isinstance(id_filter, int):
-            id_filter = format(id_filter, 'X')
-
-        self.sendAtCmd('ATSF' + id_filter)
-
     def setCANRxMask(self, mask):
         if isinstance(mask, bytes):
             mask = str(mask)
