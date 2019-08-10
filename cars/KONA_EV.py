@@ -9,13 +9,13 @@ class KONA_EV(Car):
     def __init__(self, dongle):
         self.dongle = dongle
         self.dongle.setProtocol('CAN_11_500')
-        self.dongle.setCANRxFilter(0x7ec)
         self.dongle.setCANRxMask(0x7ff)
-        self.dongle.setCanID(0x7e4)
 
     def getData(self):
         raw = {}
 
+        self.dongle.setCANRxFilter(0x7ec)
+        self.dongle.setCanID(0x7e4)
         for cmd in [b220101,b220105]:
             raw[cmd] = self.dongle.sendCommand(cmd)
 
