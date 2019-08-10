@@ -1,5 +1,6 @@
 from car import *
 
+b220100 = bytes.fromhex(hex(0x220100)[2:])
 b220101 = bytes.fromhex(hex(0x220101)[2:])
 b220105 = bytes.fromhex(hex(0x220105)[2:])
 
@@ -17,6 +18,10 @@ class KONA_EV(Car):
 
         for cmd in [b220101,b220105]:
             raw[cmd] = self.dongle.sendCommand(cmd)
+
+        self.dongle.setCANRxFilter(0x7ee)
+        self.dongle.setCanID(0x7e6)
+        raw[b220100] = self.dongle.sendCommand(b220100)
 
         data = self.getBaseData()
 
@@ -43,6 +48,7 @@ class KONA_EV(Car):
                 'dcBatteryPower':           dcBatteryCurrent * dcBatteryVoltage / 1000.0,
                 'dcBatteryVoltage':         dcBatteryVoltage,
                 'soh':                      int.from_bytes(raw[b220105][0x7ec][4][1:3], byteorder='big', signed=False) / 10.0,
+                'outsideTemp':              (raw[b220100][0x7ee][1][3] - 80) / 2.0,
                 }
 
         return data
