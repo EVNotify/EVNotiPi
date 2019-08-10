@@ -125,20 +125,8 @@ class ELM327:
             raise Exception('Unsupported protocol %s' % prot)
 
     def setCanID(self, can_id):
-        if isinstance(can_id, bytes):
-            can_id = str(can_id)
-        elif isinstance(can_id, int):
-            can_id = format(can_id, 'X')
-
-        self.sendAtCmd('ATTA' + can_id)
-
-    def setIDFilter(self, id_filter):
-        if isinstance(id_filter, bytes):
-            id_filter = str(id_filter)
-        elif isinstance(id_filter, int):
-            id_filter = format(id_filter, 'X')
-
-        self.sendAtCmd('ATCF' + id_filter)
+        print("ELM327 cannot set can id")
+        return False
 
     def setCANRxMask(self, mask):
         if isinstance(mask, bytes):
@@ -154,8 +142,9 @@ class ELM327:
         elif isinstance(addr, int):
             addr = format(addr, 'X')
 
-        self.sendAtCmd('ATCRA' + addr)
+        self.sendAtCmd('ATCF' + addr)
 
     def getObdVoltage(self):
-        return None
+        ret = self.sendAtCmd('ATRV','V')
+        return float(ret[:-1]) # strip the 'V'
 
