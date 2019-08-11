@@ -76,7 +76,7 @@ class IONIQ_BEV(Car):
                 'soh':                      int.from_bytes(raw[b2105][0x7ec][4][0:2], byteorder='big', signed=False) / 10.0,
                 'cumulativeEnergyCharged':  int.from_bytes(raw[b2101][0x7ec][5][6:7] + raw[b2101][0x7ec][6][0:3], byteorder='big', signed=False) / 10.0,
                 'cumulativeEnergyDischarged': int.from_bytes(raw[b2101][0x7ec][6][3:7], byteorder='big', signed=False) / 10.0,
-                'outsideTemp':              (raw[b2180][0x7ee][2][1] - 80) / 2,
+                'externalTemperature':      (raw[b2180][0x7ee][2][1] - 80) / 2,
                 }
 
         return data

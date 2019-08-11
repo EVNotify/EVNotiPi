@@ -48,7 +48,7 @@ class KONA_EV(Car):
                 'dcBatteryPower':           dcBatteryCurrent * dcBatteryVoltage / 1000.0,
                 'dcBatteryVoltage':         dcBatteryVoltage,
                 'soh':                      int.from_bytes(raw[b220105][0x7ec][4][1:3], byteorder='big', signed=False) / 10.0,
-                'outsideTemp':              (raw[b220100][0x7ee][1][3] - 80) / 2.0,
+                'externalTemperature':      (raw[b220100][0x7ee][1][3] - 80) / 2.0,
                 }
 
         return data
