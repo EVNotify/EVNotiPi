@@ -32,7 +32,7 @@ else:
     while settings == None:
         try:
             settings = EVNotify.getSettings()
-        except EVNotify.CommunicationError as e:
+        except evnotifyapi.CommunicationError as e:
             print("Waiting for network connectivity")
             sleep(3)
 
@@ -149,7 +149,7 @@ try:
                             socThreshold = int(s['soc'])
                             print("New notification threshold: {}".format(socThreshold))
 
-                    except EVNotify.CommunicationError:
+                    except evnotifyapi.CommunicationError:
                         pass
 
                 # track charging started
@@ -169,7 +169,7 @@ try:
             if location and not is_charging and not is_connected:
                 EVNotify.setLocation({'location': location})
 
-        except EVNotify.CommunicationError as e:
+        except evnotifyapi.CommunicationError as e:
             print(e)
         except DONGLE.CAN_ERROR as e:
             print(e)
@@ -194,7 +194,7 @@ try:
                     EVNotify.sendNotification(True)
                     abortNotificationSent = True
 
-            except EVNotify.CommunicationError as e:
+            except evnotifyapi.CommunicationError as e:
                 print("Sending of notificatin failed! {}".format(e))
 
             # Flush the output buffer
