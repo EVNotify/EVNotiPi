@@ -2,6 +2,7 @@ from serial import Serial
 import logging
 import math
 import pexpect
+from pexpect import fdpexpect
 from binascii import hexlify
 
 class ELM327:
@@ -12,7 +13,7 @@ class ELM327:
     def __init__(self, dongle):
         print("Init Dongle")
         self.serial = Serial(dongle['port'], baudrate=dongle['speed'], timeout=5)
-        self.exp = pexpect.fdpexpect.fdspawn(self.serial.fd)
+        self.exp = fdpexpect.fdspawn(self.serial.fd)
         self.initDongle()
 
     def sendAtCmd(self, cmd, expect='OK'):
