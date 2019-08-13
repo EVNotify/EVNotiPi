@@ -2,8 +2,8 @@
 can>=2.0
 gps>=3.19
 pexpect>=4.7
-readerwriterlock>=1.0
+pyserial>=3.4
 pyyaml>=5.1
+readerwriterlock>=1.0
 requests>=2.22
 sdnotify>=0.3
-serial>=0.0
