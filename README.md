@@ -116,9 +116,92 @@ void loop() {
 
 ## Installation
 ### Raspberry Pi
-- `sudo apt-get update`
-- `sudo apt-get upgrade`
-- `sudo apt-get install python python-serial python-gps gpsd`
-### EVNotiPi
-- Copy `config.template.json` to `config.json`. Adjust the values for your needs
+
+- sudo apt-get install python python-serial python-gps gpsd
+
+- sudo apt-get update
+
+- sudo apt-get upgrade
+
+- sudo apt-get install git
+
+- sudo apt install python3-pip 
+
+- sudo pip3 install gps
+
+- sudo pip3 install gpio
+
+- sudo pip3 install pyserial
+
+- sudo pip3 install pexpect
+
+- sudo raspi-config
+```
+--> 5 Inetrface Options
+	--> P6 Serial
+		--> no--> yes -->OK
+			-->finish-->reboot
+ ```
+
+- sudo mkdir /var/www
+```
+	-->sudo mkdir /var/www/html
+		-->cd /var/www/html/
+```
+
+- sudo nano /boot/config.txt
+```
+-->dtoverlay=pi3-disable-bt
+   enable_uart=1
+```
+
+- sudo git clone --recurse-submodules https://github.com/EVNotify/EVNotiPi
+
+- cd /var/www/html/EVNotiPi/
+
+- sudo nano config.template.json
+```
+{
+    "akey": "xxxxxx",
+    "token": "xxxxxxxxxxxxxxxxxxxx",
+    "cartype": "IONIQ_BEV",
+    "dongle": {
+            "type": "PiOBD2Hat",
+            "port": "/dev/ttyAMA0",
+            "speed": 115200
+    }
+}
+```
+```
+srtg+x
+	--> y
+		change file name to config.json
+```
+- sudo python3 evnotipi.py &
+
+
+- cd /var/www/html/EVNotiPi/runs/
+
+- sudo nano runs.sh
+```
+--> check and adjust paths
+```
+
+- sudo nano atreboot.sh
+
+```
+--> check and adjust paths
+```
+
+- sudo chmod 755 runs.sh
+
+- sudo chmod 755 atreboot.sh
+
+- cd
+
+- sudo nano /etc/crontab
+```
+@reboot root  /var/www/html/EVNotiPi/runs/atreboot.sh
+*/1 * * * *   root   /var/www/html/EVNotiPi/runs/runs.sh
+```
 
