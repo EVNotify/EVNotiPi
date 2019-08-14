@@ -173,7 +173,7 @@ try:
             print(e)
         except DONGLE.CAN_ERROR as e:
             print(e)
-        except DONGLE.NO_DATA:
+        except DONGLE.NO_DATA as e:
             print(e)
             volt = dongle.getObdVoltage()
             if volt and volt < POLL_THRESHOLD_VOLT:
