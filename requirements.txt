@@ -5,6 +5,6 @@ pexpect>=4.7
 pyserial>=3.4
 pyyaml>=5.1
 readerwriterlock>=1.0
-requests>=2.21
+requests>=2.22
 sdnotify>=0.3
 RPi.GPIO>=0.7.0
