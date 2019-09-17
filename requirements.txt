@@ -1,10 +1,10 @@
 -i https://pypi.org/simple
-can>=2.0
 gps>=3.19
-pexpect>=4.7
+pexpect>=4.6.0
+pyroute2>=0.5.2
 pyserial>=3.4
-pyyaml>=5.1
+python-can>=3.0
 readerwriterlock>=1.0
-requests>=2.21
-sdnotify>=0.3
-RPi.GPIO>=0.7.0
+requests>=2.21.0
+rpi.gpio>=0.7.0
+sdnotify>=0.3.1
