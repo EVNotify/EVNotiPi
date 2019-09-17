@@ -1,3 +1,4 @@
+from dongle import *
 from serial import Serial
 import logging
 import math
@@ -6,15 +7,14 @@ from pexpect import fdpexpect
 from binascii import hexlify
 
 class ELM327:
-
-    class CAN_ERROR(Exception): pass
-    class NO_DATA(Exception): pass
-
-    def __init__(self, dongle):
+    def __init__(self, dongle, watchdog = None):
         print("Init Dongle")
         self.serial = Serial(dongle['port'], baudrate=dongle['speed'], timeout=5)
         self.exp = fdpexpect.fdspawn(self.serial.fd)
         self.initDongle()
+
+        self.config = dongle
+        self.watchdog = watchdog
 
     def sendAtCmd(self, cmd, expect='OK'):
         cmd = bytes(cmd, 'utf-8')
@@ -56,11 +56,11 @@ class ELM327:
             ret = b'TIMEOUT'
 
         if ret in [b'NO DATA', b'DATA ERROR', b'ACT ALERT']:
-            raise ELM327.NO_DATA(ret)
+            raise NoData(ret)
         elif ret in [b'BUFFER FULL', B'BUS BUSY', b'BUS ERROR', b'CAN ERROR',
                 b'ERR', b'FB ERROR', b'LP ALERT', b'LV RESET', b'STOPPED',
                 b'UNABLE TO CONNECT']:
-            raise ELM327.CAN_ERROR("Failed Command {}\n{}".format(cmd,ret))
+            raise CanError("Failed Command {}\n{}".format(cmd,ret))
 
         try:
             data = {}
@@ -100,12 +100,12 @@ class ELM327:
                         raise ValueError
 
         except ValueError:
-            raise ELM327.CAN_ERROR("Failed Command {}\n{}".format(cmd,ret))
+            raise CanError("Failed Command {}\n{}".format(cmd,ret))
 
         return data
 
     def initDongle(self):
-        cmds = [['ATZ','ELM327'],
+        cmds = [['ATZ','OK'],
                 ['ATE0','OK'],
                 ['ATL1','OK'],
                 ['ATS0','OK'],
@@ -150,6 +150,21 @@ class ELM327:
         self.sendAtCmd('ATCF' + addr)
 
     def getObdVoltage(self):
-        ret = self.sendAtCmd('ATRV','V')
-        return float(ret[:-1]) # strip the 'V'
+        if self.watchdog:
+            return round(self.watchdog.getVoltage(), 2)
+        else:
+            ret = self.sendAtCmd('ATRV')
+            return round(float(ret[:-1]), 2)
+
+    def isCarAvailable(self):
+        if self.watchdog:
+            return self.watchdog.getShutdownFlag() == 0
+        else:
+            return self.getObdVoltage() > 13.0
+
+    def calibrateObdVoltage(self, realVoltage):
+        if self.watchdog:
+            self.watchdog.calibrateVoltage(realVoltage)
+        else:
+            self.sendAtCmd('ATCV{:04.0f}'.format(realVoltage)) # CV dddd Calibrate the Voltage to dd.dd volts
 
