@@ -1,0 +1,39 @@
+You need to get the akey and token from the EVNotify-App and put them below.
+Then uncomment the car you are using and the type, port and speed-combination
+for your OBD2/CAN-interface.
+
+---
+evnotify:
+	akey: PUT_AKEY_HERE
+        token: PUT_TOKEN_HERE
+	interval: 5
+
+car:
+        #type: IONIQ_BEV
+        #type: KONA_EV
+        #type: NIRO_EV
+        #type: ZOE_Q210
+        interval: 1
+
+watchdog:
+        enable: true
+	i2c_address: 8
+	i2c_bus: 1
+	#input_pin: 13
+
+dongle:
+	# Use SpcketCAN:
+        #type:  SocketCAN
+        #port:  can0
+        #speed: 500000
+
+        # Use PiOBD2Hat
+        #type:  PiOBD2Hat
+        #port:  /dev/ttyAMA0
+        #speed: 115200
+
+        # Use ELM327 BT-Adapter
+        #type:  ELM327
+        #port:  /dev/rfcomm0
+        #speed: 9600
+
