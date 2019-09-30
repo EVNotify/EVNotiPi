@@ -27,8 +27,7 @@ Python Version of EVNotify
 - sudo apt upgrade
 - sudo apt install python3-{pip,rpi.gpio,pexpect,serial,requests,sdnotify,can,pyroute2,smbus}
 #### If using the Diamex PI-OBD-HAT
-- echo "enable_uart=1" | sudo tee -a /boot/config.txt
-- echo "dtoverlay=pi3-disable-bt" | sudo tee -a /boot/config.txt
+- echo "dtoverlay=disable-bt" | sudo tee -a /boot/config.txt
 #### If using MCP2515 based adapter:
 - echo "dtparam=spi=on" | sudo tee -a /boot/config.txt
 - echo "dtoverlay=mcp2515-can0,oscillator=16000000,interrupt=25" | sudo tee -a /boot/config.txt
