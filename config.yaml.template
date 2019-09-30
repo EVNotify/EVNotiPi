@@ -19,7 +19,6 @@ watchdog:
         enable: true
 	i2c_address: 8
 	i2c_bus: 1
-	#input_pin: 13
 
 dongle:
 	# Use SpcketCAN:
@@ -37,3 +36,6 @@ dongle:
         #port:  /dev/rfcomm0
         #speed: 9600
 
+	# Configure the input pin for the PnP watchdog
+	shutdown_pin: 24
+	pup_down: 21    # 21: Pull-Down 22: Pull-Up
