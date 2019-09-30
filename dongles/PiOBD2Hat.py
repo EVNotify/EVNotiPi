@@ -1,6 +1,7 @@
 from dongle import *
 from serial import Serial
 from time import sleep
+from threading import Lock
 import pexpect
 from pexpect import fdpexpect
 from binascii import hexlify
@@ -9,6 +10,7 @@ import math
 class PiOBD2Hat:
     def __init__(self, dongle, watchdog = None):
         print("Init Dongle")
+        self.serial_lock = Lock()
         self.serial = Serial(dongle['port'], baudrate=dongle['speed'])
         self.exp = fdpexpect.fdspawn(self.serial)
         self.initDongle()
@@ -21,15 +23,16 @@ class PiOBD2Hat:
         cmd = bytes(cmd, 'utf-8')
         expect = bytes(expect, 'utf-8')
         try:
-            while self.serial.in_waiting:   # Clear the input buffer
-                print("Stray data in buffer: " + \
-                        str(self.serial.read(self.serial.in_waiting)))
-                sleep(0.2)
-            self.exp.send(cmd + b'\r\n')
-            self.exp.expect('>')
-            ret = self.exp.before.strip(b'\r\n')
-            if expect not in ret:
-                raise Exception('Expected %s, got %s' % (expect,ret))
+            with self.serial_lock:
+                while self.serial.in_waiting:   # Clear the input buffer
+                    print("Stray data in buffer: " + \
+                            str(self.serial.read(self.serial.in_waiting)))
+                    sleep(0.2)
+                self.exp.send(cmd + b'\r\n')
+                self.exp.expect('>')
+                ret = self.exp.before.strip(b'\r\n')
+                if expect not in ret:
+                    raise Exception('Expected %s, got %s' % (expect,ret))
 
         except pexpect.exceptions.TIMEOUT:
             ret = b'TIMEOUT'
@@ -40,16 +43,16 @@ class PiOBD2Hat:
         """
         @cmd: should be hex-encoded
         """
-
         cmd = hexlify(cmd)
         try:
-            while self.serial.in_waiting:   # Clear the input buffer
-                print("Stray data in buffer: " + \
-                        str(self.serial.read(self.serial.in_waiting)))
-                sleep(0.2)
-            self.exp.send(cmd + b'\r\n')
-            self.exp.expect('>')
-            ret = self.exp.before.strip(b'\r\n')
+            with self.serial_lock:
+                while self.serial.in_waiting:   # Clear the input buffer
+                    print("Stray data in buffer: " + \
+                            str(self.serial.read(self.serial.in_waiting)))
+                    sleep(0.2)
+                self.exp.send(cmd + b'\r\n')
+                self.exp.expect('>')
+                ret = self.exp.before.strip(b'\r\n')
         except pexpect.exceptions.TIMEOUT:
             ret = b'TIMEOUT'
 
