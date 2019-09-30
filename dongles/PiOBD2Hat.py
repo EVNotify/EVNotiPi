@@ -17,6 +17,12 @@ class PiOBD2Hat:
 
         self.config = dongle
         self.watchdog = watchdog
+        if not watchdog:
+            import RPi.GPIO as GPIO
+            GPIO.setmode(GPIO.BCM)
+            self.pin = dongle['shutdown_pin']
+            GPIO.setup(self.pin, GPIO.IN, pull_up_down=dongle['pup_down'])
+
         self.voltage_multiplier = 0.694
 
     def sendAtCmd(self, cmd, expect='OK'):
@@ -167,7 +173,8 @@ class PiOBD2Hat:
         if self.watchdog:
             return self.watchdog.getShutdownFlag() == 0
         else:
-            return self.getObdVoltage() > 13.0
+            #return self.getObdVoltage() > 13.0
+            return GPIO.input(self.pin) == False
 
     def calibrateObdVoltage(self, realVoltage):
         if self.watchdog:
