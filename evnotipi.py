@@ -10,9 +10,6 @@ import sdnotify
 import logging
 import evnotify
 
-SYSTEM_SHUTDOWN_DELAY = 900 # 15 min    set to None to disable auto shutdown
-WIFI_SHUTDOWN_DELAY = 300 # 5 min       set to None to disable Wifi control
-
 Systemd = sdnotify.SystemdNotifier()
 
 # load config
@@ -101,8 +98,8 @@ try:
         if watchdogs_ok:
             Systemd.notify("WATCHDOG=1")
 
-        if SYSTEM_SHUTDOWN_DELAY != None:
-            if now - car.last_data > SYSTEM_SHUTDOWN_DELAY and dongle.isCarAvailable() == False:
+        if config['system']['shutdown_delay'] != None:
+            if now - car.last_data > config['system']['shutdown_delay'] and dongle.isCarAvailable() == False:
                 usercnt = int(check_output(['who','-q']).split(b'\n')[1].split(b'=')[1])
                 if usercnt == 0:
                     log.info("Not charging and car off => Shutdown")
@@ -111,8 +108,8 @@ try:
                 else:
                     log.info("Not charging and car off; Not shutting down, users connected")
 
-        if wifi and WIFI_SHUTDOWN_DELAY != None:
-            if now - car.last_data > WIFI_SHUTDOWN_DELAY and dongle.isCarAvailable() == False:
+        if wifi and config['wifi']['shutdown_delay'] != None:
+            if now - car.last_data > config['wifi']['shutdown_delay'] and dongle.isCarAvailable() == False:
                 wifi.disable()
             else:
                 wifi.enable()

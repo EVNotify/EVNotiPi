@@ -3,6 +3,9 @@ Then uncomment the car you are using and the type, port and speed-combination
 for your OBD2/CAN-interface.
 
 ---
+system:
+	shutdown_delay:	10
+
 evnotify:
 	akey: PUT_AKEY_HERE
         token: PUT_TOKEN_HERE
