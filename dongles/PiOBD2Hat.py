@@ -7,10 +7,13 @@ from pexpect import fdpexpect
 from binascii import hexlify
 import math
 import RPi.GPIO as GPIO
+import logging
 
 class PiOBD2Hat:
     def __init__(self, dongle, watchdog = None):
-        print("Init Dongle")
+        self.log = logging.getLogger("EVNotiPi/PiOBD2Hat")
+        self.log.info("Initializing PiOBD2Hat")
+        
         self.serial_lock = Lock()
         self.serial = Serial(dongle['port'], baudrate=dongle['speed'])
         self.exp = fdpexpect.fdspawn(self.serial)
@@ -31,7 +34,7 @@ class PiOBD2Hat:
         try:
             with self.serial_lock:
                 while self.serial.in_waiting:   # Clear the input buffer
-                    print("Stray data in buffer: " + \
+                    self.log.warning("Stray data in buffer: " + \
                             str(self.serial.read(self.serial.in_waiting)))
                     sleep(0.2)
                 self.exp.send(cmd + b'\r\n')
@@ -53,7 +56,7 @@ class PiOBD2Hat:
         try:
             with self.serial_lock:
                 while self.serial.in_waiting:   # Clear the input buffer
-                    print("Stray data in buffer: " + \
+                    self.log.warning("Stray data in buffer: " + \
                             str(self.serial.read(self.serial.in_waiting)))
                     sleep(0.2)
                 self.exp.send(cmd + b'\r\n')
