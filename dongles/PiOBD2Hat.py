@@ -6,6 +6,7 @@ import pexpect
 from pexpect import fdpexpect
 from binascii import hexlify
 import math
+import RPi.GPIO as GPIO
 
 class PiOBD2Hat:
     def __init__(self, dongle, watchdog = None):
@@ -18,7 +19,6 @@ class PiOBD2Hat:
         self.config = dongle
         self.watchdog = watchdog
         if not watchdog:
-            import RPi.GPIO as GPIO
             GPIO.setmode(GPIO.BCM)
             self.pin = dongle['shutdown_pin']
             GPIO.setup(self.pin, GPIO.IN, pull_up_down=dongle['pup_down'])
