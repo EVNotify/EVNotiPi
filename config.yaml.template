@@ -3,6 +3,8 @@ Then uncomment the car you are using and the type, port and speed-combination
 for your OBD2/CAN-interface.
 
 ---
+#loglevel:	10 # Debug
+
 system:
 	shutdown_delay:	10
 
