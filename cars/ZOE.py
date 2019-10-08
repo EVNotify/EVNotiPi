@@ -1,0 +1,122 @@
+from car import *
+from time import time
+from threading import Thread
+
+class ZOE(Car):
+
+    def __init__(self, config, dongle):
+        Car.__init__(self, config, dongle)
+        self.dongle.setProtocol('CAN_11_500')
+        self.dongle.setFiltersEx([
+            {'id': 0x1f6, 'mask': 0x7ff},
+            {'id': 0x29a, 'mask': 0x7ff},
+            {'id': 0x35c, 'mask': 0x7ff},
+            {'id': 0x427, 'mask': 0x7ff},
+            {'id': 0x42e, 'mask': 0x7ff},
+            {'id': 0x5d7, 'mask': 0x7ff},
+            {'id': 0x637, 'mask': 0x7ff},
+            {'id': 0x638, 'mask': 0x7ff},
+            {'id': 0x652, 'mask': 0x7ff},
+            {'id': 0x654, 'mask': 0x7ff},
+            {'id': 0x656, 'mask': 0x7ff},
+            {'id': 0x658, 'mask': 0x7ff},
+            {'id': 0x6f8, 'mask': 0x7ff},
+            {'id': 0x7bb, 'mask': 0x7ff},
+            ])
+        del self.timer
+        self.data = self.getBaseData()
+        self.data['EXTENDED'] = {}
+        self.readerthread = Thread(name="Zoe-Reader-Thread", target=self.readerThread)
+
+    def start(self):
+        self.running = True
+        self.readerthread.start()
+
+    def stop(self):
+        if self.running:
+            self.running = False
+            self.readerthread.join()
+
+    def readerThread(self):
+        while self.running:
+            now = time()
+            self.watchdog = now
+            raw = self.dongle.readDataSimple(1)
+
+            if raw == None:
+                continue
+
+            with self.datalock.gen_wlock():
+                self.data['timestamp'] = now
+
+                for sid,line in raw.items():
+                    if sid == 0x42e:
+                        self.data.update({
+                            'SOC_DISPLAY':                  (ifbu(line[0:2]) >> 3 & 0x1fff) * 0.02,
+                            })
+                        self.data['EXTENDED'].update({
+                            'dcBatteryVoltage':             (ifbu(line[3:5]) >> 5 & 0x03ff) * 0.5,
+                            'batteryMaxTemperature':        (ifbu(line[5:7]) >> 5 & 0x007f) - 40,
+                            'batteryMinTemperature':        (ifbu(line[5:7]) >> 5 & 0x007f) - 40,
+                            })
+                        if 'dcBatteryPower' in self.data['EXTENDED']:
+                            self.data['EXTENDED']['dcBatteryCurrent']: self.data['EXTENDED']['dcBatteryPower'] / self.data['EXTENDED']['dcBatteryVoltage']
+                    #elif sid == 0x637:
+                    #    self.data['EXTENDED'].update({
+                    #        'cumulativeEnergyCharged':      ifbu(line[5:7]) >> 4 & 0x0fff,
+                    #        })
+                    elif sid == 0x5d7:
+                        self.data['EXTENDED'].update({
+                            'odo':                          (ifbu(line[2:6]) >> 4) * 0.01,
+                            })
+                    elif sid == 0x638:
+                        self.data['EXTENDED'].update({
+                            'dcBatteryPower':               line[0] - 80.0,
+                            })
+                        if 'dcBatteryVoltage' in self.data['EXTENDED']:
+                            self.data['EXTENDED']['dcBatteryCurrent']: self.data['EXTENDED']['dcBatteryPower'] / self.data['EXTENDED']['dcBatteryVoltage']
+                    #elif sid == 0x652:
+                    #    self.data['EXTENDED'].update({
+                    #        'cumulativeEnergyDischarged':   ifbu(line[4:6]) & 0x3fff,
+                    #        })
+                    elif sid == 0x654:
+                        cpc = line[0] >> 5 & 0x1
+                        ect = line[2] >> 6 & 0x3
+
+                        self.data['EXTENDED'].update({
+                            'normalChargePort':             1 if cpc == 1 else 0,
+                            })
+                    elif sid == 0x656:
+                        self.data['EXTENDED'].update({
+                            'outsideTemp':                  line[6] - 40.0,
+                            })
+                    elif sid == 0x658:
+                        self.data['EXTENDED'].update({
+                            'charging':                     line[5] >> 5 & 0x1,
+                            'soh':                          line[4] & 0x7f,
+                            })
+                    elif sid == 0x6f8:
+                        self.data['EXTENDED'].update({
+                            'auxBatteryVoltage':            line[2] * 0.0625,
+                            })
+                    #elif sid == 0x7bb:
+                    #    self.data['EXTENDED'].update({
+                    #        'SOC_BMS':                      line[] * 0.01,
+                    #        })
+                    #elif sid == 0x7ec:
+                    #    self.data['EXTENDED'].update({
+                    #        '
+
+
+    def getBaseData(self):
+        return {
+            "CAPACITY": 22,
+            "SLOW_SPEED": 2.3,
+            "NORMAL_SPEED": 22.0,
+            "FAST_SPEED": 43.0
+        }
+
+    def getABRPModel(self): return 'renault:zoe:q210:22:other'
+
+    def getEVNModel(self): return 'ZOE'
+

@@ -5,10 +5,13 @@ Wants=network-online.target
 After=network-online.target
 
 [Service]
-WorkingDirectory=/opt/EVNotiPi
-ExecStart=/opt/EVNotiPi/evnotipi.py
+Type=notify
+WorkingDirectory=/opt/evnotipi
+ExecStart=/opt/evnotipi/evnotipi.py
 RestartSec=5s
 Restart=on-failure
+WatchdogSec=1m
+TimeoutStartSec=5m
 
 [Install]
 WantedBy=multi-user.target

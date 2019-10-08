@@ -1,34 +1,47 @@
+from dongle import *
 from serial import Serial
 from time import sleep
+from threading import Lock
 import pexpect
 from pexpect import fdpexpect
 from binascii import hexlify
 import math
+import RPi.GPIO as GPIO
+import logging
 
 class PiOBD2Hat:
-
-    class CAN_ERROR(Exception): pass
-    class NO_DATA(Exception): pass
-
-    def __init__(self, dongle):
-        print("Init Dongle")
+    def __init__(self, dongle, watchdog = None):
+        self.log = logging.getLogger("EVNotiPi/PiOBD2Hat")
+        self.log.info("Initializing PiOBD2Hat")
+        
+        self.serial_lock = Lock()
         self.serial = Serial(dongle['port'], baudrate=dongle['speed'])
         self.exp = fdpexpect.fdspawn(self.serial)
         self.initDongle()
+
+        self.config = dongle
+        self.watchdog = watchdog
+        if not watchdog:
+            GPIO.setmode(GPIO.BCM)
+            self.pin = dongle['shutdown_pin']
+            GPIO.setup(self.pin, GPIO.IN, pull_up_down=dongle['pup_down'])
+
+        self.voltage_multiplier = 0.694
 
     def sendAtCmd(self, cmd, expect='OK'):
         cmd = bytes(cmd, 'utf-8')
         expect = bytes(expect, 'utf-8')
         try:
-            while self.serial.in_waiting:   # Clear the input buffer
-                print("Stray data in buffer: " + \
-                        str(self.serial.read(self.serial.in_waiting)))
-                sleep(0.2)
-            self.exp.send(cmd + b'\r\n')
-            self.exp.expect('>')
-            ret = self.exp.before.strip(b'\r\n')
-            if expect not in ret:
-                raise Exception('Expected %s, got %s' % (expect,ret))
+            with self.serial_lock:
+                while self.serial.in_waiting:   # Clear the input buffer
+                    self.log.warning("Stray data in buffer: " + \
+                            str(self.serial.read(self.serial.in_waiting)))
+                    sleep(0.2)
+                self.exp.send(cmd + b'\r\n')
+                self.exp.expect('>')
+                ret = self.exp.before.strip(b'\r\n')
+                if expect not in ret:
+                    raise Exception('Expected %s, got %s' % (expect,ret))
 
         except pexpect.exceptions.TIMEOUT:
             ret = b'TIMEOUT'
@@ -36,21 +49,24 @@ class PiOBD2Hat:
         return ret.split(b"\r\n")[-1]
 
     def sendCommand(self, cmd):
-        # cmd is a byte array
+        """
+        @cmd: should be hex-encoded
+        """
         cmd = hexlify(cmd)
         try:
-            while self.serial.in_waiting:   # Clear the input buffer
-                print("Stray data in buffer: " + \
-                        str(self.serial.read(self.serial.in_waiting)))
-                sleep(0.2)
-            self.exp.send(cmd + b'\r\n')
-            self.exp.expect('>')
-            ret = self.exp.before.strip(b'\r\n')
+            with self.serial_lock:
+                while self.serial.in_waiting:   # Clear the input buffer
+                    self.log.warning("Stray data in buffer: " + \
+                            str(self.serial.read(self.serial.in_waiting)))
+                    sleep(0.2)
+                self.exp.send(cmd + b'\r\n')
+                self.exp.expect('>')
+                ret = self.exp.before.strip(b'\r\n')
         except pexpect.exceptions.TIMEOUT:
             ret = b'TIMEOUT'
 
         if ret in [b'NO DATA', b'TIMEOUT', b'CAN NO ACK']:
-            raise PiOBD2Hat.NO_DATA(ret)
+            raise NoData(ret)
         elif ret in [b'INPUT TIMEOUT', b'NO INPUT CHAR', b'UNKNOWN COMMAND',
                 b'WRONG HEXCHAR COUNT', b'ILLEGAL COMMAND', b'SYNTAX ERROR',
                 b'WRONG VALUE/RANGE', b'UNABLE TO CONNECT', b'BUS BUSY',
@@ -59,7 +75,7 @@ class PiOBD2Hat:
                 b'CHECKSUM ERROR', b'NO ANSWER', b'COLLISION DETECT',
                 b'CAN NO ANSWER', b'PRTOTOCOL 8 OR 9 REQUIRED',
                 b'CAN ERROR']:
-            raise PiOBD2Hat.CAN_ERROR("Failed Command {}\n{}".format(cmd,ret))
+            raise CanError("Failed Command {}\n{}".format(cmd,ret))
 
         try:
             data = {}
@@ -99,7 +115,7 @@ class PiOBD2Hat:
                         raise ValueError
 
         except ValueError:
-            raise PiOBD2Hat.CAN_ERROR("Failed Command {}\n{}".format(cmd,ret))
+            raise CanError("Failed Command {}\n{}".format(cmd,ret))
 
         return data
 
@@ -150,6 +166,23 @@ class PiOBD2Hat:
         self.sendAtCmd('ATCR' + addr)
 
     def getObdVoltage(self):
-        ret = self.sendAtCmd('AT!10','V')
-        return float(ret[:-1]) * 0.694 # strip the 'V'
+        if self.watchdog:
+            return round(self.watchdog.getVoltage(), 2)
+        else:
+            ret = self.sendAtCmd('AT!10','V')
+            return round(float(ret[:-1]) * self.voltage_multiplier, 2)
+
+    def isCarAvailable(self):
+        if self.watchdog:
+            return self.watchdog.getShutdownFlag() == 0
+        else:
+            #return self.getObdVoltage() > 13.0
+            return GPIO.input(self.pin) == False
+
+    def calibrateObdVoltage(self, realVoltage):
+        if self.watchdog:
+            self.watchdog.calibrateVoltage(realVoltage)
+        else:
+            ret = self.sendAtCmd('AT!10','V')
+            self.voltage_multiplier = realVoltage / float(ret[:-1])
 
