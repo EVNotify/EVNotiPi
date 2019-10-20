@@ -68,10 +68,10 @@ class Car:
                     self.data['timestamp'] = now
 
                 volt = self.dongle.getObdVoltage()
-                if 'EXTENDED' in self.data and 'auxBatteryVoltage' in self.data['EXTENDED']:
-                    if abs(self.data['EXTENDED']['auxBatteryVoltage'] - volt) > 0.1:
-                        self.dongle.calibrateObdVoltage(self.data['EXTENDED']['auxBatteryVoltage'])
-                        volt = self.dongle.getObdVoltage()
+                #if 'EXTENDED' in self.data and 'auxBatteryVoltage' in self.data['EXTENDED']:
+                #    if abs(self.data['EXTENDED']['auxBatteryVoltage'] - volt) > 0.1:
+                #        self.dongle.calibrateObdVoltage(self.data['EXTENDED']['auxBatteryVoltage'])
+                #        volt = self.dongle.getObdVoltage()
 
                 self.data['ADDITIONAL'].update ({
                     'obdVoltage':               volt,
