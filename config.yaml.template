@@ -1,46 +1,48 @@
+# vim: sw=3 sts=3 expandtab
+
 You need to get the akey and token from the EVNotify-App and put them below.
 Then uncomment the car you are using and the type, port and speed-combination
 for your OBD2/CAN-interface.
 
 ---
-#loglevel:	10 # Debug
+#loglevel:      10 # Debug
 
 system:
-	shutdown_delay:	10
+   shutdown_delay:      10
 
 evnotify:
-	akey: PUT_AKEY_HERE
-        token: PUT_TOKEN_HERE
-	interval: 5
+   akey: PUT_AKEY_HERE
+   token: PUT_TOKEN_HERE
+   interval: 5
 
 car:
-        #type: IONIQ_BEV
-        #type: KONA_EV
-        #type: NIRO_EV
-        #type: ZOE_Q210
-        interval: 1
+   #type: IONIQ_BEV
+   #type: KONA_EV
+   #type: NIRO_EV
+   #type: ZOE_Q210
+   interval: 1
 
 watchdog:
-        enable: true
-	i2c_address: 8
-	i2c_bus: 1
+   enable: true
+   i2c_address: 8
+   i2c_bus: 1
 
 dongle:
-	# Use SpcketCAN:
-        #type:  SocketCAN
-        #port:  can0
-        #speed: 500000
+   # Use SpcketCAN:
+   #type:  SocketCAN
+   #port:  can0
+   #speed: 500000
 
-        # Use PiOBD2Hat
-        #type:  PiOBD2Hat
-        #port:  /dev/ttyAMA0
-        #speed: 115200
+   # Use PiOBD2Hat
+   #type:  PiOBD2Hat
+   #port:  /dev/ttyAMA0
+   #speed: 115200
 
-        # Use ELM327 BT-Adapter
-        #type:  ELM327
-        #port:  /dev/rfcomm0
-        #speed: 9600
+   # Use ELM327 BT-Adapter
+   #type:  ELM327
+   #port:  /dev/rfcomm0
+   #speed: 9600
 
-	# Configure the input pin for the PnP watchdog
-	shutdown_pin: 24
-	pup_down: 21    # 21: Pull-Down 22: Pull-Up
+   # Configure the input pin for the PnP watchdog
+   shutdown_pin: 24
+   pup_down: 21    # 21: Pull-Down 22: Pull-Up
