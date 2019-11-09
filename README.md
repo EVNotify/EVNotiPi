@@ -8,7 +8,7 @@ Python Version of EVNotify
 - 5 screws M2,5x8 self-cutting (for the case)
 - LTE Stick Huawai E3372 https://www.amazon.de/gp/product/B011BRKPLE?tag=gplay97-21
 - A case, for example https://github.com/noradtux/evnotipi-case
-- The i2c watchdog, https://github.com/noradtux/evnotipi-watchdog
+- The i2c watchdog and power supply, https://github.com/noradtux/evnotipi-watchdog
 ### Variant 1 (MCP2515 based adapter with GPS); Recommended:
 - PiCan2 with GPS: https://buyzero.de/products/pican-2-mit-gps / http://skpang.co.uk/catalog/pican-with-gps-canbus-board-for-raspberry-pi-23-p-1520.html
 - µFL to SMA: http://skpang.co.uk/catalog/interface-cable-sma-to-ufl-p-551.html / https://www.amazon.de/Adafruit-u-FL-Adapter-Cable-ADA851/dp/B00XW2LKNO?tag=gplay97-21
