@@ -39,7 +39,7 @@ class SocketCAN:
 
             is_extended = True if self.can_id > 0xfff else False
 
-            self.cmd_msg = can.Message(extended_id = is_extended, arbitration_id = self.can_id, data = msg_data)
+            self.cmd_msg = can.Message(extended_id = is_Extended, arbitration_id = self.can_id, data = msg_data)
 
             #print(hexlify(cmd),msg_data)
             self.log.debug("{} send message".format(self.cmd_msg))
@@ -223,6 +223,22 @@ class SocketCAN:
 
         self.can_id = can_id
 
+<<<<<<< HEAD
+=======
+    def setIDFilter(self, id_filter):
+        # XXX ????????
+        if not isinstance(id_filter, int):
+            raise ValueError
+
+        self.can_filter = id_filter
+
+        self.bus.set_filters([{
+            'can_id': self.can_filter,
+            'can_mask': self.can_mask,
+            'extended': True if self.can_filter > 0xfff else False
+            }])
+
+>>>>>>> 9b01768... support extended can-ids
     def setCANRxMask(self, mask):
         if not isinstance(mask, int):
             raise ValueError
