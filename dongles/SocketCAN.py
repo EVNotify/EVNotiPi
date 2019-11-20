@@ -176,6 +176,72 @@ class SocketCAN:
 
         return data
 
+    def sendCommandEx(self, cmd, cantx, canrx):
+        try:
+            cmd_len = len(cmd)
+            assert(cmd_len < 8)
+
+            msg_data = bytearray([cmd_len]) + cmd + b"\00" * (7 - cmd_len) # Pad cmd to 8 bytes
+
+            is_extended = True if cantx > 0xfff else False
+
+            self.cmd_msg = can.Message(extended_id = is_Extended, arbitration_id = cantx, data = msg_data)
+
+            self.bus.set_filters([{
+                'can_id':   canrx,
+                'can_mask': 0xffffffff if is_extended else 0x7ff
+                }])
+
+            #print(hexlify(cmd),msg_data)
+            self.log.debug("{} Sent messsage".format(self.cmd_msg))
+            self.bus.send(self.cmd_msg)
+
+            data = b''
+            data_len = 0
+
+            while True:
+                msg = self.bus.recv(0.1)
+
+                if msg == None:
+                    break
+
+                if msg.data[0] & 0xf0 == 0x00:
+                    self.log.debug("{} single frame".format(msg))
+                    data_len = msg.data[0] & 0x0f
+                    data = bytes(msg.data[1:(data_len+1)])
+
+                elif msg.data[0] & 0xf0 == 0x10:
+                    self.log.debug("{} first frame".format(msg))
+                    data_len = (msg.data[0] & 0x0f) + msg.data[1]
+                    data = bytes(msg.data[2:])
+
+                    self.log.debug("Send flow control message")
+                    self.flow_msg.arbitration_id = cantx
+                    self.flow_msg.is_extended = is_extended
+                    self.bus.send(self.flow_msg)
+
+                elif msg.data[0] & 0xf0 == 0x20:
+                    self.log.debug("{} consecutive frame".format(msg))
+                    idx = msg.data[0] & 0x0f
+                    frame_len = min(7, data_len - len(data))
+                    data += bytes(msg.data[1:frame_len])
+
+                    if data_len == len(data):
+                        break
+
+                elif msg.data[0] & 0xf0 == 0x30:
+                    raise CanError("Unexpected flow control: {}".format(msg))
+                else:
+                    raise CanError("Unexpected message: {}".format(msg))
+
+        except OSError as e:
+            raise CanError("Failed Command {}: {}".format(hexlify(cmd), e))
+
+        if data_len != len(data):
+            raise NoData(b'NO DATA')
+
+        return data
+
     def readDataSimple(self, timeout=None):
         try:
             data = {}
