@@ -238,7 +238,9 @@ class SocketCAN:
             raise CanError("Failed Command {}: {}".format(hexlify(cmd), e))
 
         if data_len != len(data):
-            raise NoData(b'NO DATA')
+            raise CanError("Failed Command {}: {}".format(hexlify(cmd), data))
+        if data_len == 0:
+            raise NoData('NO DATA')
 
         return data
 
