@@ -39,7 +39,7 @@ class SocketCAN:
 
             is_extended = True if self.can_id > 0xfff else False
 
-            self.cmd_msg = can.Message(extended_id = is_Extended, arbitration_id = self.can_id, data = msg_data)
+            self.cmd_msg = can.Message(extended_id = is_extended, arbitration_id = self.can_id, data = msg_data)
 
             #print(hexlify(cmd),msg_data)
             self.log.debug("{} send message".format(self.cmd_msg))
@@ -185,7 +185,7 @@ class SocketCAN:
 
             is_extended = True if cantx > 0xfff else False
 
-            self.cmd_msg = can.Message(extended_id = is_Extended, arbitration_id = cantx, data = msg_data)
+            self.cmd_msg = can.Message(extended_id = is_extended, arbitration_id = cantx, data = msg_data)
 
             self.bus.set_filters([{
                 'can_id':   canrx,
