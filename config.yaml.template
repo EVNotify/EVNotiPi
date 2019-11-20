@@ -1,8 +1,8 @@
 # vim: sw=3 sts=3 expandtab
 
-You need to get the akey and token from the EVNotify-App and put them below.
-Then uncomment the car you are using and the type, port and speed-combination
-for your OBD2/CAN-interface.
+# You need to get the akey and token from the EVNotify-App and put them below.
+# Then uncomment the car you are using and the type, port and speed-combination
+# for your OBD2/CAN-interface.
 
 ---
 #loglevel:      10 # Debug
@@ -29,6 +29,11 @@ watchdog:
    i2c_bus: 1
 
 dongle:
+   debug:
+      enable:	0
+      url: 	https://whatever
+      #user:
+      #pass:
    # Use SpcketCAN:
    #type:  SocketCAN
    #port:  can0
