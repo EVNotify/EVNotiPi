@@ -1,10 +1,13 @@
 #!/usr/bin/python3
 
 import sys
+import logging
 from binascii import hexlify
 
+logging.basicConfig(level=logging.DEBUG)
+
 sys.path.insert(0, 'dongles')
-import SocketCAN from SocketCAN
+from SocketCAN import SocketCAN
 
 config = {
         'type': 'SocketCAN',
@@ -12,7 +15,7 @@ config = {
         'speed': 500000
         }
 
-dongle = SocketCAN(config, Watchdog=None)
+dongle = SocketCAN(config, watchdog=None)
 
 b19023b = bytes.fromhex('19023b')
 b222001 = bytes.fromhex('222001')
