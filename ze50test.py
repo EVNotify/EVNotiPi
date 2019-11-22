@@ -46,6 +46,6 @@ b22505a = bytes.fromhex('22505a')
 b225062 = bytes.fromhex('225062')
 b225064 = bytes.fromhex('225064')
 
-data = dongle.sendCommandEx(b19023b, cantx=0x18DAF1DE, canrx=0x18DADEF1)
+data = dongle.sendCommandEx(b19023b, canrx=0x18DAF1DE, cantx=0x18DADEF1)
 
 print(hexlify(data))

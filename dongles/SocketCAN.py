@@ -189,7 +189,7 @@ class SocketCAN:
 
             self.bus.set_filters([{
                 'can_id':   canrx,
-                'can_mask': 0xffffffff if is_extended else 0x7ff
+                'can_mask': 0#0xffffffff if is_extended else 0x7ff
                 }])
 
             #print(hexlify(cmd),msg_data)
@@ -200,7 +200,8 @@ class SocketCAN:
             data_len = 0
 
             while True:
-                msg = self.bus.recv(0.1)
+                msg = self.bus.recv(1)
+                self.log.debug(msg)
 
                 if msg == None:
                     break
@@ -216,9 +217,8 @@ class SocketCAN:
                     data = bytes(msg.data[2:])
 
                     self.log.debug("Send flow control message")
-                    self.flow_msg.arbitration_id = cantx
-                    self.flow_msg.is_extended = is_extended
-                    self.bus.send(self.flow_msg)
+                    flow_msg = can.Message(extended_id = is_extended, arbitration_id = cantx, data = [0x30,0,0,0,0,0,0,0])
+                    self.bus.send(flow_msg)
 
                 elif msg.data[0] & 0xf0 == 0x20:
                     self.log.debug("{} consecutive frame".format(msg))
@@ -238,7 +238,7 @@ class SocketCAN:
             raise CanError("Failed Command {}: {}".format(hexlify(cmd), e))
 
         if data_len != len(data):
-            raise CanError("Failed Command {}: {}".format(hexlify(cmd), data))
+            raise CanError("Failed Command {}: {}".format(hexlify(cmd), hexlify(data)))
         if data_len == 0:
             raise NoData('NO DATA')
 
