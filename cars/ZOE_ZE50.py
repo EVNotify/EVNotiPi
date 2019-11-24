@@ -43,7 +43,7 @@ class IONIQ_BEV(Car):
         self.dongle.setCANRxFilter(0x7ec)
         self.dongle.setCanID(0x7e4)
         for cmd in [b19023b]:
-            raw[cmd] = self.dongle.sendCommandEx(cmd, cantx=0x18DAF1DE, canrx=0x18DADEF1)
+            raw[cmd] = self.dongle.sendCommandEx(cmd, canrx=0x18DAF1DE, cantx=0x18DADEF1)
 
         data = self.getBaseData()
 

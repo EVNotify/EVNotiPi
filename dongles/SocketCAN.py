@@ -189,7 +189,7 @@ class SocketCAN:
 
             self.bus.set_filters([{
                 'can_id':   canrx,
-                'can_mask': 0#0xffffffff if is_extended else 0x7ff
+                'can_mask': 0x1fffff if is_extended else 0x7ff
                 }])
 
             #print(hexlify(cmd),msg_data)
