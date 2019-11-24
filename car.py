@@ -1,5 +1,5 @@
-from time import time
-from threading import Timer, Lock
+from time import time, sleep
+from threading import Thread, Lock
 from readerwriterlock import rwlock
 from dongle import NoData, CanError
 import logging
@@ -17,74 +17,71 @@ class Car:
         self.config = config
         self.dongle = dongle
         self.poll_interval = config['interval']
-        self.timer = None
+        self.thread = None
         self.data = {}
         self.datalock = rwlock.RWLockWrite()
         self.skip_polling = False
         self.running = False
         self.last_data = 0
         self.watchdog = time()
-        self.watchdog_timeout = self.poll_interval * 10
+        self.watchdog_timeout = self.poll_interval * 10 if self.poll_interval else 10
 
     def start(self):
         self.running = True
-        self.timer = Timer(0, self.pollData)
-        self.timer.start()
+        self.thread = Thread(target = self.pollData)
+        self.thread.start()
 
     def stop(self):
-        if self.running:
-            self.timer.cancel()
         self.running = False
+        self.thread.join()
 
     def pollData(self):
-        if not self.running: return
+        while self.running:
+            now = time()
+            self.watchdog = now
 
-        now = time()
-        self.watchdog = now
+            with self.datalock.gen_wlock():
+                if not self.skip_polling or self.dongle.isCarAvailable():
+                    if self.skip_polling:
+                        self.log.info("Resume polling.")
+                        self.skip_polling = False
+                    try:
+                        self.data = self.readDongle()
+                        self.last_data = now
+                    except CanError as e:
+                        self.log.warning(e)
+                    except NoData:
+                        self.log.info("NO DATA")
+                        if not self.dongle.isCarAvailable():
+                            self.log.info("Car off detected. Stop polling until car on.")
+                            self.skip_polling = True
+                else:
+                    self.data = {}
 
-        with self.datalock.gen_wlock():
-            if not self.skip_polling or self.dongle.isCarAvailable():
-                if self.skip_polling:
-                    self.log.info("Resume polling.")
-                    self.skip_polling = False
-                try:
-                    self.data = self.readDongle()
-                    self.last_data = now
-                except CanError as e:
-                    self.log.warning(e)
-                except NoData:
-                    self.log.info("NO DATA")
-                    if not self.dongle.isCarAvailable():
-                        self.log.info("Car off detected. Stop polling until car on.")
-                        self.skip_polling = True
-            else:
-                self.data = {}
+                if self.dongle.watchdog:
+                    thresholds = self.dongle.watchdog.getThresholds()
+                    if not 'ADDITIONAL' in self.data:
+                        self.data['ADDITIONAL'] = {}
+                    if not 'timestamp' in self.data:
+                        self.data['timestamp'] = now
 
-            if self.dongle.watchdog:
-                thresholds = self.dongle.watchdog.getThresholds()
-                if not 'ADDITIONAL' in self.data:
-                    self.data['ADDITIONAL'] = {}
-                if not 'timestamp' in self.data:
-                    self.data['timestamp'] = now
+                    volt = self.dongle.getObdVoltage()
+                    #if 'EXTENDED' in self.data and 'auxBatteryVoltage' in self.data['EXTENDED']:
+                    #    if abs(self.data['EXTENDED']['auxBatteryVoltage'] - volt) > 0.1:
+                    #        self.dongle.calibrateObdVoltage(self.data['EXTENDED']['auxBatteryVoltage'])
+                    #        volt = self.dongle.getObdVoltage()
 
-                volt = self.dongle.getObdVoltage()
-                #if 'EXTENDED' in self.data and 'auxBatteryVoltage' in self.data['EXTENDED']:
-                #    if abs(self.data['EXTENDED']['auxBatteryVoltage'] - volt) > 0.1:
-                #        self.dongle.calibrateObdVoltage(self.data['EXTENDED']['auxBatteryVoltage'])
-                #        volt = self.dongle.getObdVoltage()
+                    self.data['ADDITIONAL'].update ({
+                        'obdVoltage':               volt,
+                        'startupThreshold':         thresholds['startup'],
+                        'shutdownThreshold':        thresholds['shutdown'],
+                        'emergencyThreshold':       thresholds['emergency'],
+                        })
 
-                self.data['ADDITIONAL'].update ({
-                    'obdVoltage':               volt,
-                    'startupThreshold':         thresholds['startup'],
-                    'shutdownThreshold':        thresholds['shutdown'],
-                    'emergencyThreshold':       thresholds['emergency'],
-                    })
-
-        if self.running:
-            runtime = time() - now
-            interval = self.poll_interval - (runtime if runtime > self.poll_interval else 0)
-            self.timer = Timer(interval, self.pollData)
-            self.timer.start()
+            if self.running and self.poll_interval:
+                runtime = time() - now
+                interval = self.poll_interval - (runtime if runtime > self.poll_interval else 0)
+                sleep(interval)
 
     def getData(self):
         with self.datalock.gen_rlock():
