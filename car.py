@@ -1,5 +1,5 @@
 from time import time, sleep
-from threading import Thread, Lock
+from threading import Thread
 from readerwriterlock import rwlock
 from dongle import NoData, CanError
 import logging
