@@ -25,6 +25,7 @@ class Car:
         self.last_data = 0
         self.watchdog = time()
         self.watchdog_timeout = self.poll_interval * 10 if self.poll_interval else 10
+        self.data_callbacks = []
 
     def start(self):
         self.running = True
@@ -78,6 +79,9 @@ class Car:
                         'emergencyThreshold':       thresholds['emergency'],
                         })
 
+                for cb in self.data_callbacks:
+                    cb(self.data)
+
             if self.running and self.poll_interval:
                 runtime = time() - now
                 interval = self.poll_interval - (runtime if runtime > self.poll_interval else 0)
@@ -86,6 +90,12 @@ class Car:
     def getData(self):
         with self.datalock.gen_rlock():
             return self.data if len(self.data) > 0 else None
+
+    def registerData(self, callback):
+        self.data_callbacks.append(callback)
+
+    def unregisterData(self, callback):
+        self.data_callbacks.remove(callback)
 
     def checkWatchdog(self):
         return (time() - self.watchdog) <= self.watchdog_timeout
