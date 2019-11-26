@@ -1,34 +1,9 @@
 from car import *
 from time import time
 
-b19023b = bytes.fromhex('19023b')
-b222001 = bytes.fromhex('222001')
-b222002 = bytes.fromhex('222002')
-b222003 = bytes.fromhex('222003')
-b222004 = bytes.fromhex('222004')
-b222005 = bytes.fromhex('222005')
-
-b22500d = bytes.fromhex('22500d')
-b225017 = bytes.fromhex('225017')
-b225026 = bytes.fromhex('225026')
-b225027 = bytes.fromhex('225027')
-
-b22503a = bytes.fromhex('22503a')
-b22503b = bytes.fromhex('22503b')
-b22503f = bytes.fromhex('22503f')
-
-b225041 = bytes.fromhex('225041')
-b225042 = bytes.fromhex('225042')
-b22504a = bytes.fromhex('22504a')
-
-b225054 = bytes.fromhex('225054')
-b225057 = bytes.fromhex('225057')
-b225058 = bytes.fromhex('225058')
-b225059 = bytes.fromhex('225059')
-b22505a = bytes.fromhex('22505a')
-
-b225062 = bytes.fromhex('225062')
-b225064 = bytes.fromhex('225064')
+cmd_soc     = bytes.fromhex('229002')
+cmd_voltage = bytes.fromhex('229006')
+cmd_current = bytes.fromhex('229257')
 
 class IONIQ_BEV(Car):
 
@@ -37,15 +12,64 @@ class IONIQ_BEV(Car):
         self.dongle.setProtocol('CAN_11_500')
 
     def readDongle(self):
-        now = time()
-        raw = {}
+        def bms(cmd):
+            return self.dongle.sendCommandEx(cmd, canrx=0x18DAF1DB, cantx=0x18DADBF1)
 
-        self.dongle.setCANRxFilter(0x7ec)
-        self.dongle.setCanID(0x7e4)
-        for cmd in [b19023b]:
-            raw[cmd] = self.dongle.sendCommandEx(cmd, canrx=0x18DAF1DE, cantx=0x18DADEF1)
+        now = time()
 
         data = self.getBaseData()
+
+        data['timestamp']   = now
+        data['SOC_BMS']     = ifbu(bms(cmd_soc)[3:]) / 100
+        #data['SOC_DISPLAY'] = raw[b2105][0x7ec][4][6] / 2.0
+
+        dcBatteryCurrent = ifbu(bms(cmd_current)[3:]) - 32768
+        dcBatteryVoltage = ifbu(bms(cmd_voltage)[3:]) / 1000
+
+        cellVolts = []
+        for i in range(0x21, 0x84):
+            c = bytes.fromhex("2290{:02x}".format(i))
+            cellVolts.append(ifbu(bms(c)[3:]) / 1000)
+
+        moduleTemps = []
+        for i in range(0x31, 0x3d):
+            c = bytes.fromhex("2291{:02x}".format(i))
+            moduleTemps.append(ifbu(bms(c)[3:]) / 10 - 60)
+
+        data['EXTENDED'] = {
+                #'auxBatteryVoltage':
+
+                #'batteryInletTemperature':
+                'batteryMaxTemperature': max(moduleTemps),
+                'batteryMinTemperature': min(moduleTemps),
+
+                #'cumulativeEnergyCharged':
+                #'cumulativeEnergyDischarged':
+
+                #'charging':
+                #'normalChargePort':
+                #'rapidChargePort':
+
+                'dcBatteryCurrent':     dcBatteryCurrent,
+                'dcBatteryPower':       dcBatteryCurrent * dcBatteryVoltage / 1000,
+                'dcBatteryVoltage':     dcBatteryVoltage,
+
+                #'soh':
+                #'externalTemperature':
+                #'odo':
+                }
+
+        data['ADDITIONAL'] = {
+                'obdVoltage':               self.dongle.getObdVoltage(),
+                }
+
+        for i,cvolt in enumerate(cellVolts):
+            key = "cellVoltage{:02d}".format(i+1)
+            data['ADDITIONAL'][key] = float(cvolt)
+
+        for i,temp in enumerate(moduleTemps):
+            key = "cellTemp{:02d}".format(i+1)
+            data['ADDITIONAL'][key] = float(temp)
 
         return data
 
