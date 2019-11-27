@@ -82,10 +82,14 @@ class Car:
                 for cb in self.data_callbacks:
                     cb(self.data)
 
-            if self.running and self.poll_interval:
-                runtime = time() - now
-                interval = self.poll_interval - (runtime if runtime > self.poll_interval else 0)
-                sleep(interval)
+            if self.running:
+                if self.poll_interval:
+                    runtime = time() - now
+                    interval = self.poll_interval - (runtime if runtime > self.poll_interval else 0)
+                    sleep(interval)
+
+                elif self.skip_polling:
+                    sleep(1)
 
     def getData(self):
         with self.datalock.gen_rlock():
