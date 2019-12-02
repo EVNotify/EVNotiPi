@@ -1,6 +1,6 @@
 import evnotifyapi
 from time import time, sleep
-from threading import Thread, Lock
+from threading import Thread, Condition, Lock
 import logging
 
 EVN_SETTINGS_INTERVAL = 300
@@ -29,6 +29,9 @@ class EVNotify:
         self.watchdog_timeout = self.poll_interval * 10
         self.evnotify = evnotifyapi.EVNotify(config['akey'], config['token'])
 
+        self.data = None
+        self.data_lock = Condition(Lock())
+
         self.settings = None
         self.socThreshold = 100
 
@@ -44,18 +47,32 @@ class EVNotify:
         self.running = True
         self.thread = Thread(target = self.submitData)
         self.thread.start()
+        self.car.registerData(self.dataCallback)
 
     def stop(self):
+        self.car.unregisterData(self.dataCallback)
         self.running = False
+        with self.data_lock:
+            self.data_lock.notify()
         self.thread.join()
+
+    def dataCallback(self, data):
+        self.log.debug("Enqeue...")
+        with self.data_lock:
+            self.data = data
+            self.data_lock.notify()
 
     def submitData(self):
         while self.running:
+            with self.data_lock:
+                self.data_lock.wait()
+                data = self.data
+                self.data = None
+
             now = time()
             self.watchdog = now
 
             try:
-                data = self.car.getData()
                 if data == None or not 'SOC_DISPLAY' in data:
                     raise NoData()
 
