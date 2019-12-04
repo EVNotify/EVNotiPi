@@ -53,6 +53,7 @@ class Car:
                     if not self.dongle.isCarAvailable():
                         self.log.info("Car off detected. Stop polling until car on.")
                         self.skip_polling = True
+                    sleep(1)
             else:
                 self.data = {}
 
