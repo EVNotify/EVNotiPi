@@ -77,8 +77,9 @@ class Car:
                     'emergencyThreshold':       thresholds['emergency'],
                     })
 
-            for cb in self.data_callbacks:
-                cb(self.data)
+            if self.data:
+                for cb in self.data_callbacks:
+                    cb(self.data)
 
             if self.running:
                 if self.poll_interval:
