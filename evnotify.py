@@ -1,6 +1,6 @@
 import evnotifyapi
 from time import time, sleep
-from threading import Thread, Condition, Lock
+from threading import Thread, Condition
 import logging
 
 EVN_SETTINGS_INTERVAL = 300
@@ -30,7 +30,7 @@ class EVNotify:
         self.evnotify = evnotifyapi.EVNotify(config['akey'], config['token'])
 
         self.data = None
-        self.data_lock = Condition(Lock())
+        self.data_lock = Condition()
 
         self.settings = None
         self.socThreshold = 100
