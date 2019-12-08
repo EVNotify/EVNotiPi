@@ -5,7 +5,7 @@ cmd_soc     = bytes.fromhex('229002')
 cmd_voltage = bytes.fromhex('229006')
 cmd_current = bytes.fromhex('229257')
 
-class IONIQ_BEV(Car):
+class ZOE_ZE50(Car):
 
     def __init__(self, config, dongle):
         Car.__init__(self, config, dongle)
