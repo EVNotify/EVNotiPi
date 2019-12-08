@@ -28,7 +28,7 @@ class IONIQ_BEV(Car):
 
         data['timestamp']   = now
         data['SOC_BMS']     = raw[b2101][6] / 2.0
-        data['SOC_DISPLAY'] = raw[b2105][7] / 2.0
+        data['SOC_DISPLAY'] = raw[b2105][33] / 2.0
 
         chargingBits = raw[b2101][11]
         dcBatteryCurrent = ifbs(raw[b2101][12:14]) / 10.0
