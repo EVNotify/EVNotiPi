@@ -2,7 +2,6 @@ from dongle import *
 import can
 import math
 from pyroute2 import IPRoute
-from binascii import hexlify
 from time import sleep
 import logging
 
@@ -42,8 +41,7 @@ class SocketCAN:
 
             self.cmd_msg = can.Message(extended_id = is_extended, arbitration_id = self.can_id, data = msg_data)
 
-            #print(hexlify(cmd),msg_data)
-            self.log.debug("{} send message".format(self.cmd_msg))
+            self.log.debug("{} Sent messsage".format(self.cmd_msg))
             self.bus.send(self.cmd_msg)
 
             data = {}
@@ -87,7 +85,7 @@ class SocketCAN:
                     raise CanError("Unexpected message: {}".format(msg))
 
         except OSError as e:
-            raise CanError("Failed Command {}: {}".format(hexlify(cmd), e))
+            raise CanError("Failed Command {}: {}".format(cmd.hex(), e))
 
 
         if len(data) == 0:
@@ -105,7 +103,7 @@ class SocketCAN:
                         raise ValueError
 
         except ValueError:
-            raise CanError("Failed Command {}: {}".format(hexlify(cmd), data))
+            raise CanError("Failed Command {}: {}".format(cmd.hex(), data))
 
         return data
 
@@ -128,7 +126,7 @@ class SocketCAN:
             self.log.debug("{} Sent messsage".format(self.cmd_msg))
             self.bus.send(self.cmd_msg)
 
-            data = b''
+            data = None
             data_len = 0
 
             while True:
@@ -141,12 +139,12 @@ class SocketCAN:
                 if msg.data[0] & 0xf0 == 0x00:
                     self.log.debug("{} single frame".format(msg))
                     data_len = msg.data[0] & 0x0f
-                    data = bytes(msg.data[1:(data_len+1)])
+                    data = bytearray(msg.data[1:data_len+1])
 
                 elif msg.data[0] & 0xf0 == 0x10:
                     self.log.debug("{} first frame".format(msg))
                     data_len = (msg.data[0] & 0x0f) + msg.data[1]
-                    data = bytes(msg.data[2:])
+                    data = bytearray(msg.data[2:])
 
                     self.log.debug("Send flow control message")
                     flow_msg = can.Message(extended_id = is_extended, arbitration_id = cantx, data = [0x30,0,0,0,0,0,0,0])
@@ -156,7 +154,7 @@ class SocketCAN:
                     self.log.debug("{} consecutive frame".format(msg))
                     idx = msg.data[0] & 0x0f
                     frame_len = min(7, data_len - len(data))
-                    data += bytes(msg.data[1:frame_len+1])
+                    data.extend(msg.data[1:frame_len+1])
 
                     if data_len == len(data):
                         break
@@ -167,10 +165,10 @@ class SocketCAN:
                     raise CanError("Unexpected message: {}".format(msg))
 
         except OSError as e:
-            raise CanError("Failed Command {}: {}".format(hexlify(cmd), e))
+            raise CanError("Failed Command {}: {}".format(cmd.hex(), e))
 
         if data_len != len(data):
-            raise CanError("Data length mismatch {}: {} vs {} {}".format(hexlify(cmd), data_len, len(data), hexlify(data)))
+            raise CanError("Data length mismatch {}: {} vs {} {}".format(cmd.hex(), data_len, len(data), data.hex()))
         if data_len == 0:
             raise NoData('NO DATA')
 
