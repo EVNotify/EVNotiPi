@@ -132,7 +132,7 @@ class SocketCAN:
             data_len = 0
 
             while True:
-                msg = self.bus.recv(1)
+                msg = self.bus.recv(0.2)
                 self.log.debug(msg)
 
                 if msg == None:
@@ -156,7 +156,7 @@ class SocketCAN:
                     self.log.debug("{} consecutive frame".format(msg))
                     idx = msg.data[0] & 0x0f
                     frame_len = min(7, data_len - len(data))
-                    data += bytes(msg.data[1:frame_len])
+                    data += bytes(msg.data[1:frame_len+1])
 
                     if data_len == len(data):
                         break
@@ -170,7 +170,7 @@ class SocketCAN:
             raise CanError("Failed Command {}: {}".format(hexlify(cmd), e))
 
         if data_len != len(data):
-            raise CanError("Failed Command {}: {}".format(hexlify(cmd), hexlify(data)))
+            raise CanError("Data length mismatch {}: {} vs {} {}".format(hexlify(cmd), data_len, len(data), hexlify(data)))
         if data_len == 0:
             raise NoData('NO DATA')
 
