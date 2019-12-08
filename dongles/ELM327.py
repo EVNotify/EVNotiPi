@@ -4,7 +4,6 @@ import logging
 import math
 import pexpect
 from pexpect import fdpexpect
-from binascii import hexlify
 
 class ELM327:
     def __init__(self, dongle, watchdog = None):
@@ -43,13 +42,13 @@ class ELM327:
         @cmd: should be hex-encoded
         """
 
-        cmd = hexlify(cmd)
+        cmd = cmd.hex()
         try:
             while self.serial.in_waiting:   # Clear the input buffer
                 print("Stray data in buffer: " + \
                         str(self.serial.read(self.serial.in_waiting)))
                 sleep(0.2)
-            self.exp.send(cmd + b'\r\n')
+            self.exp.send(cmd + '\r\n')
             self.exp.expect('>')
             ret = self.exp.before.strip(b'\r\n')
         except pexpect.exceptions.TIMEOUT:

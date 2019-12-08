@@ -4,7 +4,6 @@ from time import sleep
 from threading import Lock
 import pexpect
 from pexpect import fdpexpect
-from binascii import hexlify
 import math
 import RPi.GPIO as GPIO
 import logging
@@ -54,15 +53,14 @@ class PiOBD2Hat:
         """
         @cmd: should be hex-encoded
         """
-        cmd = hexlify(cmd)
+        cmd = cmd.hex()
         try:
             with self.serial_lock:
                 while self.serial.in_waiting:   # Clear the input buffer
                     self.log.warning("Stray data in buffer: " + \
                             str(self.serial.read(self.serial.in_waiting)))
                     sleep(0.2)
-                self.log.debug("Send command: {}".format(cmd))
-                self.exp.send(cmd + b'\r\n')
+                self.exp.send(cmd + '\r\n')
                 self.exp.expect('>')
                 ret = self.exp.before.strip(b'\r\n')
                 self.log.debug("Received: {}".format(ret))
