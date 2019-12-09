@@ -167,10 +167,10 @@ class SocketCAN:
         except OSError as e:
             raise CanError("Failed Command {}: {}".format(cmd.hex(), e))
 
+        if not data or data_len == 0:
+            raise NoData('NO DATA')
         if data_len != len(data):
             raise CanError("Data length mismatch {}: {} vs {} {}".format(cmd.hex(), data_len, len(data), data.hex()))
-        if data_len == 0:
-            raise NoData('NO DATA')
 
         return data
 
