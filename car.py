@@ -97,4 +97,4 @@ class Car:
         self.data_callbacks.remove(callback)
 
     def checkWatchdog(self):
-        return (time() - self.watchdog) <= self.watchdog_timeout
+        return self.thread.is_alive() # (time() - self.watchdog) <= self.watchdog_timeout
