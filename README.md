@@ -20,7 +20,16 @@ Python Version of EVNotify
 - External GPS: https://www.amazon.de/Adafruit-Channels-GPS-Empfänger-Modul-145-dBmW-66-Channels-blau/dp/B01H1R8BK0?tag=gplay97-21
 ### Variant 3 (Diamex OBD-Hat, the old default; does not support Renault Zoe):
 - Diamex OBD-Hat: https://www.diamex.de/dxshop/PI-OBD-HAT-OBD2-Modul-fuer-Raspberry-PI with flat connector
-## Drawings
+## OBD2 connection
+The case has a slot for a DB9 plug (the side with the pins). Connect the DB9 plug to CAN_H and CAN_L of the CAN-hat; connect GND and 12V to the watchdog. Pinout is as follows:
+```
+OBD2        DB9
+4,5  GND    1,2
+  6  CAN_H  3
+ 14  CAN_L  5
+ 16  12V    9
+```
+This pinout should be compatible to most DB9 to OBD2 cables. One can always build one's own cable, though.
 ## Installation
 ### Raspberry Pi
 - sudo apt update
