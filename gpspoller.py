@@ -57,7 +57,8 @@ class GpsPoller:
 
     def stop(self):
         self.running = False
-        self.thread.join()
+        self.join()
 
     def checkWatchdog(self):
-        return self.thread.is_alive() #(time() - self.watchdog) <= self.watchdog_timeout
+        return self.is_alive() #(time() - self.watchdog) <= self.watchdog_timeout
+
