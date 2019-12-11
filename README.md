@@ -8,7 +8,7 @@ Python Version of EVNotify
 - 5 screws M2,5x8 self-cutting (for the case)
 - LTE Stick Huawai E3372 https://www.amazon.de/gp/product/B011BRKPLE?tag=gplay97-21
 - A case, for example https://github.com/noradtux/evnotipi-case
-- The i2c watchdog, https://github.com/noradtux/evnotipi-watchdog
+- The i2c watchdog and power supply, https://github.com/noradtux/evnotipi-watchdog
 ### Variant 1 (MCP2515 based adapter with GPS); Recommended:
 - PiCan2 with GPS: https://buyzero.de/products/pican-2-mit-gps / http://skpang.co.uk/catalog/pican-with-gps-canbus-board-for-raspberry-pi-23-p-1520.html
 - µFL to SMA: http://skpang.co.uk/catalog/interface-cable-sma-to-ufl-p-551.html / https://www.amazon.de/Adafruit-u-FL-Adapter-Cable-ADA851/dp/B00XW2LKNO?tag=gplay97-21
@@ -20,7 +20,16 @@ Python Version of EVNotify
 - External GPS: https://www.amazon.de/Adafruit-Channels-GPS-Empfänger-Modul-145-dBmW-66-Channels-blau/dp/B01H1R8BK0?tag=gplay97-21
 ### Variant 3 (Diamex OBD-Hat, the old default; does not support Renault Zoe):
 - Diamex OBD-Hat: https://www.diamex.de/dxshop/PI-OBD-HAT-OBD2-Modul-fuer-Raspberry-PI with flat connector
-## Drawings
+## OBD2 connection
+The case has a slot for a DB9 plug (the side with the pins). Connect the DB9 plug to CAN_H and CAN_L of the CAN-hat; connect GND and 12V to the watchdog. Pinout is as follows:
+```
+OBD2        DB9
+4,5  GND    1,2
+  6  CAN_H  3
+ 14  CAN_L  5
+ 16  12V    9
+```
+This pinout should be compatible to most DB9 to OBD2 cables. One can always build one's own cable, though.
 ## Installation
 ### Raspberry Pi
 - sudo apt update
