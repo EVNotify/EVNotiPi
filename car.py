@@ -27,7 +27,7 @@ class Car:
 
     def start(self):
         self.running = True
-        self.thread = Thread(target = self.pollData)
+        self.thread = Thread(target = self.pollData, name = "EVNotiPi/Car")
         self.thread.start()
 
     def stop(self):

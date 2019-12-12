@@ -1,13 +1,12 @@
 import sys
-sys.path.append('/usr/local/lib/python3.7/site-packages')
 import gps
-import threading
+from threading import Thread
 from time import time,sleep
 from math import isnan
 
-class GpsPoller(threading.Thread):
+class GpsPoller:
     def __init__(self):
-        threading.Thread.__init__(self)
+        self.thread = None
         self.gps = gps
         self.gpsd = None
         self.last_fix = None
@@ -51,9 +50,14 @@ class GpsPoller(threading.Thread):
     def fix(self):
         return self.last_fix
 
+    def start(self):
+        self.running = True
+        self.thread = Thread(target = self.run, name = "EVNotiPi/GPS")
+        self.thread.start()
+
     def stop(self):
         self.running = False
         self.join()
 
     def checkWatchdog(self):
-        return self.is_alive() #(time() - self.watchdog) <= self.watchdog_timeout
+        return self.thread.is_alive() #(time() - self.watchdog) <= self.watchdog_timeout
