@@ -12,7 +12,8 @@ class KONA_EV(Car):
         self.dongle.setProtocol('CAN_11_500')
         self.dongle.setCANRxMask(0x7ff)
 
-    def getData(self):
+    def readDongle(self):
+        now = time()
         raw = {}
 
         self.dongle.setCANRxFilter(0x7ec)
@@ -30,6 +31,7 @@ class KONA_EV(Car):
 
         data = self.getBaseData()
 
+        data['timestamp'] = now
         data['SOC_BMS'] = raw[b220101][0x7ec][1][2] / 2.0
         data['SOC_DISPLAY'] = raw[b220105][0x7ec][5][0] / 2.0
 
