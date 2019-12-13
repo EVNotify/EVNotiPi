@@ -31,7 +31,7 @@ class KONA_EV(Car):
 
         data = self.getBaseData()
 
-        data['timestamp']   = now
+        data['timestamp'] = now
         data['SOC_BMS'] = raw[b220101][0x7ec][1][2] / 2.0
         data['SOC_DISPLAY'] = raw[b220105][0x7ec][5][0] / 2.0
 
