@@ -36,7 +36,7 @@ This pinout should be compatible to most DB9 to OBD2 cables. One can always buil
 - sudo apt update
 - sudo apt upgrade
 - sudo apt install python3-{pip,rpi.gpio,pexpect,serial,requests,sdnotify,can,pyroute2,smbus}
-- sudo systemctl stop --now serial-getty@ttyAMA0.service
+- sudo systemctl disable --now serial-getty@ttyAMA0.service
 #### If using the Diamex PI-OBD-HAT
 - echo "dtoverlay=disable-bt" | sudo tee -a /boot/config.txt
 #### If using MCP2515 based adapter:
