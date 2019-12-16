@@ -42,6 +42,8 @@ This pinout should be compatible to most DB9 to OBD2 cables. One can always buil
 - sudo sed -i -re '/max-load/ s/^#//' /etc/watchdog.conf
 #### If using MCP2515 based adapter:
 - sudo sed -i -re "\\$adtparam=spi=on\ndtoverlay=mcp2515-can0,oscillator=16000000,interrupt=25\ndtoverlay=spi-bcm2835-overlay" /boot/config.txt
+- echo -e "[Match]\nDriver=mcp251x\n\n[CAN]\nBitRate=500000\nRestartSec=100ms" | tee /etc/systemd/network/can.network
+- sudo systemctl enable --now systemd-networkd
 #### If using the i2c watchdog (the one with the Trinket M0):
 - sudo sed -i -re "\\$adtparam=i2c_arm=on" /boot/config.txt
 - sudo sed -i -re "\\$ai2c-dev" /etc/modules
