@@ -36,7 +36,7 @@ class PiOBD2Hat:
                     self.log.warning("Stray data in buffer: " + \
                             str(self.serial.read(self.serial.in_waiting)))
                     sleep(0.2)
-                self.log.debug("Send AT command: {}".format(cmd))
+                self.log.debug("Send message: {}".format(self.cmd.hex()))
                 self.exp.send(cmd + b'\r\n')
                 self.exp.expect('>')
                 ret = self.exp.before.strip(b'\r\n')
@@ -60,7 +60,8 @@ class PiOBD2Hat:
                     self.log.warning("Stray data in buffer: " + \
                             str(self.serial.read(self.serial.in_waiting)))
                     sleep(0.2)
-                self.exp.send(cmd + '\r\n')
+                self.log.debug("Send message: {}".format(self.cmd.hex()))
+                self.exp.send(cmd + b'\r\n')
                 self.exp.expect('>')
                 ret = self.exp.before.strip(b'\r\n')
                 self.log.debug("Received: {}".format(ret))
