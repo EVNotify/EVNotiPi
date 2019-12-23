@@ -41,7 +41,8 @@ class SocketCAN:
 
             self.cmd_msg = can.Message(extended_id = is_extended, arbitration_id = self.can_id, data = msg_data)
 
-            self.log.debug("{} Sent messsage".format(self.cmd_msg))
+            #print(hexlify(cmd),msg_data)
+            self.log.debug("{} send message".format(self.cmd_msg))
             self.bus.send(self.cmd_msg)
 
             data = {}
