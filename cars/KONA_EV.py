@@ -23,7 +23,7 @@ class KONA_EV(Car):
 
         self.dongle.setCANRxFilter(0x7ce)
         self.dongle.setCanID(0x7c6)
-        #raw[b220100] = self.dongle.sendCommand(b220100)
+        raw[b220100] = self.dongle.sendCommand(b220100)
         raw[b22b002] = self.dongle.sendCommand(b22b002)
 
         data = self.getBaseData()
