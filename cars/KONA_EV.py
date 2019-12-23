@@ -35,7 +35,7 @@ class KONA_EV(Car):
         data['SOC_BMS'] = raw[b220101][0x7ec][1][2] / 2.0
         data['SOC_DISPLAY'] = raw[b220105][0x7ec][5][0] / 2.0
 
-        chargingBits = raw[b220101][0x7ec][1][7]
+        chargingBits = raw[b220101][0x7ec][1][6]
         dcBatteryCurrent = ifbs(raw[b220101][0x7ec][2][0:2]) / 10.0
         dcBatteryVoltage = ifbu(raw[b220101][0x7ec][2][2:4]) / 10.0
 
