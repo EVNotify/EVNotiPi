@@ -21,12 +21,9 @@ class KONA_EV(Car):
         for cmd in [b220101,b220105]:
             raw[cmd] = self.dongle.sendCommand(cmd)
 
-        self.dongle.setCANRxFilter(0x7ee)
-        self.dongle.setCanID(0x7e6)
-        raw[b220100] = self.dongle.sendCommand(b220100)
-
         self.dongle.setCANRxFilter(0x7ce)
         self.dongle.setCanID(0x7c6)
+        raw[b220100] = self.dongle.sendCommand(b220100)
         raw[b22b002] = self.dongle.sendCommand(b22b002)
 
         data = self.getBaseData()
