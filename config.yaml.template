@@ -23,7 +23,8 @@ car:
    interval: 1
 
 watchdog:
-   enable: true
+   # Enable if using the Trinket M0 watchdog
+   enable: false
    i2c_address: 8
    i2c_bus: 1
 

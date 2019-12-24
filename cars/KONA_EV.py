@@ -21,12 +21,9 @@ class KONA_EV(Car):
         for cmd in [b220101,b220105]:
             raw[cmd] = self.dongle.sendCommand(cmd)
 
-        self.dongle.setCANRxFilter(0x7ee)
-        self.dongle.setCanID(0x7e6)
-        raw[b220100] = self.dongle.sendCommand(b220100)
-
         self.dongle.setCANRxFilter(0x7ce)
         self.dongle.setCanID(0x7c6)
+        #raw[b220100] = self.dongle.sendCommand(b220100)
         raw[b22b002] = self.dongle.sendCommand(b22b002)
 
         data = self.getBaseData()
@@ -35,7 +32,7 @@ class KONA_EV(Car):
         data['SOC_BMS'] = raw[b220101][0x7ec][1][2] / 2.0
         data['SOC_DISPLAY'] = raw[b220105][0x7ec][5][0] / 2.0
 
-        chargingBits = raw[b220101][0x7ec][1][7]
+        chargingBits = raw[b220101][0x7ec][1][6]
         dcBatteryCurrent = ifbs(raw[b220101][0x7ec][2][0:2]) / 10.0
         dcBatteryVoltage = ifbu(raw[b220101][0x7ec][2][2:4]) / 10.0
 
@@ -51,7 +48,7 @@ class KONA_EV(Car):
                 'dcBatteryPower':           dcBatteryCurrent * dcBatteryVoltage / 1000.0,
                 'dcBatteryVoltage':         dcBatteryVoltage,
                 'soh':                      ifbu(raw[b220105][0x7ec][4][1:3]) / 10.0,
-                'externalTemperature':      (raw[b220100][0x7ee][1][3] - 80) / 2.0,
+                #'externalTemperature':      (raw[b220100][0x7ce][1][3] - 80) / 2.0,
                 'odo':                      ffbu(raw[b22b002][0x7ce][1][5:7] + raw[b22b002][0x7ce][2][0:2]),
                 }
 
