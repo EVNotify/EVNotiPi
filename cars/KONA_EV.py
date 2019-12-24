@@ -36,6 +36,8 @@ class KONA_EV(Car):
                 'batteryInletTemperature':  ifbs(raw[b220101][25:26]),
                 'batteryMaxTemperature':    ifbs(raw[b220101][17:18]),
                 'batteryMinTemperature':    ifbs(raw[b220101][18:19]),
+                'cumulativeEnergyCharged':  ifbu(raw[b220101][41:45]) / 10.0,
+                'cumulativeEnergyDischarged': ifbu(raw[b220101][45:49]) / 10.0,
                 'charging':                 1 if chargingBits & 0x40 else 0,
                 'normalChargePort':         1 if chargingBits & 0x10 else 0,
                 'rapidChargePort':          1 if chargingBits & 0x20 else 0,
