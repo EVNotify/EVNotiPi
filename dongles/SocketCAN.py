@@ -141,6 +141,7 @@ class SocketCAN:
                     self.log.debug("{} single frame".format(msg))
                     data_len = msg.data[0] & 0x0f
                     data = bytearray(msg.data[1:data_len+1])
+                    break
 
                 elif msg.data[0] & 0xf0 == 0x10:
                     self.log.debug("{} first frame".format(msg))
