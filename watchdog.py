@@ -60,3 +60,16 @@ class Watchdog:
                 'emergency': emerg * self.i2c_voltage_multiplier,
                 }
 
+
+if __name__ == '__main__':
+    config = {
+            'enable': True,
+            'i2c_address': 8,
+            'i2c_bus': 1
+            }
+
+    wd = Watchdog(config)
+
+    print(wd.getShutdownFlag(),
+            wd.getVoltage(),
+            wd.getThresholds())
