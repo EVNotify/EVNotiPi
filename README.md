@@ -40,6 +40,7 @@ This pinout should be compatible to most DB9 to OBD2 cables. One can always buil
 - sudo sed -i -re "\\$agpu_mem=16\nmax_usb_current=1\nenable_uart=1\ndtoverlay=disable-bt\ndtoverlay=gpio-poweroff:active_low" -e "/^dtparam=audio=/ s/^/#/" /boot/config.txt
 - sudo sed -i -re '/console=/ s/$/ panic=1/' /boot/cmdline.txt
 - sudo sed -i -re '/max-load/ s/^#//' /etc/watchdog.conf
+- sudo sed -i -re "\\$adtparam=watchdog=on" /boot/config.txt
 #### If using MCP2515 based adapter:
 - sudo sed -i -re "\\$adtparam=spi=on\ndtoverlay=mcp2515-can0,oscillator=16000000,interrupt=25\ndtoverlay=spi-bcm2835-overlay" /boot/config.txt
 - echo -e "[Match]\nDriver=mcp251x\n\n[CAN]\nBitRate=500000\nRestartSec=100ms" | tee /etc/systemd/network/can.network
