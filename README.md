@@ -45,7 +45,7 @@ This pinout should be compatible to most DB9 to OBD2 cables. One can always buil
 - echo -e "[Match]\nDriver=mcp251x\n\n[CAN]\nBitRate=500000\nRestartSec=100ms" | tee /etc/systemd/network/can.network
 - sudo systemctl enable --now systemd-networkd
 #### If using the i2c watchdog (the one with the Trinket M0):
-- sudo sed -i -re "\\$adtparam=i2c_arm=on" /boot/config.txt
+- sudo sed -i -re "\\$adtparam=i2c_arm=on,i2c_arm_baudrate=50000" /boot/config.txt
 - sudo sed -i -re "\\$ai2c-dev" /etc/modules
 ### EVNotiPi
 - sudo git clone --recurse-submodules https://github.com/EVNotify/EVNotiPi /opt/evnotipi
