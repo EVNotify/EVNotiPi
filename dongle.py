@@ -25,7 +25,7 @@ class CanDebug:
         self.data_queue.append(json)
         try:
             self.session.post(self.url, data=self.data_queue, auth=(self.user, self.pwd), timeout=0.1)
-            self.data_queue = []
+            self.data_queue.clear()
         except requests.exceptions.Timeout as e:
             self.log.info("Timeout occured {}".format(e))
 
