@@ -279,9 +279,6 @@ class SocketCAN:
         #ip.link('set', index=ifidx, bitrate=500000) # Cannot set bitrate this way ?!?
         ip.close()
 
-    def setAllowLongMessages(self, value):
-        return True
-
     def setProtocol(self, prot):
         # SocketCAN doesn't support anything else
         if prot == 'CAN_11_500':
