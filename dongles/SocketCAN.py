@@ -40,7 +40,7 @@ class SocketCAN:
             self.cmd_msg = can.Message(extended_id = self.is_extended, arbitration_id = self.can_id, data = msg_data)
 
             #print(hexlify(cmd),msg_data)
-            self.log.debug("{} send message".format(self.cmd_msg))
+            if self.log.isEnabledFor(logging.DEBUG): self.log.debug("{} send message".format(self.cmd_msg))
             self.bus.send(self.cmd_msg)
 
             data = {}
@@ -55,23 +55,23 @@ class SocketCAN:
                 can_id = msg.arbitration_id
 
                 if msg.data[0] & 0xf0 == 0x00:
-                    self.log.debug("{} single frame".format(msg))
+                    if self.log.isEnabledFor(logging.DEBUG): self.log.debug("{} single frame", msg)
                     data_len[can_id] = msg.data[0] & 0x0f
                     data[can_id] = [bytes(msg.data[1:])]
 
                 elif msg.data[0] & 0xf0 == 0x10:
-                    self.log.debug("{} first frame".format(msg))
+                    if self.log.isEnabledFor(logging.DEBUG): self.log.debug("{} first frame", msg)
                     data_len[can_id] = (msg.data[0] & 0x0f) + msg.data[1]
                     lines = math.ceil(data_len[can_id] / 7)
                     data[can_id] = [None] * lines
                     data[can_id][0] = bytes(msg.data[2:])
 
-                    self.log.debug("Send flow control message")
+                    if self.log.isEnabledFor(logging.DEBUG): self.log.debug("Send flow control message")
                     flow_msg = can.Message(extended_id = self.is_extended, arbitration_id = cantx, data = [0x30,0,0,0,0,0,0,0])
                     self.bus.send(flow_msg)
 
                 elif msg.data[0] & 0xf0 == 0x20:
-                    self.log.debug("{} consecutive frame".format(msg))
+                    if self.log.isEnabledFor(logging.DEBUG): self.log.debug("{} consecutive frame", msg)
                     idx = msg.data[0] & 0x0f
                     data[can_id][idx] = bytes(msg.data[1:])
                     if idx + 1 == data_len[can_id]:
@@ -120,7 +120,7 @@ class SocketCAN:
                 'can_mask': 0x1fffffff if self.is_extended else 0x7ff
                 }])
 
-            self.log.debug("{} Sent messsage".format(self.cmd_msg))
+            if self.log.isEnabledFor(logging.DEBUG): self.log.debug("{} Sent messsage".format(self.cmd_msg))
             self.bus.send(self.cmd_msg)
 
             data = None
@@ -129,29 +129,28 @@ class SocketCAN:
 
             while True:
                 msg = self.bus.recv(0.2)
-                self.log.debug(msg)
 
                 if msg == None:
                     break
 
                 if msg.data[0] & 0xf0 == 0x00:
-                    self.log.debug("{} single frame".format(msg))
+                    if self.log.isEnabledFor(logging.DEBUG): self.log.debug("{} single frame", msg)
                     data_len = msg.data[0] & 0x0f
                     data = bytes(msg.data[1:data_len+1])
                     break
 
                 elif msg.data[0] & 0xf0 == 0x10:
-                    self.log.debug("{} first frame".format(msg))
+                    if self.log.isEnabledFor(logging.DEBUG): self.log.debug("{} first frame", msg)
                     data_len = (msg.data[0] & 0x0f) + msg.data[1]
                     data = bytearray(msg.data[2:])
 
-                    self.log.debug("Send flow control message")
+                    if self.log.isEnabledFor(logging.DEBUG): self.log.debug("Send flow control message")
                     flow_msg = can.Message(extended_id = self.is_extended, arbitration_id = cantx, data = [0x30,0,0,0,0,0,0,0])
                     self.bus.send(flow_msg)
                     last_idx = 0
 
                 elif msg.data[0] & 0xf0 == 0x20:
-                    self.log.debug("{} consecutive frame".format(msg))
+                    if self.log.isEnabledFor(logging.DEBUG): self.log.debug("{} consecutive frame", msg)
                     idx = msg.data[0] & 0x0f
                     if (last_idx + 1) % 0x10 != idx:
                         raise CanError("Bad frame order: last_idx({}) idx({})".format(last_idx,idx))
@@ -164,8 +163,10 @@ class SocketCAN:
                         break
 
                 elif msg.data[0] & 0xf0 == 0x30:
+                    self.log.debug(msg)
                     raise CanError("Unexpected flow control: {}".format(msg))
                 else:
+                    self.log.debug(msg)
                     raise CanError("Unexpected message: {}".format(msg))
 
         except OSError as e:
