@@ -1,3 +1,6 @@
+if __name__ == '__main__':
+    import sys
+    sys.path.insert(0,'.')
 from car import *
 from time import time
 
@@ -80,4 +83,30 @@ class ZOE_ZE50(Car):
             "NORMAL_SPEED": 22.0,
             "FAST_SPEED": 50.0
         }
+
+
+if __name__ == '__main__':
+    import sys
+    import logging
+    import pprint
+    pp = pprint.PrettyPrinter(indent=2)
+
+    logging.basicConfig(level=logging.DEBUG)
+
+    sys.path.insert(0, 'dongles')
+    from SocketCAN import SocketCAN
+    sys.path.insert(0, 'cars')
+    import ZOE_ZE50
+
+    config = {
+            'type': 'SocketCAN',
+            'port': 'vcan0',
+            'speed': 500000,
+            }
+
+    dongle = SocketCAN(config, watchdog=None)
+
+    car = ZOE_ZE50.ZOE_ZE50({'interval': 1}, dongle)
+
+    pp.pprint(car.readDongle())
 
