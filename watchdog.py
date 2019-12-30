@@ -8,15 +8,15 @@ class Watchdog:
         self.i2c_address = config['i2c_address']
         self.i2c_voltage_multiplier = 0.06
         self.i2c_bus_id = config['i2c_bus'] if 'i2c_bus' in config else 0
-        self.i2c_bus = SMBus()
+        self.i2c_bus = SMBus(self.i2c_bus_id)
         self.i2c_lock = Lock()
 
     def _BusOpen(self):
         self.i2c_lock.acquire()
-        self.i2c_bus.open(self.i2c_bus_id)
+        #self.i2c_bus.open()
 
     def _BusClose(self):
-        self.i2c_bus.close()
+        #self.i2c_bus.close()
         self.i2c_lock.release()
 
     def getShutdownFlag(self):
