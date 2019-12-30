@@ -27,6 +27,10 @@ class PiOBD2Hat:
 
         self.voltage_multiplier = 0.694
 
+        self.current_canid = 0
+        self.current_canfilter = 0
+        self.current_canmask = 0
+
     def sendAtCmd(self, cmd, expect='OK'):
         cmd = bytes(cmd, 'utf-8')
         expect = bytes(expect, 'utf-8')
@@ -141,6 +145,11 @@ class PiOBD2Hat:
         if prot == 'CAN_11_500':
             self.sendAtCmd('ATP6','6 = ISO 15765-4, CAN (11/500)')
             self.sendAtCmd('ATONI1')   # No init sequence
+            self.is_extended = False
+        elif prot == 'CAN_29_500':
+            self.sendAtCmd('ATP7','7 = ISO 15765-4, CAN (29/500)')
+            self.sendAtCmd('ATONI1')   # No init sequence
+            self.is_extended = True
         else:
             raise Exception('Unsupported protocol %s' % prot)
 
@@ -148,25 +157,31 @@ class PiOBD2Hat:
         if isinstance(can_id, bytes):
             can_id = str(can_id)
         elif isinstance(can_id, int):
-            can_id = format(can_id, 'X')
+            can_id = format(can_id, '08X' if self.is_extended else '03X')
 
-        self.sendAtCmd('ATCT' + can_id)
+        if self.current_canid != can_id:
+            self.sendAtCmd('ATCT' + can_id)
+            self.current_canid == can_id
 
     def setCANRxMask(self, mask):
         if isinstance(mask, bytes):
             mask = str(mask)
         elif isinstance(mask, int):
-            mask = format(mask, 'X')
+            mask = format(mask, '08X' if self.is_extended else '03X')
 
-        self.sendAtCmd('ATCM' + mask)
+        if self.current_canmask != mask:
+            self.sendAtCmd('ATCM' + mask)
+            self.current_canmask == mask
 
     def setCANRxFilter(self, addr):
         if isinstance(addr, bytes):
             addr = str(addr)
         elif isinstance(addr, int):
-            addr = format(addr, 'X')
+            addr = format(addr, '08X' if self.is_extended else '03X')
 
-        self.sendAtCmd('ATCR' + addr)
+        if self.current_canfilter != addr:
+            self.sendAtCmd('ATCR' + addr)
+            self.current_canfilter == addr
 
     def getObdVoltage(self):
         if self.watchdog:
