@@ -265,17 +265,17 @@ class PiOBD2Hat:
             ret = self.sendAtCmd('AT!10','V')
             return round(float(ret[:-1]) * self.voltage_multiplier, 2)
 
-    def isCarAvailable(self):
-        if self.watchdog:
-            return self.watchdog.getShutdownFlag() == 0
-        else:
-            #return self.getObdVoltage() > 13.0
-            return GPIO.input(self.pin) == False
-
     def calibrateObdVoltage(self, realVoltage):
         if self.watchdog:
             self.watchdog.calibrateVoltage(realVoltage)
         else:
             ret = self.sendAtCmd('AT!10','V')
             self.voltage_multiplier = realVoltage / float(ret[:-1])
+
+    def isCarAvailable(self):
+        if self.watchdog:
+            return self.watchdog.getShutdownFlag() == 0
+        else:
+            #return self.getObdVoltage() > 13.0
+            return GPIO.input(self.pin) == False
 

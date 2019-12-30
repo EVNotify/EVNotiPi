@@ -346,13 +346,13 @@ class SocketCAN:
         if self.watchdog:
             return round(self.watchdog.getVoltage(), 2)
 
+    def calibrateObdVoltage(self, realVoltage):
+        if self.watchdog:
+            self.watchdog.calibrateVoltage(realVoltage)
+
     def isCarAvailable(self):
         if 'input_pin' in self.config:
             return True if GPIO.input(self.config['input_pin']) == 0 else False
         elif self.watchdog:
             return self.watchdog.getShutdownFlag() == 0
-
-    def calibrateObdVoltage(self, realVoltage):
-        if self.watchdog:
-            self.watchdog.calibrateVoltage(realVoltage)
 
