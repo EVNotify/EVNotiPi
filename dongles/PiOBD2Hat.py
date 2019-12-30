@@ -126,6 +126,81 @@ class PiOBD2Hat:
 
         return data
 
+    def sendCommandEx(self, cmd, cantx, canrx):
+        cmd = cmd.hex()
+        self.setCanID(cantx)
+        self.setCANRxFilter(canrx)
+        self.setCANRxMask(0x1fffffff if self.is_extended else 0x7ff)
+
+        try:
+            with self.serial_lock:
+                while self.serial.in_waiting:   # Clear the input buffer
+                    self.log.warning("Stray data in buffer: " + \
+                            str(self.serial.read(self.serial.in_waiting)))
+                    sleep(0.2)
+                self.log.debug("Send command: {}".format(cmd))
+                self.exp.send(cmd + '\r\n')
+                self.exp.expect('>')
+                ret = self.exp.before.strip(b'\r\n')
+                self.log.debug("Received: {}".format(ret))
+        except pexpect.exceptions.TIMEOUT:
+            ret = b'TIMEOUT'
+
+        if ret in [b'NO DATA', b'TIMEOUT', b'CAN NO ACK']:
+            raise NoData(ret)
+        elif ret in [b'INPUT TIMEOUT', b'NO INPUT CHAR', b'UNKNOWN COMMAND',
+                b'WRONG HEXCHAR COUNT', b'ILLEGAL COMMAND', b'SYNTAX ERROR',
+                b'WRONG VALUE/RANGE', b'UNABLE TO CONNECT', b'BUS BUSY',
+                b'NO FEEDBACK', b'NO SYNCBYTE', b'NO KEYBYTE',
+                b'NO ADDRESSBYTE', b'WRONG PROTOCOL', b'DATA ERROR',
+                b'CHECKSUM ERROR', b'NO ANSWER', b'COLLISION DETECT',
+                b'CAN NO ANSWER', b'PRTOTOCOL 8 OR 9 REQUIRED',
+                b'CAN ERROR']:
+            raise CanError("Failed Command {}\n{}".format(cmd,ret))
+
+        try:
+            data = None
+            data_len = 0
+            raw = str(ret,'ascii').split('\r\n')
+
+            for line in raw:
+                if (self.is_extended == False and len(line) != 19) \
+                        or (self.is_extended == True and len(line) != 27):
+                    raise ValueError
+
+                if self.is_extended:
+                    offset = 8
+                else:
+                    offset = 3
+
+                identifier = int(line[0:offset], 16)
+                frame_type = int(line[offset:offset+1], 16)
+
+                if frame_type == 0:     # Single frame
+                    self.log.debug("{} single frame".format(line))
+                    data_len = int(line[offset+1:offset+2], 16)
+                    data = bytes.fromhex(line[offset+2:data_len*2+offset+2])
+                elif frame_type == 1:   # First frame
+                    self.log.debug("{} first frame".format(line))
+                    data_len = int(line[offset+1:offset+4], 16)
+                    data = bytearray.fromhex(line[offset+4:])
+                elif frame_type == 2:   # Consecutive frame
+                    self.log.debug("{} consecutive frame".format(line))
+                    frame_len = min(7, data_len - len(data))
+                    data.extend(bytearray.fromhex(line[offset+2:frame_len*2+offset+2]))
+                else:                   # Unexpected frame
+                    raise ValueError
+
+            if not data or data_len == 0:
+                raise NoData('NO DATA')
+            if data_len != len(data):
+                raise CanError("Data length mismatch {}: {} vs {} {}".format(cmd, data_len, len(data), data.hex()))
+
+        except ValueError:
+            raise CanError("Failed Command {}\n{}".format(cmd,ret))
+
+        return data
+
     def initDongle(self):
         cmds = [['ATRST','DIAMEX PI-OBD'],  # Cold start
                 ['ATE0','OK'],              # Disable echo
