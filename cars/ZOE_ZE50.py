@@ -12,7 +12,7 @@ class ZOE_ZE50(Car):
 
     def __init__(self, config, dongle):
         Car.__init__(self, config, dongle)
-        self.dongle.setProtocol('CAN_11_500')
+        self.dongle.setProtocol('CAN_29_500')
 
     def readDongle(self):
         def bms(cmd):
