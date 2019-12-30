@@ -161,6 +161,7 @@ class PiOBD2Hat:
         try:
             data = None
             data_len = 0
+            last_idx = 0
             raw = str(ret,'ascii').split('\r\n')
 
             for line in raw:
@@ -180,14 +181,27 @@ class PiOBD2Hat:
                     self.log.debug("{} single frame".format(line))
                     data_len = int(line[offset+1:offset+2], 16)
                     data = bytes.fromhex(line[offset+2:data_len*2+offset+2])
+                    break
+
                 elif frame_type == 1:   # First frame
                     self.log.debug("{} first frame".format(line))
                     data_len = int(line[offset+1:offset+4], 16)
                     data = bytearray.fromhex(line[offset+4:])
+                    last_idx = 0
+
                 elif frame_type == 2:   # Consecutive frame
                     self.log.debug("{} consecutive frame".format(line))
+                    idx = int(line[offset+2:offset+3], 16)
+                    if (last_idx + 1) % 0x10 != idx:
+                        raise CanError("Bad frame order: last_idx({}) idx({})".format(last_idx,idx))
+
                     frame_len = min(7, data_len - len(data))
                     data.extend(bytearray.fromhex(line[offset+2:frame_len*2+offset+2]))
+                    last_idx = idx
+
+                    if data_len == len(data):
+                        break
+
                 else:                   # Unexpected frame
                     raise ValueError
 

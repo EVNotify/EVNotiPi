@@ -125,6 +125,7 @@ class SocketCAN:
 
             data = None
             data_len = 0
+            last_idx = 0
 
             while True:
                 msg = self.bus.recv(0.2)
@@ -147,12 +148,17 @@ class SocketCAN:
                     self.log.debug("Send flow control message")
                     flow_msg = can.Message(extended_id = self.is_extended, arbitration_id = cantx, data = [0x30,0,0,0,0,0,0,0])
                     self.bus.send(flow_msg)
+                    last_idx = 0
 
                 elif msg.data[0] & 0xf0 == 0x20:
                     self.log.debug("{} consecutive frame".format(msg))
                     idx = msg.data[0] & 0x0f
+                    if (last_idx + 1) % 0x10 != idx:
+                        raise CanError("Bad frame order: last_idx({}) idx({})".format(last_idx,idx))
+
                     frame_len = min(7, data_len - len(data))
                     data.extend(msg.data[1:frame_len+1])
+                    last_idx = idx
 
                     if data_len == len(data):
                         break
