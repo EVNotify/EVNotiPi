@@ -29,7 +29,8 @@ class EVNotify:
         self.watchdog_timeout = self.poll_interval * 10
         self.evnotify = evnotifyapi.EVNotify(config['akey'], config['token'])
 
-        self.data = None
+        self.data = []
+        self.gps_data = []
         self.data_lock = Condition()
 
         self.settings = None
@@ -59,15 +60,43 @@ class EVNotify:
     def dataCallback(self, data):
         self.log.debug("Enqeue...")
         with self.data_lock:
-            self.data = data
+            self.data.append(data)
+            self.gps_data.append(self.gps.fix())
             self.data_lock.notify()
 
     def submitData(self):
         while self.running:
             with self.data_lock:
                 self.data_lock.wait()
-                data = self.data
-                self.data = None
+                data = self.data[-1:]
+                if 'EXTENDED' in data:
+                    for d in self.data[:-1]:
+                        if 'dcBatteryCurrent' in data['EXTENDED']:
+                            data['EXTENDED']['dcBatteryCurrent'] += d['EXTENDED']['dcBatteryCurrent']
+                        if 'dcBatteryPower' in data['EXTENDED']:
+                            data['EXTENDED']['dcBatteryPower']   += d['EXTENDED']['dcBatteryPower']
+                        if 'dcBatteryVoltage' in data['EXTENDED']:
+                            data['EXTENDED']['dcBatteryVoltage'] += d['EXTENDED']['dcBatteryVoltage']
+
+                    if 'dcBatteryCurrent' in data['EXTENDED']:
+                        data['EXTENDED']['dcBatteryCurrent'] /= len(self.data)
+                    if 'dcBatteryPower' in data['EXTENDED']:
+                        data['EXTENDED']['dcBatteryPower']   /= len(self.data)
+                    if 'dcBatteryVoltage' in data['EXTENDED']:
+                        data['EXTENDED']['dcBatteryVoltage'] /= len(self.data)
+
+                fix = self.gps_data[-1:]
+                for f in self.gps_data[:-1]:
+                    fix.latitude += f.latitude
+                    fix.longitude += f.longitude
+                    fix.speed += f.speed
+
+                fix.speed /= len(self.gps_data)
+                fix.latitude /= len(self.gps_data)
+                fix.longitude /= len(self.gps_data)
+
+                self.data.clear()
+                self.gps_data.clear()
 
             now = time()
             self.watchdog = now
@@ -77,7 +106,6 @@ class EVNotify:
                     raise NoData()
 
                 self.log.debug(data)
-                fix = self.gps.fix()
                 self.last_data = now
 
                 self.evnotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'] if 'SOC_BMS' in data else None)
@@ -121,7 +149,7 @@ class EVNotify:
                                 self.log.info("New notification threshold: {}".format(self.socThreshold))
 
                         except envotifyapi.CommunicationError as e:
-                            self.log.error("Commuinication error occured",e)
+                            self.log.error("Communication error occured",e)
 
                     # track charging started
                     if is_charging and self.chargingStartSOC == 0:
