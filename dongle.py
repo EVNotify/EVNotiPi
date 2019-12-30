@@ -40,7 +40,3 @@ class OBDDongle:
         if self.candebug:
             self.candebug.debug(cantx, canrx, cmd, data)
 
-    def sendCommand2(self, cmd):
-        data = self.sendCommand(cmd)
-        # Make data linear here ...
-        return data
