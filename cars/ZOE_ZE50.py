@@ -4,9 +4,16 @@ if __name__ == '__main__':
 from car import *
 from time import time
 
-cmd_soc     = bytes.fromhex('229002')
-cmd_voltage = bytes.fromhex('229006')
-cmd_current = bytes.fromhex('229257')
+cmd_auxVoltage  = bytes.fromhex('222005')   # PR252
+cmd_chargeState = bytes.fromhex('225017')   # ET018
+cmd_soc         = bytes.fromhex('229001')
+cmd_soc_bms     = bytes.fromhex('229002')
+cmd_voltage     = bytes.fromhex('229006')
+cmd_bms_energy  = bytes.fromhex('2291C8')   # PR155
+cmd_odo         = bytes.fromhex('2291CF')   # PR046 ?? 0x80000225 => 17km ?
+cmd_nrg_discharg= bytes.fromhex('229245')   # PR047
+cmd_current     = bytes.fromhex('229257')   # PR218
+cmd_soh         = bytes.fromhex('22927A')   # ET148
 
 class ZOE_ZE50(Car):
 
@@ -16,50 +23,53 @@ class ZOE_ZE50(Car):
 
     def readDongle(self):
         def bms(cmd):
-            return self.dongle.sendCommandEx(cmd, canrx=0x18DAF1DB, cantx=0x18DADBF1)
+            return self.dongle.sendCommandEx(cmd, canrx=0x18DAF1DB, cantx=0x18DADBF1)[3:]
 
         now = time()
 
         data = self.getBaseData()
 
         data['timestamp']   = now
-        data['SOC_BMS']     = ifbu(bms(cmd_soc)[3:]) / 100
-        #data['SOC_DISPLAY'] = raw[b2105][0x7ec][4][6] / 2.0
+        data['SOC_BMS']     = ifbu(bms(cmd_soc_bms)) / 100
+        data['SOC_DISPLAY'] = ifbu(bms(cmd_soc)) / 100
 
-        dcBatteryCurrent = ifbu(bms(cmd_current)[3:]) - 32768
-        dcBatteryVoltage = ifbu(bms(cmd_voltage)[3:]) / 1000
+        dcBatteryCurrent = ifbu(bms(cmd_current)) - 32768
+        dcBatteryVoltage = ifbu(bms(cmd_voltage)) / 1000
+
+        #soh_raw = bms(cmd_soh) # returns 254 bytes of data ...
+
 
         cellVolts = []
         for i in range(0x21, 0x84):
             c = bytes.fromhex("2290{:02x}".format(i))
-            cellVolts.append(ifbu(bms(c)[3:]) / 1000)
+            cellVolts.append(ifbu(bms(c)) / 1000)
 
         moduleTemps = []
         for i in range(0x31, 0x3d):
             c = bytes.fromhex("2291{:02x}".format(i))
-            moduleTemps.append(ifbu(bms(c)[3:]) / 10 - 60)
+            moduleTemps.append(ifbu(bms(c)) / 10 - 60)
 
         data['EXTENDED'] = {
-                #'auxBatteryVoltage':
+                'auxBatteryVoltage':    ifbu(bms(cmd_auxVoltage)) / 100.0,
 
                 #'batteryInletTemperature':
                 'batteryMaxTemperature': max(moduleTemps),
                 'batteryMinTemperature': min(moduleTemps),
 
-                #'cumulativeEnergyCharged':
-                #'cumulativeEnergyDischarged':
+                'cumulativeEnergyCharged':  ifbu(bms(cmd_bms_energy)) / 1000.0,
+                'cumulativeEnergyDischarged': ifbu(bms(cmd_nrg_discharg)) / 1000.0,
 
-                #'charging':
+                'charging':             0 if ifbu(bms(cmd_chargeState)) == 0 else 1,
                 #'normalChargePort':
                 #'rapidChargePort':
 
                 'dcBatteryCurrent':     dcBatteryCurrent,
-                'dcBatteryPower':       dcBatteryCurrent * dcBatteryVoltage / 1000,
+                'dcBatteryPower':       dcBatteryCurrent * dcBatteryVoltage / 1000.0,
                 'dcBatteryVoltage':     dcBatteryVoltage,
 
                 #'soh':
                 #'externalTemperature':
-                #'odo':
+                #'odo':                  ifbu(bms(cmd_odo)),
                 }
 
         data['ADDITIONAL'] = {
