@@ -1,9 +1,6 @@
 from dongle import *
 from serial import Serial
-from time import sleep
 from threading import Lock
-import pexpect
-from pexpect import fdpexpect
 import math
 import RPi.GPIO as GPIO
 import logging
@@ -14,8 +11,7 @@ class ATBASE:
         self.log.info("Initializing PiOBD2Hat")
 
         self.serial_lock = Lock()
-        self.serial = Serial(dongle['port'], baudrate=dongle['speed'])
-        self.exp = fdpexpect.fdspawn(self.serial)
+        self.serial = Serial(dongle['port'], baudrate=dongle['speed']i, timeout=1)
         self.initDongle()
 
         self.config = dongle
@@ -35,16 +31,21 @@ class ATBASE:
                 while self.serial.in_waiting:   # Clear the input buffer
                     self.log.warning("Stray data in buffer: " + \
                             str(self.serial.read(self.serial.in_waiting)))
-                    sleep(0.2)
                 self.log.debug("Send command: {}".format(cmd))
-                self.exp.send(cmd + '\r\n')
-                self.exp.expect('>')
-                ret = self.exp.before.strip(b'\r\n')
+                self.serial.write(cmd + '\r\n')
+                ret = bytearray()
+                while True:
+                    byte = self.serial.read(1)
+                    if byte == b'>':
+                        break
+                    else:
+                        ret.extend(byte)
+
                 self.log.debug("Received: {}".format(ret))
                 if expect and expect not in ret:
                     raise Exception('Expected %s, got %s' % (expect,ret))
 
-        except pexpect.exceptions.TIMEOUT:
+        except serial.SerialTimeoutException:
             ret = b'TIMEOUT'
 
         return ret
