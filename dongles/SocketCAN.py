@@ -320,7 +320,7 @@ class SocketCAN:
         self.socket = socket.socket(socket.PF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
         try:
             self.socket.bind((self.config['port'],))
-            self.socket.settimeout(1)
+            self.socket.settimeout(0.2)
         except OSError:
             self.log.error("Could not bind to %i", self.config['port'])
 
