@@ -201,7 +201,7 @@ class SocketCAN:
                     raise CanError("Unexpected message: {}".format(canStr(msg)))
 
         except socket.timeout as e:
-            raise CanError("Command timed out {}: {}".format(cmd.hex(), e))
+            raise NoData("Command timed out {}: {}".format(cmd.hex(), e))
         except OSError as e:
             raise CanError("Failed Command {}: {}".format(cmd.hex(), e))
 
