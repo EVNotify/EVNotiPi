@@ -86,14 +86,14 @@ class EVNotify:
                         data['EXTENDED']['dcBatteryVoltage'] /= len(self.data)
 
                 fix = self.gps_data[-1:]
-                for f in self.gps_data[:-1]:
-                    fix.latitude += f.latitude
-                    fix.longitude += f.longitude
-                    fix.speed += f.speed
+                #for f in self.gps_data[:-1]:
+                #    fix.latitude += f.latitude
+                #    fix.longitude += f.longitude
+                #    fix.speed += f.speed
 
-                fix.speed /= len(self.gps_data)
-                fix.latitude /= len(self.gps_data)
-                fix.longitude /= len(self.gps_data)
+                #fix.speed /= len(self.gps_data)
+                #fix.latitude /= len(self.gps_data)
+                #fix.longitude /= len(self.gps_data)
 
                 self.data.clear()
                 self.gps_data.clear()

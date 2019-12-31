@@ -85,7 +85,8 @@ class Car:
                 if self.poll_interval:
                     runtime = time() - now
                     interval = self.poll_interval - (runtime if runtime > self.poll_interval else 0)
-                    sleep(interval)
+                    if interval > 0:
+                        sleep(interval)
 
                 elif self.skip_polling:
                     sleep(1)
