@@ -41,6 +41,7 @@ class ATBASE:
                     else:
                         ret.extend(byte)
 
+                ret = ret.strip(b'\r\n')
                 self.log.debug("Received: {}".format(ret))
                 if expect:
                     expect = bytes(expect, 'ascii')
@@ -129,6 +130,7 @@ class ATBASE:
             last_idx = 0
             raw = str(ret,'ascii').split('\r\n')
 
+            #self.log.debug(raw)
             for line in raw:
                 if (self.is_extended == False and len(line) != 19) \
                         or (self.is_extended == True and len(line) != 27):
@@ -156,7 +158,7 @@ class ATBASE:
 
                 elif frame_type == 2:   # Consecutive frame
                     self.log.debug("{} consecutive frame".format(line))
-                    idx = int(line[offset+2:offset+3], 16)
+                    idx = int(line[offset+1:offset+2], 16)
                     if (last_idx + 1) % 0x10 != idx:
                         raise CanError("Bad frame order: last_idx({}) idx({})".format(last_idx,idx))
 
