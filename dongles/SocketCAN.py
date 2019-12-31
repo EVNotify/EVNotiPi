@@ -45,7 +45,7 @@ class SocketCAN:
                     len(msg_data), msg_data)
 
             if self.log.isEnabledFor(logging.DEBUG):
-                self.log.debug("{} send message".format(canStr(can_msg)))
+                self.log.debug("%s send message", canStr(can_msg))
 
             self.socket.send(cmd_msg)
 
@@ -61,7 +61,7 @@ class SocketCAN:
 
                 if frame_type == 0x00:
                     if self.log.isEnabledFor(logging.DEBUG):
-                        self.log.debug("{} single frame", canStr(msg))
+                        self.log.debug("%s single frame", canStr(msg))
 
                     data_len[can_id] = msg_data[0] & 0x0f
                     data[can_id] = [bytes(msg_data[1:])]
@@ -69,7 +69,7 @@ class SocketCAN:
 
                 elif frame_type == 0x10:
                     if self.log.isEnabledFor(logging.DEBUG):
-                        self.log.debug("{} first frame", canStr(msg))
+                        self.log.debug("%s first frame", canStr(msg))
 
                     data_len[can_id] = (msg_data[0] & 0x0f) + msg_data[1]
                     lines = math.ceil(data_len[can_id] / 7)
@@ -86,7 +86,7 @@ class SocketCAN:
 
                 elif frame_type == 0x20:
                     if self.log.isEnabledFor(logging.DEBUG):
-                        self.log.debug("{} consecutive frame", canStr(msg))
+                        self.log.debug("%s consecutive frame", canStr(msg))
 
                     idx = msg_data[0] & 0x0f
                     data[can_id][idx] = bytes(msg_data[1:])
@@ -126,7 +126,8 @@ class SocketCAN:
 
             msg_data = bytes([cmd_len]) + cmd + b"\00" * (7 - cmd_len) # Pad cmd to 8 bytes
 
-            self.cmd_msg = struct.pack(CANFMT, self.can_id | socket.CAN_EFF_FLAG if self.is_extended else 0,
+            cmd_msg = struct.pack(CANFMT, cantx,
+                    #| socket.CAN_EFF_FLAG if self.is_extended else 0,
                     len(msg_data), msg_data)
 
             self.setFiltersEx([{
@@ -135,24 +136,26 @@ class SocketCAN:
                 }])
 
             if self.log.isEnabledFor(logging.DEBUG):
-                self.log.debug("{} send messsage".format(canStr(cmd_msg)))
+                self.log.debug("%s send messsage", canStr(cmd_msg))
 
-            self.bus.send(self.cmd_msg)
+            self.socket.send(cmd_msg)
 
             data = None
             data_len = 0
             last_idx = 0
 
             while True:
-                msg = self.socket.recv(16)
+                self.log.debug("waiting recv msg")
+                msg = self.socket.recv(72)
                 can_id, length, msg_data = struct.unpack(CANFMT, msg)
+                self.log.debug("Got %x %i %s",can_id, length, msg_data.hex())
                 can_id &= socket.CAN_EFF_MASK
                 msg_data = msg_data[:length]
                 frame_type = msg_data[0] & 0xf0
 
                 if frame_type == 0x00:
                     if self.log.isEnabledFor(logging.DEBUG):
-                        self.log.debug("{} single frame", canStr(msg))
+                        self.log.debug("%s single frame", canStr(msg))
 
                     data_len = msg_data[0] & 0x0f
                     data = bytes(msg_data[1:data_len+1])
@@ -160,7 +163,7 @@ class SocketCAN:
 
                 elif frame_type == 0x10:
                     if self.log.isEnabledFor(logging.DEBUG):
-                        self.log.debug("{} first frame", canStr(msg))
+                        self.log.debug("%s first frame", canStr(msg))
 
                     data_len = (msg_data[0] & 0x0f) + msg_data[1]
                     data = bytearray(msg_data[2:])
@@ -168,7 +171,8 @@ class SocketCAN:
                     if self.log.isEnabledFor(logging.DEBUG):
                         self.log.debug("Send flow control message")
 
-                    flow_msg = struct.pack(CANFMT, cantx | socket.CAN_EFF_FLAG if self.is_extended else 0,
+                    flow_msg = struct.pack(CANFMT, cantx,
+                            #| socket.CAN_EFF_FLAG if self.is_extended else 0,
                             8, b'0\x00\x00\x00\x00\x00\x00\x00')
 
                     self.socket.send(flow_msg)
@@ -177,7 +181,7 @@ class SocketCAN:
 
                 elif frame_type == 0x20:
                     if self.log.isEnabledFor(logging.DEBUG):
-                        self.log.debug("{} consecutive frame", msg)
+                        self.log.debug("%s consecutive frame", canStr(msg))
 
                     idx = msg_data[0] & 0x0f
                     if (last_idx + 1) % 0x10 != idx:
@@ -280,7 +284,7 @@ class SocketCAN:
         try:
             data = {}
 
-            msg = self.socket.recv(16)
+            msg = self.socket.recv(72)
             can_id, length, msg_data = struct.unpack(CANFMT, msg)
             can_id &= socket.CAN_EFF_MASK
             msg_data = msg_data[:length]
@@ -316,9 +320,9 @@ class SocketCAN:
         self.socket = socket.socket(socket.PF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
         try:
             self.socket.bind((self.config['port'],))
-            self.socket.settimeout(0.2)
+            self.socket.settimeout(1)
         except OSError:
-            self.log.error("Could not bind to {}".format(self.config['port'])
+            self.log.error("Could not bind to %i", self.config['port'])
 
 
     def setProtocol(self, prot):
@@ -377,8 +381,8 @@ class SocketCAN:
     def setFiltersEx(self, filters):
         flt = bytearray()
         for f in filters:
-            flt.extend(struct.pack("<LL",
-                    f['id'] | socket.CAN_EFF_FLAG if self.is_extended else 0,
+            flt.extend(struct.pack("=II",
+                    f['id'],# | socket.CAN_EFF_FLAG if self.is_extended else 0,
                     f['mask']))
 
         self.socket.setsockopt(socket.SOL_CAN_RAW, socket.CAN_RAW_FILTER, flt)
