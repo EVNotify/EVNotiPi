@@ -43,14 +43,10 @@ class ATBASE:
                         continue
                     data = self.serial.read(self.serial.in_waiting)
 
-                    endidx = data.find(b'\r\n>')
+                    endidx = data.find(b'>')
                     if endidx >= 0:
-                        pfx = 2 if data[:2] == b'\r\n' else 0
-                        ret.extend(data[pfx:endidx])
+                        ret.extend(data[:endidx])
                         break
-                    elif len(ret) == 0:    # Strip leading b'\r\n'
-                        pfx = 2 if data[:2] == b'\r\n' else 0
-                        ret.extend(data[pfx:])
                     else:
                         ret.extend(data)
 
@@ -64,7 +60,7 @@ class ATBASE:
         except serial.SerialTimeoutException:
             ret = b'TIMEOUT'
 
-        return ret
+        return ret.strip(b'\r\n')
 
     def sendAtCmd(self, cmd, expect='OK'):
         ret = self.talkToDongle(cmd, expect)
