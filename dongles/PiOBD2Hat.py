@@ -45,7 +45,7 @@ class PiOBD2Hat(ATBASE):
 
         if self.current_canid != can_id:
             self.sendAtCmd('ATCT' + can_id)
-            self.current_canid == can_id
+            self.current_canid = can_id
 
     def setCANRxMask(self, mask):
         if isinstance(mask, bytes):
@@ -55,7 +55,7 @@ class PiOBD2Hat(ATBASE):
 
         if self.current_canmask != mask:
             self.sendAtCmd('ATCM' + mask)
-            self.current_canmask == mask
+            self.current_canmask = mask
 
     def setCANRxFilter(self, addr):
         if isinstance(addr, bytes):
@@ -65,7 +65,7 @@ class PiOBD2Hat(ATBASE):
 
         if self.current_canfilter != addr:
             self.sendAtCmd('ATCR' + addr)
-            self.current_canfilter == addr
+            self.current_canfilter = addr
 
     def getObdVoltage(self):
         if self.watchdog:
