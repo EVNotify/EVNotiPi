@@ -1,6 +1,7 @@
 from dongle import *
 import serial
 from threading import Lock
+from time import sleep
 import math
 import RPi.GPIO as GPIO
 import logging
@@ -31,18 +32,30 @@ class ATBASE:
                 while self.serial.in_waiting:   # Clear the input buffer
                     self.log.warning("Stray data in buffer: " + \
                             str(self.serial.read(self.serial.in_waiting)))
+                    sleep(0.1)
+
                 self.log.debug("Send command: {}".format(cmd))
                 self.serial.write(bytes(cmd + '\r\n', 'ascii'))
                 ret = bytearray()
                 while True:
-                    byte = self.serial.read(1)
-                    if byte == b'>':
-                        break
-                    else:
-                        ret.extend(byte)
+                    if not self.serial.in_waiting:
+                        sleep(0.1)
+                        continue
+                    data = self.serial.read(self.serial.in_waiting)
 
-                ret = ret.strip(b'\r\n')
+                    endidx = data.find(b'\r\n>')
+                    if endidx >= 0:
+                        pfx = 2 if data[:2] == b'\r\n' else 0
+                        ret.extend(data[pfx:endidx])
+                        break
+                    elif len(ret) == 0:    # Strip leading b'\r\n'
+                        pfx = 2 if data[:2] == b'\r\n' else 0
+                        ret.extend(data[pfx:])
+                    else:
+                        ret.extend(data)
+
                 self.log.debug("Received: {}".format(ret))
+
                 if expect:
                     expect = bytes(expect, 'ascii')
                     if expect not in ret:
