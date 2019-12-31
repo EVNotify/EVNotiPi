@@ -1,4 +1,4 @@
-from at-base-dongle import *
+from AtBaseDongle import *
 
 class ELM327(ATBASE):
     def __init__(self, dongle, watchdog = None):

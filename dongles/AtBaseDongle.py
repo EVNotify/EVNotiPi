@@ -1,5 +1,5 @@
 from dongle import *
-from serial import Serial
+import serial
 from threading import Lock
 import math
 import RPi.GPIO as GPIO
@@ -11,7 +11,7 @@ class ATBASE:
         self.log.info("Initializing PiOBD2Hat")
 
         self.serial_lock = Lock()
-        self.serial = Serial(dongle['port'], baudrate=dongle['speed']i, timeout=1)
+        self.serial = serial.Serial(dongle['port'], baudrate=dongle['speed'], timeout=1)
         self.initDongle()
 
         self.config = dongle
@@ -32,7 +32,7 @@ class ATBASE:
                     self.log.warning("Stray data in buffer: " + \
                             str(self.serial.read(self.serial.in_waiting)))
                 self.log.debug("Send command: {}".format(cmd))
-                self.serial.write(cmd + '\r\n')
+                self.serial.write(bytes(cmd + '\r\n', 'ascii'))
                 ret = bytearray()
                 while True:
                     byte = self.serial.read(1)
@@ -42,8 +42,10 @@ class ATBASE:
                         ret.extend(byte)
 
                 self.log.debug("Received: {}".format(ret))
-                if expect and expect not in ret:
-                    raise Exception('Expected %s, got %s' % (expect,ret))
+                if expect:
+                    expect = bytes(expect, 'ascii')
+                    if expect not in ret:
+                        raise Exception(b'Expected {}, got {}'.format(expect,ret))
 
         except serial.SerialTimeoutException:
             ret = b'TIMEOUT'
@@ -51,8 +53,6 @@ class ATBASE:
         return ret
 
     def sendAtCmd(self, cmd, expect='OK'):
-        cmd = str(cmd)
-        expect = str(expect)
         ret = self.talkToDongle(cmd, expect)
         return ret.split(b"\r\n")[-1]
 
@@ -61,7 +61,7 @@ class ATBASE:
         @cmd: bytes or bytearray containing command bytes
         """
         cmd = cmd.hex()
-        ret = self.talkToDongle(cmd, expect)
+        ret = self.talkToDongle(cmd)
 
         if ret in this.ret_NoData:
             raise NoData(ret)
@@ -116,9 +116,9 @@ class ATBASE:
         self.setCANRxFilter(canrx)
         self.setCANRxMask(0x1fffffff if self.is_extended else 0x7ff)
 
-        ret = self.talkToDongle(cmd, expect)
+        ret = self.talkToDongle(cmd)
 
-        if ret in this.ret_NoData:
+        if ret in self.ret_NoData:
             raise NoData(ret)
         elif ret in self.ret_CanError:
             raise CanError("Failed Command {}\n{}".format(cmd,ret))
