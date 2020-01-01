@@ -84,6 +84,8 @@ class EVNotify:
             with self.data_lock:
                 self.log.debug('Waiting...')
                 self.data_lock.wait()
+                if len(self.data) == 0:
+                    continue
 
                 self.log.debug("Transmit...")
 
