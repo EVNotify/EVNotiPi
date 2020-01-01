@@ -43,8 +43,8 @@ class ZOE_ZE50(Car):
 
         data.update({
             #Base
-            'SOC_BMS':              ifbu(bms(cmd_soc_bms)) / 100
-            'SOC_DISPLAY':          ifbu(bms(cmd_soc)) / 100
+            'SOC_BMS':              ifbu(bms(cmd_soc_bms)) / 100,
+            'SOC_DISPLAY':          ifbu(bms(cmd_soc)) / 100,
 
             #Extended:
             'auxBatteryVoltage':    ifbu(bms(cmd_auxVoltage)) / 100.0,

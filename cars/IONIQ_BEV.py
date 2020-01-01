@@ -58,8 +58,8 @@ class IONIQ_BEV(Car):
 
         data.update({
             # Base:
-            'SOC_BMS':                  raw[b2101][6] / 2.0
-            'SOC_DISPLAY':              raw[b2105][33] / 2.0
+            'SOC_BMS':                  raw[b2101][6] / 2.0,
+            'SOC_DISPLAY':              raw[b2105][33] / 2.0,
 
             # Extended:
             'auxBatteryVoltage':        raw[b2101][31] / 10.0,

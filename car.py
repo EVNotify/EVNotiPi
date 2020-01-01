@@ -2,6 +2,7 @@ from time import time, sleep
 from threading import Thread
 from dongle import NoData, CanError
 import logging
+from math import isnan
 
 def ifbu(in_bytes): return int.from_bytes(in_bytes, byteorder='big', signed=False)
 def ifbs(in_bytes): return int.from_bytes(in_bytes, byteorder='big', signed=True)
@@ -64,7 +65,7 @@ class Car:
                     'latitude':     None,
                     'longitude':    None,
                     'speed':        None,
-                    'fix_mode':     None,
+                    'fix_mode':     0,
                     }
             if not self.skip_polling or self.dongle.isCarAvailable():
                 if self.skip_polling:
@@ -86,7 +87,7 @@ class Car:
             if fix and fix.mode > 1:
                 if data['charging'] or data['normalChargePort'] or data['rapidChargePort']:
                     speed = 0.0
-                elif isnan(speed):
+                elif isnan(fix.speed):
                     speed = None
                 else:
                     speed = float(fix.speed)
@@ -95,12 +96,12 @@ class Car:
                     'fix_mode':     fix.mode,
                     'latitude':     float(fix.latitude),
                     'longitude':    float(fix.longitude),
-                    'speed':        speed
+                    'speed':        speed,
                     'gdop':         float(fix.gdop),
                     'pdop':         float(fix.pdop),
                     'hdop':         float(fix.hdop),
                     'vdop':         float(fix.vdop),
-                    'altitude':     float(fix.altitude) fix.mode > 2 and not isnan(fix.altitude) else None,
+                    'altitude':     float(fix.altitude) if fix.mode > 2 and not isnan(fix.altitude) else None,
                     'gps_device':   fix.device if fix.device else None,
                     })
 

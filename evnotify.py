@@ -26,7 +26,7 @@ ExtendedFields = (
 class NoData(Exception): pass
 
 class EVNotify:
-    def __init__(self, config, car, gps):
+    def __init__(self, config, car):
         self.log = logging.getLogger("EVNotiPi/EVNotify")
         self.log.info("Initializing EVNotify")
 
@@ -34,7 +34,6 @@ class EVNotify:
         self.car = car
         self.chargingStartSOC = 0
         self.config = config
-        self.gps = gps
         self.last_charging = time()
         self.last_charging_soc = 0
         self.last_evn_settings_poll = 0
@@ -83,29 +82,28 @@ class EVNotify:
     def submitData(self):
         while self.running:
             with self.data_lock:
+                self.log.debug('Waiting...')
                 self.data_lock.wait()
-                data = self.data[-1:]
-                pwr_cnt = 0
-                gps_cnt = 0
-                for d in self.data[:-1]:
-                    if d['dcBatteryCurrent'] and d['dcBatteryPower'] and d['dcBatteryVoltage']:
-                        data['dcBatteryCurrent'] += d['dcBatteryCurrent']
-                        data['dcBatteryPower']   += d['dcBatteryPower']
-                        data['dcBatteryVoltage'] += d['dcBatteryVoltage']
-                        pwr_cnt += 1
-                    if d['speed'] and d['latitude'] and d['longitude']:
-                        data['speed']       += d['speed']
-                        data['latitude']    += d['latitude']
-                        data['longitude']   += d['longitude']
-                        gps_cnt += 1
 
-                data['dcBatteryCurrent'] /= pwr_cnt
-                data['dcBatteryPower']   /= pwr_cnt
-                data['dcBatteryVoltage'] /= pwr_cnt
+                self.log.debug("Transmit...")
 
-                data['speed']       /= gps_cnt
-                data['latitude']    /= gps_cnt
-                data['longitude']   /= gps_cnt
+                avgs = {
+                        'dcBatteryCurrent': [],
+                        'dcBatteryPower': [],
+                        'dcBatteryVoltage': [],
+                        'speed': [],
+                        'latitude': [],
+                        'longitude': [],
+                        'altitude': [],
+                        }
+               
+                for d in self.data:
+                    for k,v in avgs.items():
+                        if k in d and d[k] != None:
+                            v.append(d[k])
+
+                data = self.data[-1]
+                data.update({k:round(sum(v)/len(v),2) for k,v in avgs.items() if len(v) > 0})
 
                 self.data.clear()
 
@@ -113,7 +111,6 @@ class EVNotify:
             self.watchdog = now
 
             try:
-                self.log.debug(data)
                 self.last_data = now
 
                 self.evnotify.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
@@ -129,6 +126,7 @@ class EVNotify:
                     self.evnotify.setLocation({'location': location})
 
                 extended_data = {a:data[a] for a in ExtendedFields if data[a] != None}
+                self.log.debug(extended_data)
                 self.evnotify.setExtended(extended_data)
 
                 # Notification handling from here on
