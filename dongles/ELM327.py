@@ -9,13 +9,13 @@ class ELM327(ATBASE):
                 b'UNABLE TO CONNECT')
 
     def initDongle(self):
-        cmds = [['ATZ','OK'],
-                ['ATE0','OK'],
-                ['ATL1','OK'],
-                ['ATS0','OK'],
-                ['ATH1','OK'],
-                ['ATSTFF','OK'],
-                ['ATFE','OK']]
+        cmds = (('ATZ','OK'),
+                ('ATE0','OK'),
+                ('ATL1','OK'),
+                ('ATS0','OK'),
+                ('ATH1','OK'),
+                ('ATSTFF','OK'),
+                ('ATFE','OK'))
 
         for c,r in cmds:
             self.sendAtCmd(c, r)
