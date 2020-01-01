@@ -22,8 +22,6 @@ class Car:
         self.skip_polling = False
         self.running = False
         self.last_data = 0
-        self.watchdog = time()
-        self.watchdog_timeout = self.poll_interval * 10 if self.poll_interval else 10
         self.data_callbacks = []
 
     def start(self):
@@ -38,7 +36,6 @@ class Car:
     def pollData(self):
         while self.running:
             now = time()
-            self.watchdog = now
 
             # initialize data with required fields; saves all those checks later
             data = {
@@ -90,18 +87,18 @@ class Car:
                 elif isnan(fix.speed):
                     speed = None
                 else:
-                    speed = float(fix.speed)
+                    speed = fix.speed
 
                 data.update({
                     'fix_mode':     fix.mode,
-                    'latitude':     float(fix.latitude),
-                    'longitude':    float(fix.longitude),
+                    'latitude':     fix.latitude,
+                    'longitude':    fix.longitude,
                     'speed':        speed,
-                    'gdop':         float(fix.gdop),
-                    'pdop':         float(fix.pdop),
-                    'hdop':         float(fix.hdop),
-                    'vdop':         float(fix.vdop),
-                    'altitude':     float(fix.altitude) if fix.mode > 2 and not isnan(fix.altitude) else None,
+                    'gdop':         fix.gdop,
+                    'pdop':         fix.pdop,
+                    'hdop':         fix.hdop,
+                    'vdop':         fix.vdop,
+                    'altitude':     fix.altitude if fix.mode > 2 and not isnan(fix.altitude) else None,
                     'gps_device':   fix.device if fix.device else None,
                     })
 
@@ -137,4 +134,5 @@ class Car:
         self.data_callbacks.remove(callback)
 
     def checkWatchdog(self):
-        return self.thread.is_alive() # (time() - self.watchdog) <= self.watchdog_timeout
+        return self.thread.is_alive()
+

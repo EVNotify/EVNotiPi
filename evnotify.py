@@ -41,8 +41,6 @@ class EVNotify:
         self.poll_interval = config['interval']
         self.running = False
         self.thread = None
-        self.watchdog = time()
-        self.watchdog_timeout = self.poll_interval * 10
         self.evnotify = evnotifyapi.EVNotify(config['akey'], config['token'])
 
         self.data = []
@@ -110,7 +108,6 @@ class EVNotify:
                 self.data.clear()
 
             now = time()
-            self.watchdog = now
 
             try:
                 self.last_data = now
@@ -198,4 +195,5 @@ class EVNotify:
 
 
     def checkWatchdog(self):
-        return self.thread.is_alive() # (time() - self.watchdog) <= self.watchdog_timeout
+        return self.thread.is_alive()
+
