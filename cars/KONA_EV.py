@@ -7,11 +7,11 @@ b22b002 = bytes.fromhex('22b002')
 
 class KONA_EV(Car):
 
-    def __init__(self, config, dongle):
-        Car.__init__(self, config, dongle)
+    def __init__(self, config, dongle, gps):
+        Car.__init__(self, config, dongle, gps)
         self.dongle.setProtocol('CAN_11_500')
 
-    def readDongle(self):
+    def readDongle(self, data):
         now = time()
         raw = {}
 
@@ -21,35 +21,33 @@ class KONA_EV(Car):
         #raw[b220100] = self.dongle.sendCommand(b220100)
         raw[b22b002] = self.dongle.sendCommandEx(b22b002, canrx=0x7ce, cantx=0x7c6)
 
-        data = self.getBaseData()
-
-        data['timestamp'] = now
-        data['SOC_BMS'] = raw[b220101][8] / 2.0
-        data['SOC_DISPLAY'] = raw[b220105][34] / 2.0
+        data.update(self.getBaseData())
 
         chargingBits = raw[b220101][12]
         dcBatteryCurrent = ifbs(raw[b220101][13:15]) / 10.0
         dcBatteryVoltage = ifbu(raw[b220101][15:17]) / 10.0
 
-        data['EXTENDED'] = {
-                'auxBatteryVoltage':        raw[b220101][32] / 10.0,
-                'batteryInletTemperature':  ifbs(raw[b220101][25:26]),
-                'batteryMaxTemperature':    ifbs(raw[b220101][17:18]),
-                'batteryMinTemperature':    ifbs(raw[b220101][18:19]),
-                'cumulativeEnergyCharged':  ifbu(raw[b220101][41:45]) / 10.0,
-                'cumulativeEnergyDischarged': ifbu(raw[b220101][45:49]) / 10.0,
-                'charging':                 1 if chargingBits & 0x40 else 0,
-                'normalChargePort':         1 if chargingBits & 0x10 else 0,
-                'rapidChargePort':          1 if chargingBits & 0x20 else 0,
-                'dcBatteryCurrent':         dcBatteryCurrent,
-                'dcBatteryPower':           dcBatteryCurrent * dcBatteryVoltage / 1000.0,
-                'dcBatteryVoltage':         dcBatteryVoltage,
-                'soh':                      ifbu(raw[b220105][28:30]) / 10.0,
-                #'externalTemperature':      (raw[b220100][0x7ce][1][3] - 80) / 2.0,
-                'odo':                      ffbu(raw[b22b002][11:15]),
-                }
-
-        return data
+        data.update({
+            # Base:
+            'SOC_BMS':                  raw[b220101][8] / 2.0
+            'SOC_DISPLAY':              raw[b220105][34] / 2.0
+            # Extended:
+            'auxBatteryVoltage':        raw[b220101][32] / 10.0,
+            'batteryInletTemperature':  ifbs(raw[b220101][25:26]),
+            'batteryMaxTemperature':    ifbs(raw[b220101][17:18]),
+            'batteryMinTemperature':    ifbs(raw[b220101][18:19]),
+            'cumulativeEnergyCharged':  ifbu(raw[b220101][41:45]) / 10.0,
+            'cumulativeEnergyDischarged': ifbu(raw[b220101][45:49]) / 10.0,
+            'charging':                 1 if chargingBits & 0x40 else 0,
+            'normalChargePort':         1 if chargingBits & 0x10 else 0,
+            'rapidChargePort':          1 if chargingBits & 0x20 else 0,
+            'dcBatteryCurrent':         dcBatteryCurrent,
+            'dcBatteryPower':           dcBatteryCurrent * dcBatteryVoltage / 1000.0,
+            'dcBatteryVoltage':         dcBatteryVoltage,
+            'soh':                      ifbu(raw[b220105][28:30]) / 10.0,
+            #'externalTemperature':      (raw[b220100][0x7ce][1][3] - 80) / 2.0,
+            'odo':                      ffbu(raw[b22b002][11:15]),
+            })
 
     def getBaseData(self):
         return {

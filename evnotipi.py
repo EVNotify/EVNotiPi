@@ -56,7 +56,7 @@ else:
     Watchdog = None
 
 dongle = DONGLE(config['dongle'], watchdog = Watchdog)
-car = CAR(config['car'], dongle)
+car = CAR(config['car'], dongle, gps)
 Threads.append(car)
 
 # Init GPS interface
@@ -64,7 +64,7 @@ gps = GpsPoller()
 Threads.append(gps)
 
 # Init EVNotify
-EVNotify = evnotify.EVNotify(config['evnotify'], car, gps)
+EVNotify = evnotify.EVNotify(config['evnotify'], car)
 Threads.append(EVNotify)
 
 # Init WiFi control

@@ -1,4 +1,5 @@
 from car import *
+from dongle import NoData
 from time import time
 
 b2101 = bytes.fromhex('2101')
@@ -11,11 +12,11 @@ b22b002 = bytes.fromhex('22b002')
 
 class IONIQ_BEV(Car):
 
-    def __init__(self, config, dongle):
-        Car.__init__(self, config, dongle)
+    def __init__(self, config, dongle, gps):
+        Car.__init__(self, config, dongle, gps)
         self.dongle.setProtocol('CAN_11_500')
 
-    def readDongle(self):
+    def readDongle(self, data):
         now = time()
         raw = {}
 
@@ -24,11 +25,13 @@ class IONIQ_BEV(Car):
 
         raw[b2180] = self.dongle.sendCommandEx(b2180, canrx=0x7ee, cantx=0x7e6)
 
-        data = self.getBaseData()
+        try:
+            raw[b22b002] = self.dongle.sendCommandEx(b22b002, canrx=0x7ce, cantx=0x7c6)
+        except NoData:
+            # 0x7ce is only available while driving
+            pass
 
-        data['timestamp']   = now
-        data['SOC_BMS']     = raw[b2101][6] / 2.0
-        data['SOC_DISPLAY'] = raw[b2105][33] / 2.0
+        data.update(self.getBaseData())
 
         chargingBits = raw[b2101][11]
         dcBatteryCurrent = ifbs(raw[b2101][12:14]) / 10.0
@@ -53,59 +56,56 @@ class IONIQ_BEV(Car):
             for byte in range(6,38):
                 cellVoltages.append(raw[cmd][byte] / 50.0)
 
-        data['EXTENDED'] = {
-                'auxBatteryVoltage':        raw[b2101][31] / 10.0,
+        data.update({
+            # Base:
+            'SOC_BMS':                  raw[b2101][6] / 2.0
+            'SOC_DISPLAY':              raw[b2105][33] / 2.0
 
-                'batteryInletTemperature':  ifbs(raw[b2101][22:23]),
-                'batteryMaxTemperature':    ifbs(raw[b2101][16:17]),
-                'batteryMinTemperature':    ifbs(raw[b2101][17:18]),
+            # Extended:
+            'auxBatteryVoltage':        raw[b2101][31] / 10.0,
 
-                'cumulativeEnergyCharged':  ifbu(raw[b2101][40:44]) / 10.0,
-                'cumulativeEnergyDischarged': ifbu(raw[b2101][44:48]) / 10.0,
+            'batteryInletTemperature':  ifbs(raw[b2101][22:23]),
+            'batteryMaxTemperature':    ifbs(raw[b2101][16:17]),
+            'batteryMinTemperature':    ifbs(raw[b2101][17:18]),
 
-                'charging':                 1 if chargingBits & 0x80 else 0,
-                'normalChargePort':         1 if chargingBits & 0x20 else 0,
-                'rapidChargePort':          1 if chargingBits & 0x40 else 0,
+            'cumulativeEnergyCharged':  ifbu(raw[b2101][40:44]) / 10.0,
+            'cumulativeEnergyDischarged': ifbu(raw[b2101][44:48]) / 10.0,
 
-                'dcBatteryCurrent':         dcBatteryCurrent,
-                'dcBatteryPower':           dcBatteryCurrent * dcBatteryVoltage / 1000.0,
-                'dcBatteryVoltage':         dcBatteryVoltage,
+            'charging':                 1 if chargingBits & 0x80 else 0,
+            'normalChargePort':         1 if chargingBits & 0x20 else 0,
+            'rapidChargePort':          1 if chargingBits & 0x40 else 0,
 
-                'soh':                      ifbu(raw[b2105][27:29]) / 10.0,
-                'externalTemperature':      (raw[b2180][14] - 80) / 2.0,
-                }
+            'dcBatteryCurrent':         dcBatteryCurrent,
+            'dcBatteryPower':           dcBatteryCurrent * dcBatteryVoltage / 1000.0,
+            'dcBatteryVoltage':         dcBatteryVoltage,
 
-        if data['EXTENDED']['charging'] == 0:
-            raw[b22b002] = self.dongle.sendCommandEx(b22b002, canrx=0x7ce, cantx=0x7c6)
-            data['EXTENDED'].update({
-                'odo':                      ffbu(raw[b22b002][9:12]),
-                })
+            'soh':                      ifbu(raw[b2105][27:29]) / 10.0,
+            'externalTemperature':      (raw[b2180][14] - 80) / 2.0,
+            'odo':                      ffbu(raw[b22b002][9:12]) if b22b002 in raw else None,
 
-        data['ADDITIONAL'] = {
-                'cumulativeChargeCurrent':  ifbu(raw[b2101][32:36]) / 10.0,
-                'cumulativeDischargeCurrent': ifbu(raw[b2101][36:40]) / 10.0,
+            # Additional:
+            'cumulativeChargeCurrent':  ifbu(raw[b2101][32:36]) / 10.0,
+            'cumulativeDischargeCurrent': ifbu(raw[b2101][36:40]) / 10.0,
 
-                'batteryAvgTemperature':    sum(cellTemps) / len(cellTemps),
-                'driveMotorSpeed':          ifbs(raw[b2101][55:57]),
+            'batteryAvgTemperature':    sum(cellTemps) / len(cellTemps),
+            'driveMotorSpeed':          ifbs(raw[b2101][55:57]),
 
-                'fanStatus':                raw[b2101][29],
-                'fanFeedback':              raw[b2101][30],
+            'fanStatus':                raw[b2101][29],
+            'fanFeedback':              raw[b2101][30],
 
-                'availableChargePower':     ifbu(raw[b2101][7:9]) / 100.0,
-                'availableDischargePower':  ifbu(raw[b2101][9:11]) / 100.0,
+            'availableChargePower':     ifbu(raw[b2101][7:9]) / 100.0,
+            'availableDischargePower':  ifbu(raw[b2101][9:11]) / 100.0,
 
-                'obdVoltage':               self.dongle.getObdVoltage(),
-                }
+            'obdVoltage':               self.dongle.getObdVoltage(),
+            })
 
         for i,temp in enumerate(cellTemps):
             key = "cellTemp{:02d}".format(i+1)
-            data['ADDITIONAL'][key] = float(temp)
+            data[key] = float(temp)
 
         for i,cvolt in enumerate(cellVoltages):
             key = "cellVoltage{:02d}".format(i+1)
-            data['ADDITIONAL'][key] = float(cvolt)
-
-        return data
+            data[key] = float(cvolt)
 
     def getBaseData(self):
         return {

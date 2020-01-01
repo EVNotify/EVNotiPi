@@ -16,28 +16,20 @@ cmd_current     = bytes.fromhex('229257')   # PR218
 cmd_soh         = bytes.fromhex('22927A')   # ET148
 
 class ZOE_ZE50(Car):
-
-    def __init__(self, config, dongle):
-        Car.__init__(self, config, dongle)
+    def __init__(self, config, dongle, gps):
+        Car.__init__(self, config, dongle, gps)
         self.dongle.setProtocol('CAN_29_500')
 
-    def readDongle(self):
+    def readDongle(self, data):
         def bms(cmd):
             return self.dongle.sendCommandEx(cmd, canrx=0x18DAF1DB, cantx=0x18DADBF1)[3:]
 
-        now = time()
-
-        data = self.getBaseData()
-
-        data['timestamp']   = now
-        data['SOC_BMS']     = ifbu(bms(cmd_soc_bms)) / 100
-        data['SOC_DISPLAY'] = ifbu(bms(cmd_soc)) / 100
+        data.update(self.getBaseData())
 
         dcBatteryCurrent = ifbu(bms(cmd_current)) - 32768
         dcBatteryVoltage = ifbu(bms(cmd_voltage)) / 1000
 
         #soh_raw = bms(cmd_soh) # returns 254 bytes of data ...
-
 
         cellVolts = []
         for i in range(0x21, 0x84):
@@ -49,42 +41,41 @@ class ZOE_ZE50(Car):
             c = bytes.fromhex("2291{:02x}".format(i))
             moduleTemps.append(ifbu(bms(c)) / 10 - 60)
 
-        data['EXTENDED'] = {
-                'auxBatteryVoltage':    ifbu(bms(cmd_auxVoltage)) / 100.0,
+        data.update({
+            #Base
+            'SOC_BMS':              ifbu(bms(cmd_soc_bms)) / 100
+            'SOC_DISPLAY':          ifbu(bms(cmd_soc)) / 100
 
-                #'batteryInletTemperature':
-                'batteryMaxTemperature': max(moduleTemps),
-                'batteryMinTemperature': min(moduleTemps),
+            #Extended:
+            'auxBatteryVoltage':    ifbu(bms(cmd_auxVoltage)) / 100.0,
 
-                'cumulativeEnergyCharged':  ifbu(bms(cmd_bms_energy)) / 1000.0,
-                'cumulativeEnergyDischarged': ifbu(bms(cmd_nrg_discharg)) / 1000.0,
+            #'batteryInletTemperature':
+            'batteryMaxTemperature': max(moduleTemps),
+            'batteryMinTemperature': min(moduleTemps),
 
-                'charging':             0 if ifbu(bms(cmd_chargeState)) == 0 else 1,
-                #'normalChargePort':
-                #'rapidChargePort':
+            'cumulativeEnergyCharged':  ifbu(bms(cmd_bms_energy)) / 1000.0,
+            'cumulativeEnergyDischarged': ifbu(bms(cmd_nrg_discharg)) / 1000.0,
 
-                'dcBatteryCurrent':     dcBatteryCurrent,
-                'dcBatteryPower':       dcBatteryCurrent * dcBatteryVoltage / 1000.0,
-                'dcBatteryVoltage':     dcBatteryVoltage,
+            'charging':             0 if ifbu(bms(cmd_chargeState)) == 0 else 1,
+            #'normalChargePort':
+            #'rapidChargePort':
 
-                #'soh':
-                #'externalTemperature':
-                #'odo':                  ifbu(bms(cmd_odo)),
-                }
+            'dcBatteryCurrent':     dcBatteryCurrent,
+            'dcBatteryPower':       dcBatteryCurrent * dcBatteryVoltage / 1000.0,
+            'dcBatteryVoltage':     dcBatteryVoltage,
 
-        data['ADDITIONAL'] = {
-                'obdVoltage':               self.dongle.getObdVoltage(),
-                }
+            #'soh':
+            #'externalTemperature':
+            #'odo':                  ifbu(bms(cmd_odo)),
+            })
 
         for i,cvolt in enumerate(cellVolts):
             key = "cellVoltage{:02d}".format(i+1)
-            data['ADDITIONAL'][key] = float(cvolt)
+            data[key] = float(cvolt)
 
         for i,temp in enumerate(moduleTemps):
             key = "cellTemp{:02d}".format(i+1)
-            data['ADDITIONAL'][key] = float(temp)
-
-        return data
+            data[key] = float(temp)
 
     def getBaseData(self):
         return {
@@ -118,5 +109,7 @@ if __name__ == '__main__':
 
     car = ZOE_ZE50.ZOE_ZE50({'interval': 1}, dongle)
 
-    pp.pprint(car.readDongle())
+    data = {}
+    car.readDongle(data)
+    pp.pprint(data)
 

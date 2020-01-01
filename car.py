@@ -11,13 +11,13 @@ def ffbs(in_bytes): return float(int.from_bytes(in_bytes, byteorder='big', signe
 class DataError(Exception): pass
 
 class Car:
-    def __init__(self, config, dongle):
+    def __init__(self, config, dongle, gps):
         self.log = logging.getLogger("EVNotiPi/Car")
         self.config = config
         self.dongle = dongle
+        self.gps = gps
         self.poll_interval = config['interval']
         self.thread = None
-        self.data = {}
         self.skip_polling = False
         self.running = False
         self.last_data = 0
@@ -39,12 +39,39 @@ class Car:
             now = time()
             self.watchdog = now
 
+            # initialize data with required fields; saves all those checks later
+            data = {
+                    'timestamp':    now,
+                    # Base:
+                    'SOC_BMS':      None,
+                    'SOC_DISPLAY':  None,
+                    # Extended:
+                    'auxBatteryVoltage':        None,
+                    'batteryInletTemperature':  None,
+                    'batteryMaxTemperature':    None,
+                    'batteryMinTemperature':    None,
+                    'cumulativeEnergyCharged':  None,
+                    'cumulativeEnergyDischarged':   None,
+                    'charging':                 None,
+                    'normalChargePort':         None,
+                    'rapidChargePort':          None,
+                    'dcBatteryCurrent':         None,
+                    'dcBatteryPower':           None,
+                    'dcBatteryVoltage':         None,
+                    'soh':                      None,
+                    'externalTemperature':      None,
+                    # Location:
+                    'latitude':     None,
+                    'longitude':    None,
+                    'speed':        None,
+                    'fix_mode':     None,
+                    }
             if not self.skip_polling or self.dongle.isCarAvailable():
                 if self.skip_polling:
                     self.log.info("Resume polling.")
                     self.skip_polling = False
                 try:
-                    self.data = self.readDongle()
+                    self.readDongle(data)  # readDongle updates data inplace
                     self.last_data = now
                 except CanError as e:
                     self.log.warning(e)
@@ -54,32 +81,43 @@ class Car:
                         self.log.info("Car off detected. Stop polling until car on.")
                         self.skip_polling = True
                     sleep(1)
-            else:
-                self.data = {}
+
+            fix = self.gps.fix()
+            if fix and fix.mode > 1:
+                if data['charging'] or data['normalChargePort'] or data['rapidChargePort']:
+                    speed = 0.0
+                elif isnan(speed):
+                    speed = None
+                else:
+                    speed = float(fix.speed)
+
+                data.update({
+                    'fix_mode':     fix.mode,
+                    'latitude':     float(fix.latitude),
+                    'longitude':    float(fix.longitude),
+                    'speed':        speed
+                    'gdop':         float(fix.gdop),
+                    'pdop':         float(fix.pdop),
+                    'hdop':         float(fix.hdop),
+                    'vdop':         float(fix.vdop),
+                    'altitude':     float(fix.altitude) fix.mode > 2 and not isnan(fix.altitude) else None,
+                    'gps_device':   fix.device if fix.device else None,
+                    })
 
             if self.dongle.watchdog:
                 thresholds = self.dongle.watchdog.getThresholds()
-                if not 'ADDITIONAL' in self.data:
-                    self.data['ADDITIONAL'] = {}
-                if not 'timestamp' in self.data:
-                    self.data['timestamp'] = now
-
                 volt = self.dongle.getObdVoltage()
-                #if 'EXTENDED' in self.data and 'auxBatteryVoltage' in self.data['EXTENDED']:
-                #    if abs(self.data['EXTENDED']['auxBatteryVoltage'] - volt) > 0.1:
-                #        self.dongle.calibrateObdVoltage(self.data['EXTENDED']['auxBatteryVoltage'])
-                #        volt = self.dongle.getObdVoltage()
 
-                self.data['ADDITIONAL'].update ({
+                data.update ({
                     'obdVoltage':               volt,
                     'startupThreshold':         thresholds['startup'],
                     'shutdownThreshold':        thresholds['shutdown'],
                     'emergencyThreshold':       thresholds['emergency'],
                     })
 
-            if self.data:
+            if data:
                 for cb in self.data_callbacks:
-                    cb(self.data)
+                    cb(data)
 
             if self.running:
                 if self.poll_interval:
