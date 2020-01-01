@@ -126,8 +126,7 @@ class SocketCAN:
 
             msg_data = bytes([cmd_len]) + cmd + b"\00" * (7 - cmd_len) # Pad cmd to 8 bytes
 
-            cmd_msg = struct.pack(CANFMT, cantx,
-                    #| socket.CAN_EFF_FLAG if self.is_extended else 0,
+            cmd_msg = struct.pack(CANFMT, cantx | socket.CAN_EFF_FLAG if self.is_extended else 0,
                     len(msg_data), msg_data)
 
             self.setFiltersEx([{
@@ -171,8 +170,7 @@ class SocketCAN:
                     if self.log.isEnabledFor(logging.DEBUG):
                         self.log.debug("Send flow control message")
 
-                    flow_msg = struct.pack(CANFMT, cantx,
-                            #| socket.CAN_EFF_FLAG if self.is_extended else 0,
+                    flow_msg = struct.pack(CANFMT, cantx | socket.CAN_EFF_FLAG if self.is_extended else 0,
                             8, b'0\x00\x00\x00\x00\x00\x00\x00')
 
                     self.socket.send(flow_msg)
