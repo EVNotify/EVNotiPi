@@ -15,12 +15,12 @@ class PiOBD2Hat(ATBASE):
         self.voltage_multiplier = 0.694
 
     def initDongle(self):
-        cmds = [['ATRST','DIAMEX PI-OBD'],  # Cold start
-                ['ATE0','OK'],              # Disable echo
-                ['ATL1','OK'],              # Use \r\n
-                ['ATOHS0','OK'],            # Disable space between HEX bytes
-                ['ATH1','OK'],              # Display header
-                ['ATST64','OK']]            # Input timeout (10 sec)
+        cmds = (('ATRST','DIAMEX PI-OBD'),  # Cold start
+                ('ATE0','OK'),              # Disable echo
+                ('ATL1','OK'),              # Use \r\n
+                ('ATOHS0','OK'),            # Disable space between HEX bytes
+                ('ATH1','OK'),              # Display header
+                ('ATST64','OK'))            # Input timeout (10 sec)
 
         for c,r in cmds:
             self.sendAtCmd(c, r)
