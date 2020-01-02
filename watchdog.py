@@ -15,7 +15,7 @@ class Watchdog:
             startup   = config['thresholds']['startup']   if 'startup'   in config['thresholds'] else None
             shutdown  = config['thresholds']['shutdown']  if 'shutdown'  in config['thresholds'] else None
             emergency = config['thresholds']['emergency'] if 'emergency' in config['thresholds'] else None
-            self.log.info("New thresholds startup(%d) shutdown(%d) emergency(%d)", startup, shutdown, emergency)
+            self.log.info("New thresholds startup(%s) shutdown(%s) emergency(%s)", startup, shutdown, emergency)
             self.setThresholds(startup, shutdown, emergency)
 
     def _BusOpen(self):
