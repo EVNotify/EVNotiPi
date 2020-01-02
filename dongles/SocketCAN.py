@@ -41,7 +41,7 @@ class SocketCAN:
 
             msg_data = bytes([cmd_len]) + cmd + b"\00" * (7 - cmd_len) # Pad cmd to 8 bytes
 
-            cmd_msg = struct.pack(CANFMT, self.can_id | socket.CAN_EFF_FLAG if self.is_extended else 0,
+            cmd_msg = struct.pack(CANFMT, self.can_id | socket.CAN_EFF_FLAG if self.is_extended else self.can_id,
                     len(msg_data), msg_data)
 
             if self.log.isEnabledFor(logging.DEBUG):
@@ -79,7 +79,7 @@ class SocketCAN:
                     if self.log.isEnabledFor(logging.DEBUG):
                         self.log.debug("Send flow control message")
 
-                    flow_msg = struct.pack(CANFMT, self.can_id | socket.CAN_EFF_FLAG if self.is_extended else 0,
+                    flow_msg = struct.pack(CANFMT, self.can_id | socket.CAN_EFF_FLAG if self.is_extended else self.can_id,
                             8, b'0\x00\x00\x00\x00\x00\x00\x00')
 
                     self.socket.send(flow_msg)
@@ -126,7 +126,7 @@ class SocketCAN:
 
             msg_data = bytes([cmd_len]) + cmd + b"\00" * (7 - cmd_len) # Pad cmd to 8 bytes
 
-            cmd_msg = struct.pack(CANFMT, cantx | socket.CAN_EFF_FLAG if self.is_extended else 0,
+            cmd_msg = struct.pack(CANFMT, cantx | socket.CAN_EFF_FLAG if self.is_extended else cantx,
                     len(msg_data), msg_data)
 
             self.setFiltersEx([{
@@ -170,7 +170,7 @@ class SocketCAN:
                     if self.log.isEnabledFor(logging.DEBUG):
                         self.log.debug("Send flow control message")
 
-                    flow_msg = struct.pack(CANFMT, cantx | socket.CAN_EFF_FLAG if self.is_extended else 0,
+                    flow_msg = struct.pack(CANFMT, cantx | socket.CAN_EFF_FLAG if self.is_extended else cantx,
                             8, b'0\x00\x00\x00\x00\x00\x00\x00')
 
                     self.socket.send(flow_msg)
@@ -296,7 +296,7 @@ class SocketCAN:
         flt = bytearray()
         for f in filters:
             flt.extend(struct.pack("=II",
-                    f['id'],# | socket.CAN_EFF_FLAG if self.is_extended else 0,
+                    f['id'],# | socket.CAN_EFF_FLAG if self.is_extended else f['id'],
                     f['mask']))
 
         self.socket.setsockopt(socket.SOL_CAN_RAW, socket.CAN_RAW_FILTER, flt)
