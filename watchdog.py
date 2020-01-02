@@ -65,13 +65,13 @@ class Watchdog:
 
         if startup:
             self.i2c_bus.write_byte(self.i2c_address, 0x21)
-            self.i2c_bus.write_byte(self.i2c_address, startup)
+            self.i2c_bus.write_byte(self.i2c_address, int(startup/self.i2c_voltage_multiplier))
         if shutdown:
             self.i2c_bus.write_byte(self.i2c_address, 0x22)
-            self.i2c_bus.write_byte(self.i2c_address, shutdown)
+            self.i2c_bus.write_byte(self.i2c_address, int(shutdown/self.i2c_voltage_multiplier))
         if emergency:
             self.i2c_bus.write_byte(self.i2c_address, 0x23)
-            self.i2c_bus.write_byte(self.i2c_address, emergency)
+            self.i2c_bus.write_byte(self.i2c_address, int(emergency/self.i2c_voltage_multiplier))
 
         self._BusClose()
 
