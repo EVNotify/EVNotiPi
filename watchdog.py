@@ -67,7 +67,7 @@ class Watchdog:
                 'emergency': emerg * self.i2c_voltage_multiplier,
                 }
 
-    def setThresholds(startup=None, shutdown=None, emergency=None):
+    def setThresholds(self, startup=None, shutdown=None, emergency=None):
         self._BusOpen()
 
         if startup:
