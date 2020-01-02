@@ -60,6 +60,21 @@ class Watchdog:
                 'emergency': emerg * self.i2c_voltage_multiplier,
                 }
 
+    def setThresholds(startup=None, shutdown=None, emergency=None):
+        self._BusOpen()
+
+        if startup:
+            self.i2c_bus.write_byte(self.i2c_address, 0x21)
+            self.i2c_bus.write_byte(self.i2c_address, startup)
+        if shutdown:
+            self.i2c_bus.write_byte(self.i2c_address, 0x22)
+            self.i2c_bus.write_byte(self.i2c_address, shutdown)
+        if emergency:
+            self.i2c_bus.write_byte(self.i2c_address, 0x23)
+            self.i2c_bus.write_byte(self.i2c_address, emergency)
+
+        self._BusClose()
+
 
 if __name__ == '__main__':
     config = {
