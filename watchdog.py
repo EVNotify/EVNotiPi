@@ -11,6 +11,12 @@ class Watchdog:
         self.i2c_bus = SMBus(self.i2c_bus_id)
         self.i2c_lock = Lock()
 
+        if 'thresholds' in config:
+            startup   = config['thresholds']['startup']   if 'startup'   in config['thresholds'] else None
+            shutdown  = config['thresholds']['shutdown']  if 'shutdown'  in config['thresholds'] else None
+            emergency = config['thresholds']['emergency'] if 'emergency' in config['thresholds'] else None
+            self.setThresholds(startup, shutdown, mergency)
+
     def _BusOpen(self):
         self.i2c_lock.acquire()
         #self.i2c_bus.open()
