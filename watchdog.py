@@ -15,7 +15,8 @@ class Watchdog:
             startup   = config['thresholds']['startup']   if 'startup'   in config['thresholds'] else None
             shutdown  = config['thresholds']['shutdown']  if 'shutdown'  in config['thresholds'] else None
             emergency = config['thresholds']['emergency'] if 'emergency' in config['thresholds'] else None
-            self.setThresholds(startup, shutdown, mergency)
+            self.log.info("New thresholds startup({}) shutdown({}) emergency({})", startup, shutdown, emergency)
+            self.setThresholds(startup, shutdown, emergency)
 
     def _BusOpen(self):
         self.i2c_lock.acquire()
