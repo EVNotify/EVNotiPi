@@ -71,14 +71,11 @@ class Watchdog:
         self._BusOpen()
 
         if startup:
-            self.i2c_bus.write_byte(self.i2c_address, 0x21)
-            self.i2c_bus.write_byte(self.i2c_address, int(startup/self.i2c_voltage_multiplier))
+            self.i2c_bus.write_byte_data(self.i2c_address, 0x21, int(startup/self.i2c_voltage_multiplier))
         if shutdown:
-            self.i2c_bus.write_byte(self.i2c_address, 0x22)
-            self.i2c_bus.write_byte(self.i2c_address, int(shutdown/self.i2c_voltage_multiplier))
+            self.i2c_bus.write_byte_data(self.i2c_address, 0x22, int(shutdown/self.i2c_voltage_multiplier))
         if emergency:
-            self.i2c_bus.write_byte(self.i2c_address, 0x23)
-            self.i2c_bus.write_byte(self.i2c_address, int(emergency/self.i2c_voltage_multiplier))
+            self.i2c_bus.write_byte_data(self.i2c_address, 0x23, int(emergency/self.i2c_voltage_multiplier))
 
         self._BusClose()
 
@@ -87,7 +84,11 @@ if __name__ == '__main__':
     config = {
             'enable': True,
             'i2c_address': 8,
-            'i2c_bus': 1
+            'i2c_bus': 1,
+            'thresholds': {
+                'startup': 13.0,
+                'shutdown': 12.6
+                }
             }
 
     wd = Watchdog(config)
