@@ -22,7 +22,10 @@ if os.path.exists('config.json'):
 elif os.path.exists('config.yaml'):
     import yaml
     with open('config.yaml', encoding='utf-8') as config_file:
-        config = yaml.load(config_file, Loader=yaml.SafeLoader)
+        config = None
+        # use the last document in config.yaml as config
+        for c in yaml.load_all(config_file, Loader=yaml.SafeLoader):
+            config = c
 else:
     raise Exception('No config found')
 
