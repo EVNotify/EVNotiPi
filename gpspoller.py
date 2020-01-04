@@ -14,7 +14,6 @@ class GpsPoller:
 
     def run(self):
         self.running = True
-        last_loop = time()
         while self.running:
             try:
                 if self.gpsd:
@@ -23,18 +22,11 @@ class GpsPoller:
 
                         fix = self.gpsd.fix
                         fix.device = self.gpsd.device
-                        fix.gdop = self.gpsd.gdop if not isnan(self.gpsd.gdop) else -1
-                        fix.pdop = self.gpsd.pdop if not isnan(self.gpsd.pdop) else -1
-                        fix.hdop = self.gpsd.hdop if not isnan(self.gpsd.hdop) else -1
-                        fix.vdop = self.gpsd.vdop if not isnan(self.gpsd.vdop) else -1
+                        fix.gdop = self.gpsd.gdop if not isnan(self.gpsd.gdop) else None
+                        fix.pdop = self.gpsd.pdop if not isnan(self.gpsd.pdop) else None
+                        fix.hdop = self.gpsd.hdop if not isnan(self.gpsd.hdop) else None
+                        fix.vdop = self.gpsd.vdop if not isnan(self.gpsd.vdop) else None
 
-                        if fix.mode > 2:
-                            now = time()
-                            if not isnan(fix.speed):
-                                self.distance += fix.speed * (now - last_loop)
-                            last_loop = now
-
-                        fix.distance = self.distance
                         self.last_fix = fix
                 else:
                     self.gpsd = self.gps.gps(mode=self.gps.WATCH_ENABLE)
