@@ -1,37 +1,77 @@
 import sys
-import gps
+import socket
 from threading import Thread
 from time import time,sleep
 from math import isnan
+import json
 
 class GpsPoller:
     def __init__(self):
         self.thread = None
-        self.gps = gps
-        self.gpsd = None
-        self.last_fix = None
+        self.gpsd = ('localhost', 2947)
+        self.last_fix = {
+                'device': None,
+                'mode': 0,
+                'latitude': None,
+                'longitude': None,
+                'speed': None,
+                'altitude': None,
+                'xdop': None,
+                'ydop': None,
+                'vdop': None,
+                'tdop': None,
+                'hdop': None,
+                'gdop': None,
+                'pdop': None,
+                }
         self.distance = 0
 
     def run(self):
         self.running = True
+        s = None
         while self.running:
             try:
-                if self.gpsd:
-                    if self.gpsd.waiting(timeout=1):
-                        self.gpsd.next()
+                if s:
+                    try:
+                        data = s.recv(1024)
+                        for line in data.split(b'\r\n'):
+                            if len(line) > 0:
+                                fix = json.loads(line)
+                                if 'class' not in fix:
+                                    continue
 
-                        fix = self.gpsd.fix
-                        fix.device = self.gpsd.device
-                        fix.gdop = self.gpsd.gdop if not isnan(self.gpsd.gdop) else None
-                        fix.pdop = self.gpsd.pdop if not isnan(self.gpsd.pdop) else None
-                        fix.hdop = self.gpsd.hdop if not isnan(self.gpsd.hdop) else None
-                        fix.vdop = self.gpsd.vdop if not isnan(self.gpsd.vdop) else None
-
-                        self.last_fix = fix
+                                if fix['class'] == 'TPV':
+                                    self.last_fix.update({
+                                        'device':    fix['device'],
+                                        'mode':      fix['mode'],
+                                        'latitude':  fix['lat'],
+                                        'longitude': fix['lon'],
+                                        'speed':     fix['speed'],
+                                        'altitude':  fix['alt'] if fix['mode'] > 2 else None,
+                                        })
+                                elif fix['class'] == 'SKY':
+                                    self.last_fix.update({
+                                        'xdop': fix['xdop'],
+                                        'ydop': fix['ydop'], 
+                                        'vdop': fix['vdop'], 
+                                        'tdop': fix['tdop'], 
+                                        'hdop': fix['hdop'], 
+                                        'gdop': fix['gdop'], 
+                                        'pdop': fix['pdop'], 
+                                        })
+                    except socket.timeout:
+                        pass
                 else:
-                    self.gpsd = self.gps.gps(mode=self.gps.WATCH_ENABLE)
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    try:
+                        s.connect(self.gpsd)
+                        s.settimeout(1)
+                        s.recv(1024)
+                        s.sendall(b'?WATCH={"enable":true,"json":true};')
+                    except OSError as e:
+                        s.close()
+                        s = None
             except (StopIteration, ConnectionResetError, OSError):
-                self.gpsd = None
                 self.last_fix = None
                 sleep(1)
 
@@ -49,4 +89,8 @@ class GpsPoller:
 
     def checkWatchdog(self):
         return self.thread.is_alive()
+
+if __name__ == '__main__':
+    gps = GpsPoller()
+    gps.run()
 
