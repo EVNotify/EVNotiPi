@@ -48,10 +48,10 @@ class GpsPoller:
                                     self.last_fix.update({
                                         'device':    fix['device'],
                                         'mode':      fix['mode'],
-                                        'latitude':  fix['lat'],
-                                        'longitude': fix['lon'],
-                                        'speed':     fix['speed'],
-                                        'altitude':  fix['alt'] if fix['mode'] > 2 else None,
+                                        'latitude':  fix.get('lat'),
+                                        'longitude': fix.get('lon'),
+                                        'speed':     fix.get('speed'),
+                                        'altitude':  fix.get('alt'),
                                         })
                                 elif fix['class'] == 'SKY':
                                     self.last_fix.update({
