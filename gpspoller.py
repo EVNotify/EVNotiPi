@@ -4,9 +4,11 @@ from threading import Thread
 from time import time,sleep
 from math import isnan
 import json
+import logging
 
 class GpsPoller:
     def __init__(self):
+        self.log = logging.getLogger("EVNotiPi/GPSPoller")
         self.thread = None
         self.gpsd = ('localhost', 2947)
         self.last_fix = {
@@ -33,9 +35,11 @@ class GpsPoller:
             try:
                 if s:
                     try:
-                        data = s.recv(1024)
+                        data = s.recv(4096)
                         for line in data.split(b'\r\n'):
-                            if len(line) > 0:
+                            if len(line) == 0:
+                                continue
+                            try:
                                 fix = json.loads(line)
                                 if 'class' not in fix:
                                     continue
@@ -59,6 +63,8 @@ class GpsPoller:
                                         'gdop': fix['gdop'], 
                                         'pdop': fix['pdop'], 
                                         })
+                            except json.decoder.JSONDecodeError:
+                                self.log.error("JSONDecodeError %s", line)
                     except socket.timeout:
                         pass
                 else:
