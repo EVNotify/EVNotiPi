@@ -12,6 +12,8 @@ import evnotify
 
 Systemd = sdnotify.SystemdNotifier()
 
+class WatchdogFailure(Exception): pass
+
 # load config
 if os.path.exists('config.json'):
     import json
@@ -20,7 +22,10 @@ if os.path.exists('config.json'):
 elif os.path.exists('config.yaml'):
     import yaml
     with open('config.yaml', encoding='utf-8') as config_file:
-        config = yaml.load(config_file, Loader=yaml.SafeLoader)
+        config = None
+        # use the last document in config.yaml as config
+        for c in yaml.load_all(config_file, Loader=yaml.SafeLoader):
+            config = c
 else:
     raise Exception('No config found')
 
@@ -52,16 +57,19 @@ if 'watchdog' in config and config['watchdog']['enable'] == True:
 else:
     Watchdog = None
 
+# Init dongle
 dongle = DONGLE(config['dongle'], watchdog = Watchdog)
-car = CAR(config['car'], dongle)
-Threads.append(car)
 
 # Init GPS interface
 gps = GpsPoller()
 Threads.append(gps)
 
+# Init car
+car = CAR(config['car'], dongle, gps)
+Threads.append(car)
+
 # Init EVNotify
-EVNotify = evnotify.EVNotify(config['evnotify'], car, gps)
+EVNotify = evnotify.EVNotify(config['evnotify'], car)
 Threads.append(EVNotify)
 
 # Init WiFi control
@@ -91,14 +99,16 @@ try:
         now = time()
         watchdogs_ok = True
         for t in Threads:
-            if t.checkWatchdog() == False:
+            status = t.checkWatchdog()
+            if status == False:
                 log.error("Watchdog Failed " + str(t))
                 watchdogs_ok = False
+                raise WatchdogFailure(str(t))
 
         if watchdogs_ok:
             Systemd.notify("WATCHDOG=1")
 
-        if config['system']['shutdown_delay'] != None:
+        if 'system' in config and 'shutdown_delay' in config['system']:
             if now - car.last_data > config['system']['shutdown_delay'] and dongle.isCarAvailable() == False:
                 usercnt = int(check_output(['who','-q']).split(b'\n')[1].split(b'=')[1])
                 if usercnt == 0:
