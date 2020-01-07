@@ -45,7 +45,10 @@ class GpsPoller:
                                     continue
 
                                 if fix['class'] == 'TPV':
+                                    fix_time = mktime(strptime(fix['time'][:23], "%Y-%m-%dT%H:%M:%S.%f"))
+
                                     self.last_fix.update({
+                                        'time':      fix_time,
                                         'device':    fix['device'],
                                         'mode':      fix['mode'],
                                         'latitude':  fix.get('lat'),
@@ -56,13 +59,14 @@ class GpsPoller:
                                 elif fix['class'] == 'SKY':
                                     self.last_fix.update({
                                         'xdop': fix['xdop'],
-                                        'ydop': fix['ydop'], 
-                                        'vdop': fix['vdop'], 
-                                        'tdop': fix['tdop'], 
-                                        'hdop': fix['hdop'], 
-                                        'gdop': fix['gdop'], 
-                                        'pdop': fix['pdop'], 
+                                        'ydop': fix['ydop'],
+                                        'vdop': fix['vdop'],
+                                        'tdop': fix['tdop'],
+                                        'hdop': fix['hdop'],
+                                        'gdop': fix['gdop'],
+                                        'pdop': fix['pdop'],
                                         })
+
                             except json.decoder.JSONDecodeError:
                                 self.log.error("JSONDecodeError %s", line)
                     except socket.timeout:
