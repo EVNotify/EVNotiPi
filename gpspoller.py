@@ -59,13 +59,13 @@ class GpsPoller:
                                         })
                                 elif fix['class'] == 'SKY':
                                     self.last_fix.update({
-                                        'xdop': fix['xdop'],
-                                        'ydop': fix['ydop'],
-                                        'vdop': fix['vdop'],
-                                        'tdop': fix['tdop'],
-                                        'hdop': fix['hdop'],
-                                        'gdop': fix['gdop'],
-                                        'pdop': fix['pdop'],
+                                        'xdop': fix.get('xdop', None),
+                                        'ydop': fix.get('ydop', None),
+                                        'vdop': fix.get('vdop', None),
+                                        'tdop': fix.get('tdop', None),
+                                        'hdop': fix.get('hdop', None),
+                                        'gdop': fix.get('gdop', None),
+                                        'pdop': fix.get('pdop', None),
                                         })
 
                             except json.decoder.JSONDecodeError:
