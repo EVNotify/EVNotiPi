@@ -1,7 +1,7 @@
 import sys
 import socket
 from threading import Thread
-from time import time,sleep
+from time import time,sleep,strptime,mktime
 from math import isnan
 import json
 import logging
@@ -18,6 +18,7 @@ class GpsPoller:
                 'longitude': None,
                 'speed': None,
                 'altitude': None,
+                'time': None,
                 'xdop': None,
                 'ydop': None,
                 'vdop': None,
@@ -48,13 +49,13 @@ class GpsPoller:
                                     fix_time = mktime(strptime(fix['time'][:23], "%Y-%m-%dT%H:%M:%S.%f"))
 
                                     self.last_fix.update({
-                                        'time':      fix_time,
                                         'device':    fix['device'],
                                         'mode':      fix['mode'],
                                         'latitude':  fix.get('lat'),
                                         'longitude': fix.get('lon'),
                                         'speed':     fix.get('speed'),
                                         'altitude':  fix.get('alt'),
+                                        'time':      fix_time,
                                         })
                                 elif fix['class'] == 'SKY':
                                     self.last_fix.update({
