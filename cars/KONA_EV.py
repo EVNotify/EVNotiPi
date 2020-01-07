@@ -18,10 +18,11 @@ class KONA_EV(Car):
         for cmd in [b220101,b220105]:
             raw[cmd] = self.dongle.sendCommandEx(cmd, canrx=0x7ec, cantx=0x7e4)
 
-        #raw[b220100] = self.dongle.sendCommand(b220100)
-        if b22b002 != None:     # eNiro has problems with b22b002
+        try:
             raw[b22b002] = self.dongle.sendCommandEx(b22b002, canrx=0x7ce, cantx=0x7c6)
-            data['odo'] = ffbu(raw[b22b002][11:15]),
+        except NoData:
+            # 0x7ce is only available while driving
+            pass
 
         data.update(self.getBaseData())
 
@@ -48,6 +49,7 @@ class KONA_EV(Car):
             'dcBatteryVoltage':         dcBatteryVoltage,
             'soh':                      ifbu(raw[b220105][28:30]) / 10.0,
             #'externalTemperature':      (raw[b220100][0x7ce][1][3] - 80) / 2.0,
+            'odo':                      ffbu(raw[b22b002][11:15]) if b22b002 in raw else None,
             })
 
     def getBaseData(self):
