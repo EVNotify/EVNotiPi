@@ -83,6 +83,8 @@ class GpsPoller:
                         s.close()
                         s = None
             except (StopIteration, ConnectionResetError, OSError):
+                s.close()
+                s = None
                 self.last_fix = None
                 sleep(1)
 
