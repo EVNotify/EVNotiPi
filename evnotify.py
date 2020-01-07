@@ -105,8 +105,8 @@ class EVNotify:
                 # Need to copy data here because we update it later
                 data = self.data[-1].copy()
                 self.data.clear()
-            
-            data.update({k:round(sum(v)/len(v),2) for k,v in avgs.items() if len(v) > 0})
+
+            data.update({k:sum(v)/len(v) for k,v in avgs.items() if len(v) > 0})
 
             now = time()
 
