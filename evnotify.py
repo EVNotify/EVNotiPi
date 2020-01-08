@@ -102,10 +102,11 @@ class EVNotify:
                         if k in d and d[k] != None:
                             v.append(d[k])
 
-                data = self.data[-1]
-                data.update({k:round(sum(v)/len(v),2) for k,v in avgs.items() if len(v) > 0})
-
+                # Need to copy data here because we update it later
+                data = self.data[-1].copy()
                 self.data.clear()
+
+            data.update({k:sum(v)/len(v) for k,v in avgs.items() if len(v) > 0})
 
             now = time()
 

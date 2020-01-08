@@ -81,25 +81,24 @@ class Car:
                     sleep(1)
 
             fix = self.gps.fix()
-            if fix and fix.mode > 1:
+            if fix and fix['mode'] > 1:
                 if data['charging'] or data['normalChargePort'] or data['rapidChargePort']:
                     speed = 0.0
-                elif isnan(fix.speed):
-                    speed = None
                 else:
-                    speed = fix.speed
+                    speed = fix['speed']
 
                 data.update({
-                    'fix_mode':     fix.mode,
-                    'latitude':     fix.latitude,
-                    'longitude':    fix.longitude,
+                    'fix_mode':     fix['mode'],
+                    'latitude':     fix['latitude'],
+                    'longitude':    fix['longitude'],
                     'speed':        speed,
-                    'gdop':         fix.gdop,
-                    'pdop':         fix.pdop,
-                    'hdop':         fix.hdop,
-                    'vdop':         fix.vdop,
-                    'altitude':     fix.altitude if fix.mode > 2 and not isnan(fix.altitude) else None,
-                    'gps_device':   fix.device if fix.device else None,
+                    'gdop':         fix['gdop'],
+                    'pdop':         fix['pdop'],
+                    'hdop':         fix['hdop'],
+                    'vdop':         fix['vdop'],
+                    'tdop':         fix['tdop'],
+                    'altitude':     fix['altitude'],
+                    'gps_device':   fix['device'],
                     })
 
             if self.dongle.watchdog:
@@ -128,7 +127,8 @@ class Car:
                     sleep(1)
 
     def registerData(self, callback):
-        self.data_callbacks.append(callback)
+        if callback not in self.data_callbacks:
+            self.data_callbacks.append(callback)
 
     def unregisterData(self, callback):
         self.data_callbacks.remove(callback)

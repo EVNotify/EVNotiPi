@@ -39,7 +39,7 @@ class SocketCAN:
             cmd_len = len(cmd)
             assert(cmd_len < 8)
 
-            msg_data = bytes([cmd_len]) + cmd + b"\00" * (7 - cmd_len) # Pad cmd to 8 bytes
+            msg_data = (bytes([cmd_len]) + cmd).ljust(8, b'\x00') # Pad cmd to 8 bytes
 
             cmd_msg = struct.pack(CANFMT, self.can_id | socket.CAN_EFF_FLAG if self.is_extended else self.can_id,
                     len(msg_data), msg_data)
@@ -124,7 +124,7 @@ class SocketCAN:
             cmd_len = len(cmd)
             assert(cmd_len < 8)
 
-            msg_data = bytes([cmd_len]) + cmd + b"\00" * (7 - cmd_len) # Pad cmd to 8 bytes
+            msg_data = (bytes([cmd_len]) + cmd).ljust(8, b'\x00') # Pad cmd to 8 bytes
 
             cmd_msg = struct.pack(CANFMT, cantx | socket.CAN_EFF_FLAG if self.is_extended else cantx,
                     len(msg_data), msg_data)
