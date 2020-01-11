@@ -32,7 +32,7 @@ class KONA_EV(Car):
 
         data.update({
             # Base:
-            'SOC_BMS':                  raw[b220101][8] / 2.0,
+            'SOC_BMS':                  raw[b220101][7] / 2.0,
             'SOC_DISPLAY':              raw[b220105][34] / 2.0,
             # Extended:
             'auxBatteryVoltage':        raw[b220101][32] / 10.0,
