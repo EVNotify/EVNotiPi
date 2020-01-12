@@ -26,13 +26,13 @@ class KONA_EV(Car):
 
         data.update(self.getBaseData())
 
-        chargingBits = raw[b220101][12]
+        chargingBits = raw[b220101][53]
         dcBatteryCurrent = ifbs(raw[b220101][13:15]) / 10.0
         dcBatteryVoltage = ifbu(raw[b220101][15:17]) / 10.0
 
         data.update({
             # Base:
-            'SOC_BMS':                  raw[b220101][8] / 2.0,
+            'SOC_BMS':                  raw[b220101][7] / 2.0,
             'SOC_DISPLAY':              raw[b220105][34] / 2.0,
             # Extended:
             'auxBatteryVoltage':        raw[b220101][32] / 10.0,
@@ -41,9 +41,9 @@ class KONA_EV(Car):
             'batteryMinTemperature':    ifbs(raw[b220101][18:19]),
             'cumulativeEnergyCharged':  ifbu(raw[b220101][41:45]) / 10.0,
             'cumulativeEnergyDischarged': ifbu(raw[b220101][45:49]) / 10.0,
-            'charging':                 1 if chargingBits & 0x40 else 0,
-            'normalChargePort':         1 if chargingBits & 0x10 else 0,
-            'rapidChargePort':          1 if chargingBits & 0x20 else 0,
+            'charging':                 1 if (chargingBits & 0xc) == 0x8 else 0,
+            'normalChargePort':         1 if (chargingBits & 0x80) and raw[b220101][12] == 3 else 0,
+            'rapidChargePort':          1 if (chargingBits & 0x80) and raw[b220101][12] != 3 else 0,
             'dcBatteryCurrent':         dcBatteryCurrent,
             'dcBatteryPower':           dcBatteryCurrent * dcBatteryVoltage / 1000.0,
             'dcBatteryVoltage':         dcBatteryVoltage,
