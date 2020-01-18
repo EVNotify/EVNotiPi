@@ -12,6 +12,14 @@ def canStr(msg):
     can_id, length, data = struct.unpack(CANFMT, msg)
     return "{:x}#{} ({})".format(can_id & socket.CAN_EFF_MASK, data.hex(), length)
 
+SOL_CAN_BASE        = socket.SOL_CAN_BASE if hasattr(socket, 'SOL_CAN_BASE') else 100
+SOL_CAN_ISOTP       = SOL_CAN_BASE + socket.CAN_ISOTP if hasattr(socket, 'CAN_ISOTP') else None # Allow importing the module without python 3.7
+CAN_ISOTP_OPTS      = 1
+CAN_ISOTP_RECV_FC   = 2
+CAN_ISOTP_TX_STMIN  = 3
+CAN_ISOTP_RX_STMIN  = 4
+CAN_ISOTP_LL_OPTS   = 5
+
 class SocketCAN:
     def __init__(self, config, watchdog = None):
         self.log = logging.getLogger("EVNotiPi/SocketCAN")
@@ -27,12 +35,13 @@ class SocketCAN:
 
         self.sock_can = None
         self.sock_isotp = None
-        self.initDongle()
 
         self.can_id = 0x7df
         self.can_filter = None
         self.can_mask = 0x7ff
         self.is_extended = False
+
+        self.initDongle()
 
     def initDongle(self):
         ip = IPRoute()
@@ -54,7 +63,8 @@ class SocketCAN:
             s = socket.socket(socket.AF_CAN, socket.SOCK_DGRAM, socket.CAN_ISOTP)
             s.close()
             # CAN_ISOTP_TX_PADDING CAN_ISOTP_RX_PADDING CAN_ISOTP_CHK_PAD_LEN CAN_ISOTP_CHK_PAD_DATA
-            opts = 0x004 | 0x008 | 0x010 | 0x020
+            #opts = 0x004 | 0x008 | 0x010 | 0x020
+            opts = 0x004 | 0x008 | 0x010
             if self.is_extended:
                 # CAN_ISOTP_EXTEND_ADDR
                 opts |= 0x002
@@ -62,6 +72,7 @@ class SocketCAN:
             self.sock_opt_isotp_fc = struct.pack("=BBB", 0, 0, 0)
             # select implementation of sendCommandEx
             self.sendCommandEx = self.sendCommandEx_ISOTP
+            self.log.info("using ISO-TP support")
         except OSError:
             # CAN_ISOTP not supported
             self.sendCommandEx = self.sendCommandEx_CANRAW
@@ -160,15 +171,19 @@ class SocketCAN:
 
     def sendCommandEx_ISOTP(self, cmd, cantx, canrx):
         try:
-            with socket.socket(socket.PF_CAN, socket.SOCK_RAW, socket.CAN_ISOTP) as sock:
+            with socket.socket(socket.AF_CAN, socket.SOCK_DGRAM, socket.CAN_ISOTP) as sock:
                 sock.setsockopt(SOL_CAN_ISOTP, CAN_ISOTP_OPTS, self.sock_opt_isotp_opt)
                 sock.setsockopt(SOL_CAN_ISOTP, CAN_ISOTP_RECV_FC, self.sock_opt_isotp_fc)
 
                 sock.bind((self.config['port'], canrx, cantx))
                 sock.settimeout(5)
 
+                if self.log.isEnabledFor(logging.DEBUG):
+                    self.log.debug(hex(canrx),hex(cantx),cmd.hex())
                 sock.send(cmd)
                 data = sock.recv(4096)
+                if self.log.isEnabledFor(logging.DEBUG):
+                    self.log.debug(data.hex())
         except socket.timeout as e:
             raise NoData("Command timed out {}: {}".format(cmd.hex(), e))
         except OSError as e:
