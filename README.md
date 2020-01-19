@@ -35,13 +35,17 @@ This pinout should be compatible to most DB9 to OBD2 cables. One can always buil
 ### Raspberry Pi
 - sudo apt update
 - sudo apt upgrade
-- sudo apt install python3-{pip,rpi.gpio,serial,requests,sdnotify,pyroute2,smbus,yaml} gpsd watchdog git rsyslog-
+- sudo apt install python3-{pip,rpi.gpio,serial,requests,sdnotify,pyroute2,smbus,yaml,gevent} gpsd watchdog rsyslog-
 - sudo systemctl disable --now serial-getty@ttyAMA0.service
 - sudo sed -i -re "\\$agpu_mem=16\nmax_usb_current=1\nenable_uart=1\ndtoverlay=disable-bt\ndtoverlay=gpio-poweroff:active_low" -e "/^dtparam=audio=/ s/^/#/" /boot/config.txt
 - sudo sed -i -re '/console=/ s/$/ panic=1/' /boot/cmdline.txt
 - sudo sed -i -re '/max-load/ s/^#//' /etc/watchdog.conf
 - sudo sed -i -re "\\$adtparam=watchdog=on" /boot/config.txt
 #### If using MCP2515 based adapter:
+- sudo apt install dkms
+- sudo git clone https://github.com/noradtux/can-isotp /usr/src/can-isotp
+- sudo dkms add /usr/src/can-isotp
+- sudo dkms install -m can-isotp -v r26.ced84ca
 - sudo sed -i -re "\\$adtparam=spi=on\ndtoverlay=mcp2515-can0,oscillator=16000000,interrupt=25\ndtoverlay=spi-bcm2835-overlay" /boot/config.txt
 - echo -e "[Match]\nDriver=mcp251x\n\n[CAN]\nBitRate=500000\nRestartSec=100ms" | sudo tee /etc/systemd/network/can.network
 - sudo systemctl enable --now systemd-networkd
