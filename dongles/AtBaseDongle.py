@@ -62,7 +62,7 @@ class ATBASE:
 
         return ret.strip(b'\r\n')
 
-    def sendAtCmd(self, cmd, expect='OK'):
+    def sendAtCmd(self, cmd, expect=None):
         ret = self.talkToDongle(cmd, expect)
         return ret.split(b"\r\n")[-1]
 
