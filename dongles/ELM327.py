@@ -64,7 +64,7 @@ class ELM327(ATBASE):
         if self.watchdog:
             return round(self.watchdog.getVoltage(), 2)
         else:
-            ret = self.sendAtCmd('ATRV')
+            ret = self.sendAtCmd('ATRV', None)
             return round(float(ret[:-1]), 2)
 
     def calibrateObdVoltage(self, realVoltage):
