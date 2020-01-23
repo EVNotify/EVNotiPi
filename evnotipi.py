@@ -8,29 +8,46 @@ import sys
 import signal
 import sdnotify
 import logging
+from argparse import ArgumentParser
 import evnotify
 
 Systemd = sdnotify.SystemdNotifier()
 
 class WatchdogFailure(Exception): pass
 
+parser = ArgumentParser(description='EVNotiPi')
+parser.add_argument('-d', '--debug', dest='debug', action='store_true', default=False)
+parser.add_argument('-c', '--config', dest='config', action='store', default='config.yaml')
+args = parser.parse_args()
+del parser
+
 # load config
-if os.path.exists('config.json'):
-    import json
-    with open('config.json', encoding='utf-8') as config_file:
-        config = json.loads(config_file.read())
-elif os.path.exists('config.yaml'):
-    import yaml
-    with open('config.yaml', encoding='utf-8') as config_file:
-        config = None
-        # use the last document in config.yaml as config
-        for c in yaml.load_all(config_file, Loader=yaml.SafeLoader):
-            config = c
+if os.path.exists(args.config):
+    if args.config[-5:] == '.json':
+        import json
+        with open(args.config, encoding='utf-8') as config_file:
+            config = json.loads(config_file.read())
+    elif args.config[-5:] == '.yaml':
+        import yaml
+        with open(args.config, encoding='utf-8') as config_file:
+            config = None
+            # use the last document in config.yaml as config
+            for c in yaml.load_all(config_file, Loader=yaml.SafeLoader):
+                config = c
+    else:
+        raise Exception('Unknown config type')
 else:
     raise Exception('No config found')
 
-logging.basicConfig(level=config['loglevel'] if 'loglevel' in config else logging.INFO)
+if args.debug:
+    logging.basicConfig(level=logging.DEBUG)
+elif 'loglevel' in config:
+    logging.basicConfig(level=config['loglevel'])
+else:
+    logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("EVNotiPi")
+
+del args
 
 # Load OBD2 interface module
 if not "{}.py".format(config['dongle']['type']) in os.listdir('dongles'):
