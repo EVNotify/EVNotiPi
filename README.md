@@ -35,7 +35,7 @@ This pinout should be compatible to most DB9 to OBD2 cables. One can always buil
 ### Raspberry Pi
 - sudo apt update
 - sudo apt upgrade
-- sudo apt install python3-{pip,rpi.gpio,serial,requests,sdnotify,pyroute2,smbus,yaml} gpsd watchdog rsyslog-
+- sudo apt install python3-{pip,rpi.gpio,serial,requests,sdnotify,pyroute2,smbus,yaml} gpsd watchdog git rsyslog-
 - sudo systemctl disable --now serial-getty@ttyAMA0.service
 - sudo sed -i -re "\\$agpu_mem=16\nmax_usb_current=1\nenable_uart=1\ndtoverlay=disable-bt\ndtoverlay=gpio-poweroff:active_low" -e "/^dtparam=audio=/ s/^/#/" /boot/config.txt
 - sudo sed -i -re '/console=/ s/$/ panic=1/' /boot/cmdline.txt

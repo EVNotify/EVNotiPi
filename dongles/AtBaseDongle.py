@@ -55,7 +55,7 @@ class ATBASE:
                 if expect:
                     expect = bytes(expect, 'ascii')
                     if expect not in ret:
-                        raise Exception(b'Expected {}, got {}'.format(expect,ret))
+                        raise Exception("Expected {}, got {}".format(expect,ret))
 
         except serial.SerialTimeoutException:
             ret = b'TIMEOUT'
