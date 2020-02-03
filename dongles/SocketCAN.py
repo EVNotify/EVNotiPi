@@ -19,12 +19,11 @@ class SocketCAN:
 
         self.config = config
 
-        if 'input_pin' in config:
-            import RPi.GPIO as GPIO
-            GPIO.setmode(GPIO.BCM)
-            GPIO.setup(self.config['input_pin'], GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-
         self.watchdog = watchdog
+        if not watchdog:
+            GPIO.setmode(GPIO.BCM)
+            self.pin = dongle['shutdown_pin']
+            GPIO.setup(self.pin, GPIO.IN, pull_up_down=dongle['pup_down'])
 
         self.socket = None
         self.initDongle()
@@ -310,8 +309,8 @@ class SocketCAN:
             self.watchdog.calibrateVoltage(realVoltage)
 
     def isCarAvailable(self):
-        if 'input_pin' in self.config:
-            return True if GPIO.input(self.config['input_pin']) == 0 else False
-        elif self.watchdog:
+        if self.watchdog:
             return self.watchdog.getShutdownFlag() == 0
+        else
+            return GPIO.input(self.pin) == False
 
