@@ -31,8 +31,8 @@ class SocketCAN:
         self.watchdog = watchdog
         if not watchdog:
             GPIO.setmode(GPIO.BCM)
-            self.pin = dongle['shutdown_pin']
-            GPIO.setup(self.pin, GPIO.IN, pull_up_down=dongle['pup_down'])
+            self.pin = config['shutdown_pin']
+            GPIO.setup(self.pin, GPIO.IN, pull_up_down=config['pup_down'])
 
         self.sock_can = None
         self.sock_isotp = None
