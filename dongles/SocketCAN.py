@@ -367,6 +367,6 @@ class SocketCAN:
     def isCarAvailable(self):
         if self.watchdog:
             return self.watchdog.getShutdownFlag() == 0
-        else
+        else:
             return GPIO.input(self.pin) == False
 
