@@ -69,7 +69,7 @@ sys.path.remove('cars')
 
 Threads = []
 
-if 'watchdog' in config and config['watchdog']['enable'] == True:
+if 'watchdog' in config and config['watchdog'].get('enable') == True:
     import watchdog
     Watchdog = watchdog.Watchdog(config['watchdog'])
 else:
@@ -91,7 +91,7 @@ EVNotify = evnotify.EVNotify(config['evnotify'], car)
 Threads.append(EVNotify)
 
 # Init WiFi control
-if 'wifi' in config and config['wifi']['enable'] == True:
+if 'wifi' in config and config['wifi'].get('enable') == True:
     from wifi_ctrl import WiFiCtrl
     wifi = WiFiCtrl()
 else:
