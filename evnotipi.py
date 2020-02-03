@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from gevent.monkey import patch_all; patch_all()
 from gpspoller import GpsPoller
 from subprocess import check_call, check_output
 from time import sleep,time
