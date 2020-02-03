@@ -180,7 +180,7 @@ class SocketCAN:
                 sock.settimeout(5)
 
                 if self.log.isEnabledFor(logging.DEBUG):
-                    self.log.debug(hex(canrx),hex(cantx),cmd.hex())
+                    self.log.debug("canrx(%s) cantx(%s) cmd(%s)",hex(canrx),hex(cantx),cmd.hex())
                 sock.send(cmd)
                 data = sock.recv(4096)
                 if self.log.isEnabledFor(logging.DEBUG):
