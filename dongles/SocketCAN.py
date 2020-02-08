@@ -5,12 +5,21 @@ import math
 from pyroute2 import IPRoute
 from time import sleep
 import logging
+import RPi.GPIO as GPIO
 
 CANFMT = "<IB3x8s"
 
 def canStr(msg):
     can_id, length, data = struct.unpack(CANFMT, msg)
     return "{:x}#{} ({})".format(can_id & socket.CAN_EFF_MASK, data.hex(), length)
+
+SOL_CAN_BASE        = socket.SOL_CAN_BASE if hasattr(socket, 'SOL_CAN_BASE') else 100
+SOL_CAN_ISOTP       = SOL_CAN_BASE + socket.CAN_ISOTP if hasattr(socket, 'CAN_ISOTP') else None # Allow importing the module without python 3.7
+CAN_ISOTP_OPTS      = 1
+CAN_ISOTP_RECV_FC   = 2
+CAN_ISOTP_TX_STMIN  = 3
+CAN_ISOTP_RX_STMIN  = 4
+CAN_ISOTP_LL_OPTS   = 5
 
 class SocketCAN:
     def __init__(self, config, watchdog = None):
@@ -19,20 +28,62 @@ class SocketCAN:
 
         self.config = config
 
-        if 'input_pin' in config:
-            import RPi.GPIO as GPIO
-            GPIO.setmode(GPIO.BCM)
-            GPIO.setup(self.config['input_pin'], GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-
         self.watchdog = watchdog
+        if not watchdog:
+            GPIO.setmode(GPIO.BCM)
+            self.pin = config['shutdown_pin']
+            GPIO.setup(self.pin, GPIO.IN, pull_up_down=config['pup_down'])
 
-        self.socket = None
-        self.initDongle()
+        self.sock_can = None
+        self.sock_isotp = None
 
         self.can_id = 0x7df
         self.can_filter = None
         self.can_mask = 0x7ff
         self.is_extended = False
+
+        self.initDongle()
+
+    def initDongle(self):
+        ip = IPRoute()
+        ifidx = ip.link_lookup(ifname=self.config['port'])[0]
+        link = ip.link('get',index=ifidx)
+        if 'state' in link[0] and link[0]['state'] == 'up':
+            ip.link('set', index=ifidx, state='down')
+            sleep(1)
+
+        ip.link('set', index=ifidx, type='can', txqlen=4000, bitrate=self.config['speed'])
+        ip.link('set', index=ifidx, state='up')
+        ip.close()
+
+        if self.sock_can:
+            self.sock_can.close()
+
+        try:
+            # check if kernel supports CAN_ISOTP
+            s = socket.socket(socket.AF_CAN, socket.SOCK_DGRAM, socket.CAN_ISOTP)
+            s.close()
+            # CAN_ISOTP_TX_PADDING CAN_ISOTP_RX_PADDING CAN_ISOTP_CHK_PAD_LEN CAN_ISOTP_CHK_PAD_DATA
+            #opts = 0x004 | 0x008 | 0x010 | 0x020
+            opts = 0x004 | 0x008 | 0x010
+            if self.is_extended:
+                # CAN_ISOTP_EXTEND_ADDR
+                opts |= 0x002
+            self.sock_opt_isotp_opt = struct.pack("=LLBBBB", opts, 0, 0, 0xAA, 0xFF, 0)
+            self.sock_opt_isotp_fc = struct.pack("=BBB", 0, 0, 0)
+            # select implementation of sendCommandEx
+            self.sendCommandEx = self.sendCommandEx_ISOTP
+            self.log.info("using ISO-TP support")
+        except OSError:
+            # CAN_ISOTP not supported
+            self.sendCommandEx = self.sendCommandEx_CANRAW
+
+        self.sock_can = socket.socket(socket.PF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
+        try:
+            self.sock_can.bind((self.config['port'],))
+            self.sock_can.settimeout(0.2)
+        except OSError:
+            self.log.error("Could not bind to %i", self.config['port'])
 
     def sendCommand(self, cmd):
         try:
@@ -47,13 +98,13 @@ class SocketCAN:
             if self.log.isEnabledFor(logging.DEBUG):
                 self.log.debug("%s send message", canStr(can_msg))
 
-            self.socket.send(cmd_msg)
+            self.sock_can.send(cmd_msg)
 
             data = {}
             data_len = {}
 
             while True:
-                msg = self.socket.recv(16)
+                msg = self.sock_can.recv(16)
                 can_id, length, msg_data = struct.unpack(CANFMT, msg)
                 can_id &= socket.CAN_EFF_MASK
                 msg_data = msg_data[:length]
@@ -82,7 +133,7 @@ class SocketCAN:
                     flow_msg = struct.pack(CANFMT, self.can_id | socket.CAN_EFF_FLAG if self.is_extended else self.can_id,
                             8, b'0\x00\x00\x00\x00\x00\x00\x00')
 
-                    self.socket.send(flow_msg)
+                    self.sock_can.send(flow_msg)
 
                 elif frame_type == 0x20:
                     if self.log.isEnabledFor(logging.DEBUG):
@@ -119,7 +170,32 @@ class SocketCAN:
 
         return data
 
-    def sendCommandEx(self, cmd, cantx, canrx):
+    def sendCommandEx_ISOTP(self, cmd, cantx, canrx):
+        try:
+            with socket.socket(socket.AF_CAN, socket.SOCK_DGRAM, socket.CAN_ISOTP) as sock:
+                sock.setsockopt(SOL_CAN_ISOTP, CAN_ISOTP_OPTS, self.sock_opt_isotp_opt)
+                sock.setsockopt(SOL_CAN_ISOTP, CAN_ISOTP_RECV_FC, self.sock_opt_isotp_fc)
+
+                sock.bind((self.config['port'], canrx, cantx))
+                sock.settimeout(5)
+
+                if self.log.isEnabledFor(logging.DEBUG):
+                    self.log.debug("canrx(%s) cantx(%s) cmd(%s)",hex(canrx),hex(cantx),cmd.hex())
+                sock.send(cmd)
+                data = sock.recv(4096)
+                if self.log.isEnabledFor(logging.DEBUG):
+                    self.log.debug(data.hex())
+        except socket.timeout as e:
+            raise NoData("Command timed out {}: {}".format(cmd.hex(), e))
+        except OSError as e:
+            raise CanError("Failed Command {}: {}".format(cmd.hex(), e))
+
+        if not data or len(data) == 0:
+            raise NoData('NO DATA')
+
+        return data
+
+    def sendCommandEx_CANRAW(self, cmd, cantx, canrx):
         try:
             cmd_len = len(cmd)
             assert(cmd_len < 8)
@@ -137,7 +213,7 @@ class SocketCAN:
             if self.log.isEnabledFor(logging.DEBUG):
                 self.log.debug("%s send messsage", canStr(cmd_msg))
 
-            self.socket.send(cmd_msg)
+            self.sock_can.send(cmd_msg)
 
             data = None
             data_len = 0
@@ -145,7 +221,7 @@ class SocketCAN:
 
             while True:
                 self.log.debug("waiting recv msg")
-                msg = self.socket.recv(72)
+                msg = self.sock_can.recv(72)
                 can_id, length, msg_data = struct.unpack(CANFMT, msg)
                 self.log.debug("Got %x %i %s",can_id, length, msg_data.hex())
                 can_id &= socket.CAN_EFF_MASK
@@ -173,7 +249,7 @@ class SocketCAN:
                     flow_msg = struct.pack(CANFMT, cantx | socket.CAN_EFF_FLAG if self.is_extended else cantx,
                             8, b'0\x00\x00\x00\x00\x00\x00\x00')
 
-                    self.socket.send(flow_msg)
+                    self.sock_can.send(flow_msg)
 
                     last_idx = 0
 
@@ -214,7 +290,7 @@ class SocketCAN:
         try:
             data = {}
 
-            msg = self.socket.recv(72)
+            msg = self.sock_can.recv(72)
             can_id, length, msg_data = struct.unpack(CANFMT, msg)
             can_id &= socket.CAN_EFF_MASK
             msg_data = msg_data[:length]
@@ -232,29 +308,6 @@ class SocketCAN:
 
         return data
 
-    def initDongle(self):
-        ip = IPRoute()
-        ifidx = ip.link_lookup(ifname=self.config['port'])[0]
-        link = ip.link('get',index=ifidx)
-        if 'state' in link[0] and link[0]['state'] == 'up':
-            ip.link('set', index=ifidx, state='down')
-            sleep(1)
-
-        ip.link('set', index=ifidx, type='can', txqlen=1, bitrate=self.config['speed'])
-        ip.link('set', index=ifidx, state='up')
-        ip.close()
-
-        if self.socket:
-            self.socket.close()
-
-        self.socket = socket.socket(socket.PF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
-        try:
-            self.socket.bind((self.config['port'],))
-            self.socket.settimeout(0.2)
-        except OSError:
-            self.log.error("Could not bind to %i", self.config['port'])
-
-
     def setProtocol(self, prot):
         # SocketCAN doesn't support anything else
         if prot == 'CAN_11_500':
@@ -263,6 +316,8 @@ class SocketCAN:
             self.is_extended = True
         else:
             raise Exception('Unsupported protocol %s' % prot)
+
+        self.initDongle()
 
     def setCanID(self, can_id):
         if not isinstance(can_id, int):
@@ -299,7 +354,7 @@ class SocketCAN:
                     f['id'],# | socket.CAN_EFF_FLAG if self.is_extended else f['id'],
                     f['mask']))
 
-        self.socket.setsockopt(socket.SOL_CAN_RAW, socket.CAN_RAW_FILTER, flt)
+        self.sock_can.setsockopt(socket.SOL_CAN_RAW, socket.CAN_RAW_FILTER, flt)
 
     def getObdVoltage(self):
         if self.watchdog:
@@ -310,8 +365,8 @@ class SocketCAN:
             self.watchdog.calibrateVoltage(realVoltage)
 
     def isCarAvailable(self):
-        if 'input_pin' in self.config:
-            return True if GPIO.input(self.config['input_pin']) == 0 else False
-        elif self.watchdog:
+        if self.watchdog:
             return self.watchdog.getShutdownFlag() == 0
+        else:
+            return GPIO.input(self.pin) == False
 
