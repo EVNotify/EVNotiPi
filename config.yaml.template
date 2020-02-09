@@ -32,8 +32,8 @@ watchdog:
 
 dongle:
    debug:
-      enable:	0
-      url: 	https://whatever
+      enable: 0
+      url: https://whatever
       #user:
       #pass:
    # Use SpcketCAN:
