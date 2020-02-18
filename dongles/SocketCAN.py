@@ -177,7 +177,7 @@ class SocketCAN:
                 sock.setsockopt(SOL_CAN_ISOTP, CAN_ISOTP_RECV_FC, self.sock_opt_isotp_fc)
 
                 sock.bind((self.config['port'], canrx, cantx))
-                sock.settimeout(5)
+                sock.settimeout(0.2)
 
                 if self.log.isEnabledFor(logging.DEBUG):
                     self.log.debug("canrx(%s) cantx(%s) cmd(%s)",hex(canrx),hex(cantx),cmd.hex())
