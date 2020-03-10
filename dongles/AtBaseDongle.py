@@ -141,8 +141,8 @@ class ATBASE:
 
             #self.log.debug(raw)
             for line in raw:
-                if (self.is_extended == False and len(line) != 19) \
-                        or (self.is_extended == True and len(line) != 27):
+                if (self.is_extended is False and len(line) != 19) \
+                        or (self.is_extended is True and len(line) != 27):
                     raise ValueError
 
                 if self.is_extended:
@@ -196,5 +196,5 @@ class ATBASE:
             return self.watchdog.getShutdownFlag() == 0
         else:
             #return self.getObdVoltage() > 13.0
-            return GPIO.input(self.pin) == False
+            return GPIO.input(self.pin) is False
 

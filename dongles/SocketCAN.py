@@ -368,5 +368,5 @@ class SocketCAN:
         if self.watchdog:
             return self.watchdog.getShutdownFlag() == 0
         else:
-            return GPIO.input(self.pin) == False
+            return GPIO.input(self.pin) is False
 

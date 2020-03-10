@@ -69,7 +69,7 @@ sys.path.remove('cars')
 
 Threads = []
 
-if 'watchdog' in config and config['watchdog'].get('enable') == True:
+if 'watchdog' in config and config['watchdog'].get('enable') is True:
     import watchdog
     Watchdog = watchdog.Watchdog(config['watchdog'])
 else:
@@ -91,7 +91,7 @@ EVNotify = evnotify.EVNotify(config['evnotify'], car)
 Threads.append(EVNotify)
 
 # Init WiFi control
-if 'wifi' in config and config['wifi'].get('enable') == True:
+if 'wifi' in config and config['wifi'].get('enable') is True:
     from wifi_ctrl import WiFiCtrl
     wifi = WiFiCtrl()
 else:
@@ -118,7 +118,7 @@ try:
         watchdogs_ok = True
         for t in Threads:
             status = t.checkWatchdog()
-            if status == False:
+            if status is False:
                 log.error("Watchdog Failed " + str(t))
                 watchdogs_ok = False
                 raise WatchdogFailure(str(t))
@@ -127,7 +127,7 @@ try:
             Systemd.notify("WATCHDOG=1")
 
         if 'system' in config and 'shutdown_delay' in config['system']:
-            if now - car.last_data > config['system']['shutdown_delay'] and dongle.isCarAvailable() == False:
+            if now - car.last_data > config['system']['shutdown_delay'] and dongle.isCarAvailable() is False:
                 usercnt = int(check_output(['who','-q']).split(b'\n')[1].split(b'=')[1])
                 if usercnt == 0:
                     log.info("Not charging and car off => Shutdown")
@@ -137,7 +137,7 @@ try:
                     log.info("Not charging and car off; Not shutting down, users connected")
 
         if wifi and config['wifi']['shutdown_delay'] != None:
-            if now - car.last_data > config['wifi']['shutdown_delay'] and dongle.isCarAvailable() == False:
+            if now - car.last_data > config['wifi']['shutdown_delay'] and dongle.isCarAvailable() is False:
                 wifi.disable()
             else:
                 wifi.enable()
