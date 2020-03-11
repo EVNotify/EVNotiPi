@@ -120,10 +120,9 @@ class Car:
                 if self.poll_interval:
                     runtime = time() - now
                     interval = self.poll_interval - (runtime if runtime > self.poll_interval else 0)
-                    if interval > 0:
-                        sleep(interval)
+                    sleep(max(0,interval))
 
-                elif self.skip_polling:
+                elif self.skip_polling or data.get('charging', False):
                     sleep(1)
 
     def registerData(self, callback):
