@@ -55,16 +55,12 @@ if not "{}.py".format(config['dongle']['type']) in os.listdir('dongles'):
     raise Exception('Unsupported dongle {}'.format(config['dongle']['type']))
 
 # Init ODB2 adapter
-sys.path.insert(0, 'dongles')
-exec("from {0} import {0} as DONGLE".format(config['dongle']['type']))
-sys.path.remove('dongles')
+exec("from dongles.{0} import {0} as DONGLE".format(config['dongle']['type']))
 
 if not "{}.py".format(config['car']['type']) in os.listdir('cars'):
     raise Exception('Unsupported car {}'.format(config['car']['type']))
 
-sys.path.insert(0, 'cars')
-exec("from {0} import {0} as CAR".format(config['car']['type']))
-sys.path.remove('cars')
+exec("from cars.{0} import {0} as CAR".format(config['car']['type']))
 
 
 Threads = []
