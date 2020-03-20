@@ -72,7 +72,7 @@ else:
     Watchdog = None
 
 # Init dongle
-dongle = DONGLE(config['dongle'], watchdog = Watchdog)
+dongle = DONGLE(config['dongle'], watchdog=Watchdog)
 
 # Init GPS interface
 gps = GpsPoller()
@@ -114,8 +114,8 @@ try:
         watchdogs_ok = True
         for t in Threads:
             status = t.checkWatchdog()
-            if status is False:
-                log.error("Watchdog Failed " + str(t))
+            if not status:
+                log.error("Watchdog Failed %s", str(t))
                 watchdogs_ok = False
                 raise WatchdogFailure(str(t))
 
@@ -123,17 +123,19 @@ try:
             Systemd.notify("WATCHDOG=1")
 
         if 'system' in config and 'shutdown_delay' in config['system']:
-            if now - car.last_data > config['system']['shutdown_delay'] and dongle.isCarAvailable() is False:
-                usercnt = int(check_output(['who','-q']).split(b'\n')[1].split(b'=')[1])
+            if (now - car.last_data > config['system']['shutdown_delay'] and
+                    not dongle.isCarAvailable()):
+                usercnt = int(check_output(['who', '-q']).split(b'\n')[1].split(b'=')[1])
                 if usercnt == 0:
                     log.info("Not charging and car off => Shutdown")
-                    check_call(['/bin/systemctl','poweroff'])
+                    check_call(['/bin/systemctl', 'poweroff'])
                     sleep(5)
                 else:
                     log.info("Not charging and car off; Not shutting down, users connected")
 
-        if wifi and config['wifi']['shutdown_delay'] != None:
-            if now - car.last_data > config['wifi']['shutdown_delay'] and dongle.isCarAvailable() is False:
+        if wifi and config['wifi']['shutdown_delay'] is not None:
+            if (now - car.last_data > config['wifi']['shutdown_delay'] and
+                    not dongle.isCarAvailable()):
                 wifi.disable()
             else:
                 wifi.enable()
@@ -142,7 +144,8 @@ try:
 
         if main_running:
             loop_delay = 1 - (time()-now)
-            if loop_delay > 0: sleep(loop_delay)
+            if loop_delay > 0:
+                sleep(loop_delay)
 
 except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
     main_running = False
@@ -153,4 +156,3 @@ finally:
     for t in Threads[::-1]: # reverse Threads
         t.stop()
     log.info("Bye.")
-
