@@ -1,11 +1,11 @@
-from dongle import *
 import socket
 import struct
 import math
-from pyroute2 import IPRoute
-from time import sleep
 import logging
+from time import sleep
+from pyroute2 import IPRoute
 import RPi.GPIO as GPIO
+from dongle import *
 
 CANFMT = "<IB3x8s"
 
@@ -22,7 +22,7 @@ CAN_ISOTP_RX_STMIN  = 4
 CAN_ISOTP_LL_OPTS   = 5
 
 class SocketCAN:
-    def __init__(self, config, watchdog = None):
+    def __init__(self, config, watchdog=None):
         self.log = logging.getLogger("EVNotiPi/SocketCAN")
         self.log.info("Initializing SocketCAN")
 
@@ -47,7 +47,7 @@ class SocketCAN:
     def initDongle(self):
         ip = IPRoute()
         ifidx = ip.link_lookup(ifname=self.config['port'])[0]
-        link = ip.link('get',index=ifidx)
+        link = ip.link('get', index=ifidx)
         if 'state' in link[0] and link[0]['state'] == 'up':
             ip.link('set', index=ifidx, state='down')
             sleep(1)
@@ -88,15 +88,15 @@ class SocketCAN:
     def sendCommand(self, cmd):
         try:
             cmd_len = len(cmd)
-            assert(cmd_len < 8)
+            assert cmd_len < 8
 
             msg_data = (bytes([cmd_len]) + cmd).ljust(8, b'\x00') # Pad cmd to 8 bytes
 
-            cmd_msg = struct.pack(CANFMT, self.can_id | socket.CAN_EFF_FLAG if self.is_extended else self.can_id,
-                    len(msg_data), msg_data)
+            cmd_msg = struct.pack(CANFMT, self.can_id | socket.CAN_EFF_FLAG \
+                    if self.is_extended else self.can_id, len(msg_data), msg_data)
 
             if self.log.isEnabledFor(logging.DEBUG):
-                self.log.debug("%s send message", canStr(can_msg))
+                self.log.debug("%s send message", canStr(cmd_msg))
 
             self.sock_can.send(cmd_msg)
 
@@ -130,8 +130,9 @@ class SocketCAN:
                     if self.log.isEnabledFor(logging.DEBUG):
                         self.log.debug("Send flow control message")
 
-                    flow_msg = struct.pack(CANFMT, self.can_id | socket.CAN_EFF_FLAG if self.is_extended else self.can_id,
-                            8, b'0\x00\x00\x00\x00\x00\x00\x00')
+                    flow_msg = struct.pack(CANFMT, self.can_id | socket.CAN_EFF_FLAG \
+                            if self.is_extended else self.can_id,
+                                           8, b'0\x00\x00\x00\x00\x00\x00\x00')
 
                     self.sock_can.send(flow_msg)
 
@@ -162,7 +163,7 @@ class SocketCAN:
             # Check if all entries are filled
             for key, val in data.items():
                 for i in val:
-                    if i == None:
+                    if i is None:
                         raise ValueError
 
         except ValueError:
@@ -180,7 +181,9 @@ class SocketCAN:
                 sock.settimeout(0.2)
 
                 if self.log.isEnabledFor(logging.DEBUG):
-                    self.log.debug("canrx(%s) cantx(%s) cmd(%s)",hex(canrx),hex(cantx),cmd.hex())
+                    self.log.debug("canrx(%s) cantx(%s) cmd(%s)",
+                                   hex(canrx), hex(cantx), cmd.hex())
+
                 sock.send(cmd)
                 data = sock.recv(4096)
                 if self.log.isEnabledFor(logging.DEBUG):
@@ -198,12 +201,13 @@ class SocketCAN:
     def sendCommandEx_CANRAW(self, cmd, cantx, canrx):
         try:
             cmd_len = len(cmd)
-            assert(cmd_len < 8)
+            assert cmd_len < 8
 
             msg_data = (bytes([cmd_len]) + cmd).ljust(8, b'\x00') # Pad cmd to 8 bytes
 
-            cmd_msg = struct.pack(CANFMT, cantx | socket.CAN_EFF_FLAG if self.is_extended else cantx,
-                    len(msg_data), msg_data)
+            cmd_msg = struct.pack(CANFMT, cantx | socket.CAN_EFF_FLAG \
+                    if self.is_extended else cantx,
+                                  len(msg_data), msg_data)
 
             self.setFiltersEx([{
                 'id':   canrx,
@@ -223,7 +227,7 @@ class SocketCAN:
                 self.log.debug("waiting recv msg")
                 msg = self.sock_can.recv(72)
                 can_id, length, msg_data = struct.unpack(CANFMT, msg)
-                self.log.debug("Got %x %i %s",can_id, length, msg_data.hex())
+                self.log.debug("Got %x %i %s", can_id, length, msg_data.hex())
                 can_id &= socket.CAN_EFF_MASK
                 msg_data = msg_data[:length]
                 frame_type = msg_data[0] & 0xf0
@@ -246,8 +250,9 @@ class SocketCAN:
                     if self.log.isEnabledFor(logging.DEBUG):
                         self.log.debug("Send flow control message")
 
-                    flow_msg = struct.pack(CANFMT, cantx | socket.CAN_EFF_FLAG if self.is_extended else cantx,
-                            8, b'0\x00\x00\x00\x00\x00\x00\x00')
+                    flow_msg = struct.pack(CANFMT, cantx | socket.CAN_EFF_FLAG \
+                            if self.is_extended else cantx,
+                                           8, b'0\x00\x00\x00\x00\x00\x00\x00')
 
                     self.sock_can.send(flow_msg)
 
@@ -259,7 +264,7 @@ class SocketCAN:
 
                     idx = msg_data[0] & 0x0f
                     if (last_idx + 1) % 0x10 != idx:
-                        raise CanError("Bad frame order: last_idx({}) idx({})".format(last_idx,idx))
+                        raise CanError("Bad frame order: last_idx({}) idx({})".format(last_idx, idx))
 
                     frame_len = min(7, data_len - len(data))
                     data.extend(msg_data[1:frame_len+1])
@@ -351,8 +356,8 @@ class SocketCAN:
         flt = bytearray()
         for f in filters:
             flt.extend(struct.pack("=II",
-                    f['id'],# | socket.CAN_EFF_FLAG if self.is_extended else f['id'],
-                    f['mask']))
+                                   f['id'],# | socket.CAN_EFF_FLAG if self.is_extended else f['id'],
+                                   f['mask']))
 
         self.sock_can.setsockopt(socket.SOL_CAN_RAW, socket.CAN_RAW_FILTER, flt)
 
