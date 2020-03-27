@@ -3,13 +3,13 @@
 from gevent.monkey import patch_all; patch_all()
 from gpspoller import GpsPoller
 from subprocess import check_call, check_output
-from time import sleep,time
+from time import sleep, time
+from argparse import ArgumentParser
 import os
 import sys
 import signal
 import sdnotify
 import logging
-from argparse import ArgumentParser
 import evnotify
 
 Systemd = sdnotify.SystemdNotifier()
@@ -17,8 +17,10 @@ Systemd = sdnotify.SystemdNotifier()
 class WatchdogFailure(Exception): pass
 
 parser = ArgumentParser(description='EVNotiPi')
-parser.add_argument('-d', '--debug', dest='debug', action='store_true', default=False)
-parser.add_argument('-c', '--config', dest='config', action='store', default='config.yaml')
+parser.add_argument('-d', '--debug', dest='debug',
+                    action='store_true', default=False)
+parser.add_argument('-c', '--config', dest='config',
+                    action='store', default='config.yaml')
 args = parser.parse_args()
 del parser
 
