@@ -31,7 +31,7 @@ class EVNotify:
         self._log.info("Initializing EVNotify")
 
         self._car = car
-        self._config = config
+        self.config = config
         self._poll_interval = config['interval']
         self._running = False
         self._thread = None
@@ -133,7 +133,7 @@ class EVNotify:
                     last_charging = now
                     last_charging_soc = current_soc
 
-                if is_charging and 'soc_threshold' not in self._config and \
+                if is_charging and 'soc_threshold' not in self.config and \
                         now - last_evn_settings_poll > EVN_SETTINGS_INTERVAL:
                     try:
                         s = self._evnotify.getSettings()
