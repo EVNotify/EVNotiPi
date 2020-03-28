@@ -92,7 +92,7 @@ class EVNotify:
 
                 # Detect aborted charge
                 if ((now - last_charging > ABORT_NOTIFICATION_INTERVAL and
-                     charging_start_soc > 0 and last_charging_soc < soc_threshold and
+                     charging_start_soc > 0 and 0 < last_charging_soc < soc_threshold and
                      abort_notification is ARMED) or abort_notification is FAILED):
                     log.info("Aborted charge detected, send abort notification")
                     try:
@@ -170,7 +170,7 @@ class EVNotify:
                 abort_notification = ARMED
 
             # SoC threshold notification
-            if ((is_charging and last_charging_soc < soc_threshold <= current_soc)
+            if ((is_charging and 0 < last_charging_soc < soc_threshold <= current_soc)
                     or soc_notification is FAILED):
                 log.info("Notification threshold(%i) reached: %i",
                          soc_threshold, current_soc)
