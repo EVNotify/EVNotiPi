@@ -83,11 +83,23 @@ class EVNotify:
         while self._running:
             with self._data_lock:
                 log.debug('Waiting...')
-                self._data_lock.wait()
+                self._data_lock.wait(max(10, self._poll_interval))
+                now = time()
+
+                # Detect aborted charge
+                if ((now - last_charging > ABORT_NOTIFICATION_INTERVAL and
+                     charging_start_soc > 0 and last_charging_soc < soc_threshold)
+                        or abort_notification_failed):
+                    log.info("Aborted charge detected, send abort notification")
+                    try:
+                        evn.sendNotification(True)
+                        abort_notification_failed = False
+                    except EVNotifyAPI.CommunicationError as e:
+                        log.error("Communication Error: %s", e)
+                        abort_notification_failed = True
+
                 if len(self._data) == 0:
                     continue
-
-                now = time()
 
                 log.debug("Transmit...")
 
@@ -103,7 +115,7 @@ class EVNotify:
 
                 for d in self._data:
                     for k, v in avgs.items():
-                        if k in d and d[k] is None:
+                        if k in d and d[k] is not None:
                             v.append(d[k])
 
                 # Need to copy data here because we update it later
@@ -164,18 +176,6 @@ class EVNotify:
                 except EVNotifyAPI.CommunicationError as e:
                     log.info("Communication Error: %s", e)
                     notification_failed = True
-
-            # Detect aborted charge
-            if ((now - last_charging > ABORT_NOTIFICATION_INTERVAL and
-                 charging_start_soc > 0 and last_charging_soc < soc_threshold)
-                    or abort_notification_failed):
-                log.info("Aborted charge detected, send abort notification")
-                try:
-                    evn.sendNotification(True)
-                    abort_notification_failed = False
-                except EVNotifyAPI.CommunicationError as e:
-                    log.error("Communication Error: %s", e)
-                    abort_notification_failed = True
 
             if is_charging:
                 last_charging = now
