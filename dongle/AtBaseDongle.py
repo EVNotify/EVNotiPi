@@ -1,10 +1,10 @@
-from dongle import *
-import serial
 from threading import Lock
 from time import sleep
-import math
 import RPi.GPIO as GPIO
 import logging
+import math
+import serial
+from .dongle import *
 
 class ATBASE:
     def __init__(self, dongle, watchdog = None):

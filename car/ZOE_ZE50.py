@@ -1,8 +1,5 @@
-if __name__ == '__main__':
-    import sys
-    sys.path.insert(0,'.')
-from car import *
 from time import time
+from .car import *
 
 cmd_auxVoltage  = bytes.fromhex('222005')   # PR252
 cmd_chargeState = bytes.fromhex('225017')   # ET018

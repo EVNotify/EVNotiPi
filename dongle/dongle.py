@@ -17,11 +17,11 @@ class CanDebug:
 
     def debug(self, cantx, canrx, cmd, data):
         json = {
-                'cantx': cantx,
-                'canrx': canrx,
-                'command': cmd,
-                'rawdata': data
-                }
+            'cantx': cantx,
+            'canrx': canrx,
+            'command': cmd,
+            'rawdata': data
+            }
         self.data_queue.append(json)
         try:
             self.session.post(self.url, data=self.data_queue, auth=(self.user, self.pwd), timeout=0.1)

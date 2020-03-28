@@ -1,6 +1,6 @@
-from car import *
-from dongle import NoData
 from time import time
+from .car import *
+from ..dongle import NoData
 
 b2101 = bytes.fromhex('2101')
 b2102 = bytes.fromhex('2102')

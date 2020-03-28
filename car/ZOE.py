@@ -1,6 +1,6 @@
-from car import *
 from time import time
 from threading import Thread
+from .car import *
 
 class ZOE(Car):
 

@@ -1,14 +1,22 @@
 from time import time, sleep
 from threading import Thread
 import logging
-from dongle import NoData, CanError
+from ..dongle import NoData, CanError
 
-def ifbu(in_bytes): return int.from_bytes(in_bytes, byteorder='big', signed=False)
-def ifbs(in_bytes): return int.from_bytes(in_bytes, byteorder='big', signed=True)
-def ffbu(in_bytes): return float(int.from_bytes(in_bytes, byteorder='big', signed=False))
-def ffbs(in_bytes): return float(int.from_bytes(in_bytes, byteorder='big', signed=True))
+def ifbu(in_bytes):
+    return int.from_bytes(in_bytes, byteorder='big', signed=False)
 
-class DataError(Exception): pass
+def ifbs(in_bytes):
+    return int.from_bytes(in_bytes, byteorder='big', signed=True)
+
+def ffbu(in_bytes):
+    return float(int.from_bytes(in_bytes, byteorder='big', signed=False))
+
+def ffbs(in_bytes):
+    return float(int.from_bytes(in_bytes, byteorder='big', signed=True))
+
+class DataError(Exception):
+    pass
 
 class Car:
     def __init__(self, config, dongle, gps):

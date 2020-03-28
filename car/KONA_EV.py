@@ -1,4 +1,4 @@
-from car import *
+from .car import *
 
 b220100 = bytes.fromhex('220100')
 b220101 = bytes.fromhex('220101')

@@ -1,11 +1,11 @@
-import socket
-import struct
-import math
-import logging
 from time import sleep
 from pyroute2 import IPRoute
 import RPi.GPIO as GPIO
-from dongle import *
+import logging
+import math
+import socket
+import struct
+from .dongle import *
 
 CANFMT = "<IB3x8s"
 
