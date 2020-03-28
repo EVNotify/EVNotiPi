@@ -23,6 +23,10 @@ EXTENDED_FIELDS = (
         'externalTemperature'
         )
 
+ARMED = 0
+SENT = 1
+FAILED = -1
+
 class EVNotify:
     def __init__(self, config, car):
         self._log = logging.getLogger("EVNotiPi/EVNotify")
@@ -63,13 +67,13 @@ class EVNotify:
         log = self._log
         evn = self._evnotify
 
-        abort_notification_failed = False
+        abort_notification = None
         charging_start_soc = 0
         last_charging = time()
         last_charging_soc = 0
         last_evn_settings_poll = 0
-        notification_failed = False
         settings = None
+        soc_notification = ARMED
         soc_threshold = self.config.get('soc_threshold', 100)
 
         log.info("Get settings from backend")
@@ -88,15 +92,15 @@ class EVNotify:
 
                 # Detect aborted charge
                 if ((now - last_charging > ABORT_NOTIFICATION_INTERVAL and
-                     charging_start_soc > 0 and last_charging_soc < soc_threshold)
-                        or abort_notification_failed):
+                     charging_start_soc > 0 and last_charging_soc < soc_threshold and
+                     abort_notification is ARMED) or abort_notification is FAILED):
                     log.info("Aborted charge detected, send abort notification")
                     try:
                         evn.sendNotification(True)
-                        abort_notification_failed = False
+                        abort_notification = SENT
                     except EVNotifyAPI.CommunicationError as e:
                         log.error("Communication Error: %s", e)
-                        abort_notification_failed = True
+                        abort_notification = FAILED
 
                 if len(self._data) == 0:
                     continue
@@ -161,21 +165,21 @@ class EVNotify:
             # track charging started
             if is_charging and charging_start_soc == 0:
                 charging_start_soc = current_soc or 0
-            elif not is_connected:   # Rearm notification
+            elif not is_connected:   # Rearm abort notification
                 charging_start_soc = 0
-                abort_notification_failed = False
+                abort_notification = ARMED
 
             # SoC threshold notification
-            if ((is_charging and last_charging_soc < soc_threshold <= current_soc) or
-                    notification_failed):
+            if ((is_charging and last_charging_soc < soc_threshold <= current_soc)
+                    or soc_notification is FAILED):
                 log.info("Notification threshold(%i) reached: %i",
                          soc_threshold, current_soc)
                 try:
                     evn.sendNotification()
-                    notification_failed = False
+                    soc_notification = ARMED
                 except EVNotifyAPI.CommunicationError as e:
                     log.info("Communication Error: %s", e)
-                    notification_failed = True
+                    soc_notification = FAILED
 
             if is_charging:
                 last_charging = now
