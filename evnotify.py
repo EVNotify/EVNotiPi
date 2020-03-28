@@ -67,7 +67,7 @@ class EVNotify:
         log = self._log
         evn = self._evnotify
 
-        abort_notification = None
+        abort_notification = ARMED
         charging_start_soc = 0
         last_charging = time()
         last_charging_soc = 0
