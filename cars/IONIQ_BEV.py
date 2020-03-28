@@ -20,7 +20,7 @@ class IONIQ_BEV(Car):
         now = time()
         raw = {}
 
-        for cmd in [b2101,b2102,b2103,b2104,b2105]:
+        for cmd in [b2101, b2102, b2103, b2104, b2105]:
             raw[cmd] = self.dongle.sendCommandEx(cmd, canrx=0x7ec, cantx=0x7e4)
 
         raw[b2180] = self.dongle.sendCommandEx(b2180, canrx=0x7ee, cantx=0x7e6)
@@ -38,18 +38,18 @@ class IONIQ_BEV(Car):
         dcBatteryVoltage = ifbu(raw[b2101][14:16]) / 10.0
 
         cellTemps = [
-                ifbs(raw[b2101][18:19]), #  0
-                ifbs(raw[b2101][19:20]), #  1
-                ifbs(raw[b2101][20:21]), #  2
-                ifbs(raw[b2101][21:22]), #  3
-                ifbs(raw[b2101][22:23]), #  4
-                ifbs(raw[b2105][11:12]), #  5
-                ifbs(raw[b2105][12:13]), #  6
-                ifbs(raw[b2105][13:14]), #  7
-                ifbs(raw[b2105][14:15]), #  8
-                ifbs(raw[b2105][15:16]), #  9
-                ifbs(raw[b2105][16:17]), # 10
-                ifbs(raw[b2105][17:18])] # 11
+            ifbs(raw[b2101][18:19]), #  0
+            ifbs(raw[b2101][19:20]), #  1
+            ifbs(raw[b2101][20:21]), #  2
+            ifbs(raw[b2101][21:22]), #  3
+            ifbs(raw[b2101][22:23]), #  4
+            ifbs(raw[b2105][11:12]), #  5
+            ifbs(raw[b2105][12:13]), #  6
+            ifbs(raw[b2105][13:14]), #  7
+            ifbs(raw[b2105][14:15]), #  8
+            ifbs(raw[b2105][15:16]), #  9
+            ifbs(raw[b2105][16:17]), # 10
+            ifbs(raw[b2105][17:18])] # 11
 
         cellVoltages = []
         for cmd in [b2102, b2103, b2104]:

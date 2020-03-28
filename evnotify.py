@@ -20,7 +20,8 @@ EXTENDED_FIELDS = (
         'dcBatteryPower',
         'dcBatteryVoltage',
         'soh',
-        'externalTemperature'
+        'externalTemperature',
+        'odo'
         )
 
 ARMED = 0
