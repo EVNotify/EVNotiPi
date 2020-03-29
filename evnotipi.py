@@ -53,16 +53,16 @@ log = logging.getLogger("EVNotiPi")
 del args
 
 # Load OBD2 interface module
-if not "{}.py".format(config['dongle']['type']) in os.listdir('dongles'):
+if not "{}.py".format(config['dongle']['type']) in os.listdir('dongle'):
     raise Exception('Unsupported dongle {}'.format(config['dongle']['type']))
 
 # Init ODB2 adapter
-exec("from dongles.{0} import {0} as DONGLE".format(config['dongle']['type']))
+exec("from dongle.{0} import {0} as DONGLE".format(config['dongle']['type']))
 
-if not "{}.py".format(config['car']['type']) in os.listdir('cars'):
+if not "{}.py".format(config['car']['type']) in os.listdir('car'):
     raise Exception('Unsupported car {}'.format(config['car']['type']))
 
-exec("from cars.{0} import {0} as CAR".format(config['car']['type']))
+exec("from car.{0} import {0} as CAR".format(config['car']['type']))
 
 
 Threads = []

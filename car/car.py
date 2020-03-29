@@ -1,7 +1,7 @@
 from time import time, sleep
 from threading import Thread
 import logging
-from ..dongle import NoData, CanError
+from dongle.dongle import NoData, CanError
 
 def ifbu(in_bytes):
     return int.from_bytes(in_bytes, byteorder='big', signed=False)
