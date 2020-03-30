@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
 
 from gevent.monkey import patch_all; patch_all()
-from gpspoller import GpsPoller
 from subprocess import check_call, check_output
 from time import sleep, time
 from argparse import ArgumentParser
 import os
 import sys
 import signal
-import sdnotify
 import logging
+import sdnotify
 import evnotify
+from gpspoller import GpsPoller
 import car
 import dongle
+
+# Exit signalhandler
+def exit_gracefully(signum, frame):
+    sys.exit(0)
 
 Systemd = sdnotify.SystemdNotifier()
 
@@ -94,9 +98,6 @@ else:
 main_running = True
 
 # Set up signal handling
-def exit_gracefully(signum, frame):
-    sys.exit(0)
-
 signal.signal(signal.SIGTERM, exit_gracefully)
 
 # Start polling loops
@@ -122,8 +123,8 @@ try:
         if 'system' in config and 'shutdown_delay' in config['system']:
             if (now - car.last_data > config['system']['shutdown_delay'] and
                     not dongle.isCarAvailable()):
-                usercnt = int(check_output(['who', '-q']).split(b'\n')[1].split(b'=')[1])
-                if usercnt == 0:
+                user_cnt = int(check_output(['who', '-q']).split(b'\n')[1].split(b'=')[1])
+                if user_cnt == 0:
                     log.info("Not charging and car off => Shutdown")
                     check_call(['/bin/systemctl', 'poweroff'])
                     sleep(5)
@@ -141,8 +142,7 @@ try:
 
         if main_running:
             loop_delay = 1 - (time()-now)
-            if loop_delay > 0:
-                sleep(loop_delay)
+            sleep(min(0, loop_delay))
 
 except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
     main_running = False

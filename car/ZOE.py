@@ -47,7 +47,7 @@ class ZOE(Car):
                 continue
 
             with self.datalock.gen_wlock():
-                for sid,line in raw.items():
+                for sid, line in raw.items():
                     if sid == 0x42e:
                         self.data.update({
                             'SOC_DISPLAY':                  (ifbu(line[0:2]) >> 3 & 0x1fff) * 0.02,

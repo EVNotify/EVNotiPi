@@ -9,8 +9,8 @@ class CanDebug:
         self.log = logging.getLogger("EVNotiPi/CanDebug")
         self.session = requests.Session()
         self.url = config['debug']['url']
-        self.user = config['debug']['user'] if 'user' in config['debug'] else None
-        self.pwd  = config['debug']['pass'] if 'pass' in config['debug'] else None
+        self.user = config['debug'].get('user')
+        self.pwd  = config['debug'].get('pass')
         self.cartype = cartype
         self.akey = akey
         self.data_queue = []
@@ -24,10 +24,11 @@ class CanDebug:
             }
         self.data_queue.append(json)
         try:
-            self.session.post(self.url, data=self.data_queue, auth=(self.user, self.pwd), timeout=0.1)
+            self.session.post(self.url, data=self.data_queue,
+                              auth=(self.user, self.pwd), timeout=0.1)
             self.data_queue.clear()
         except requests.exceptions.Timeout as e:
-            self.log.info("Timeout occured {}".format(e))
+            self.log.info("Timeout occured %s", e)
 
 class OBDDongle:
     def __init__(self, config):

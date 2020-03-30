@@ -1,16 +1,16 @@
 from time import time
 from .car import *
 
-cmd_auxVoltage  = bytes.fromhex('222005')   # PR252
-cmd_chargeState = bytes.fromhex('225017')   # ET018
-cmd_soc         = bytes.fromhex('229001')
-cmd_soc_bms     = bytes.fromhex('229002')
-cmd_voltage     = bytes.fromhex('229006')
-cmd_bms_energy  = bytes.fromhex('2291C8')   # PR155
-cmd_odo         = bytes.fromhex('2291CF')   # PR046 ?? 0x80000225 => 17km ?
-cmd_nrg_discharg= bytes.fromhex('229245')   # PR047
-cmd_current     = bytes.fromhex('229257')   # PR218
-cmd_soh         = bytes.fromhex('22927A')   # ET148
+CMD_AUX_VOLTAGE  = bytes.fromhex('222005')   # PR252
+CMD_CHARGE_STATE = bytes.fromhex('225017')   # ET018
+CMD_SOC          = bytes.fromhex('229001')
+CMD_SOC_BMS      = bytes.fromhex('229002')
+CMD_VOLTAGE      = bytes.fromhex('229006')
+CMD_BMS_ENERGY   = bytes.fromhex('2291C8')   # PR155
+CMD_ODO          = bytes.fromhex('2291CF')   # PR046 ?? 0x80000225 => 17km ?
+CMD_NRG_DISCHARG = bytes.fromhex('229245')   # PR047
+CMD_CURRENT      = bytes.fromhex('229257')   # PR218
+CMD_SOH          = bytes.fromhex('22927A')   # ET148
 
 class ZOE_ZE50(Car):
     def __init__(self, config, dongle, gps):
@@ -23,10 +23,10 @@ class ZOE_ZE50(Car):
 
         data.update(self.getBaseData())
 
-        dcBatteryCurrent = ifbu(bms(cmd_current)) - 32768
-        dcBatteryVoltage = ifbu(bms(cmd_voltage)) / 1000
+        dc_battery_current = ifbu(bms(CMD_CURRENT)) - 32768
+        dc_battery_voltage = ifbu(bms(CMD_VOLTAGE)) / 1000
 
-        #soh_raw = bms(cmd_soh) # returns 254 bytes of data ...
+        #soh_raw = bms(CMD_SOH) # returns 254 bytes of data ...
 
         cellVolts = []
         for i in range(0x21, 0x84):
@@ -40,37 +40,37 @@ class ZOE_ZE50(Car):
 
         data.update({
             #Base
-            'SOC_BMS':              ifbu(bms(cmd_soc_bms)) / 100,
-            'SOC_DISPLAY':          ifbu(bms(cmd_soc)) / 100,
+            'SOC_BMS':              ifbu(bms(CMD_SOC_BMS)) / 100,
+            'SOC_DISPLAY':          ifbu(bms(CMD_SOC)) / 100,
 
             #Extended:
-            'auxBatteryVoltage':    ifbu(bms(cmd_auxVoltage)) / 100.0,
+            'auxBatteryVoltage':    ifbu(bms(CMD_AUX_VOLTAGE)) / 100.0,
 
             #'batteryInletTemperature':
             'batteryMaxTemperature': max(moduleTemps),
             'batteryMinTemperature': min(moduleTemps),
 
-            'cumulativeEnergyCharged':  ifbu(bms(cmd_bms_energy)) / 1000.0,
-            'cumulativeEnergyDischarged': ifbu(bms(cmd_nrg_discharg)) / 1000.0,
+            'cumulativeEnergyCharged':  ifbu(bms(CMD_BMS_ENERGY)) / 1000.0,
+            'cumulativeEnergyDischarged': ifbu(bms(CMD_NRG_DISCHARG)) / 1000.0,
 
-            'charging':             0 if ifbu(bms(cmd_chargeState)) == 0 else 1,
+            'charging':             0 if ifbu(bms(CMD_CHARGE_STATE)) == 0 else 1,
             #'normalChargePort':
             #'rapidChargePort':
 
-            'dcBatteryCurrent':     dcBatteryCurrent,
-            'dcBatteryPower':       dcBatteryCurrent * dcBatteryVoltage / 1000.0,
-            'dcBatteryVoltage':     dcBatteryVoltage,
+            'dcBatteryCurrent':     dc_battery_current,
+            'dcBatteryPower':       dc_battery_current * dc_battery_voltage / 1000.0,
+            'dcBatteryVoltage':     dc_battery_voltage,
 
             #'soh':
             #'externalTemperature':
-            #'odo':                  ifbu(bms(cmd_odo)),
+            #'odo':                  ifbu(bms(CMD_ODO)),
             })
 
-        for i,cvolt in enumerate(cellVolts):
+        for i, cvolt in enumerate(cellVolts):
             key = "cellVoltage{:02d}".format(i+1)
             data[key] = float(cvolt)
 
-        for i,temp in enumerate(moduleTemps):
+        for i, temp in enumerate(moduleTemps):
             key = "cellTemp{:02d}".format(i+1)
             data[key] = float(temp)
 
@@ -91,22 +91,18 @@ if __name__ == '__main__':
 
     logging.basicConfig(level=logging.DEBUG)
 
-    sys.path.insert(0, 'dongles')
-    from SocketCAN import SocketCAN
-    sys.path.insert(0, 'cars')
-    import ZOE_ZE50
+    from ..dongle.SocketCAN import SocketCAN
 
     config = {
-            'type': 'SocketCAN',
-            'port': 'vcan0',
-            'speed': 500000,
-            }
+        'type': 'SocketCAN',
+        'port': 'vcan0',
+        'speed': 500000,
+        }
 
     dongle = SocketCAN(config, watchdog=None)
 
-    car = ZOE_ZE50.ZOE_ZE50({'interval': 1}, dongle)
+    car = ZOE_ZE50({'interval': 1}, dongle)
 
     data = {}
     car.readDongle(data)
     pp.pprint(data)
-

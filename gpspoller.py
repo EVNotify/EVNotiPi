@@ -1,38 +1,36 @@
-import sys
-import socket
 from threading import Thread
-from time import time,sleep,strptime,mktime
-from math import isnan
+from time import sleep, strptime, mktime
 import json
 import logging
+import socket
 
 class GpsPoller:
     def __init__(self):
-        self.log = logging.getLogger("EVNotiPi/GPSPoller")
-        self.thread = None
-        self.gpsd = ('localhost', 2947)
-        self.last_fix = {
-                'device': None,
-                'mode': 0,
-                'latitude': None,
-                'longitude': None,
-                'speed': None,
-                'altitude': None,
-                'time': None,
-                'xdop': None,
-                'ydop': None,
-                'vdop': None,
-                'tdop': None,
-                'hdop': None,
-                'gdop': None,
-                'pdop': None,
+        self._log = logging.getLogger("EVNotiPi/GPSPoller")
+        self._thread = None
+        self._gpsd = ('localhost', 2947)
+        self._last_fix = {
+            'device': None,
+            'mode': 0,
+            'latitude': None,
+            'longitude': None,
+            'speed': None,
+            'altitude': None,
+            'time': None,
+            'xdop': None,
+            'ydop': None,
+            'vdop': None,
+            'tdop': None,
+            'hdop': None,
+            'gdop': None,
+            'pdop': None,
                 }
-        self.distance = 0
+        self._running = False
 
     def run(self):
-        self.running = True
+        self._running = True
         s = None
-        while self.running:
+        while self._running:
             try:
                 if s:
                     try:
@@ -46,9 +44,10 @@ class GpsPoller:
                                     continue
 
                                 if fix['class'] == 'TPV':
-                                    fix_time = mktime(strptime(fix['time'][:23], "%Y-%m-%dT%H:%M:%S.%f"))
+                                    fix_time = mktime(strptime(fix['time'][:23],
+                                                               "%Y-%m-%dT%H:%M:%S.%f"))
 
-                                    self.last_fix.update({
+                                    self._last_fix.update({
                                         'device':    fix['device'],
                                         'mode':      fix['mode'],
                                         'latitude':  fix.get('lat'),
@@ -58,24 +57,24 @@ class GpsPoller:
                                         'time':      fix_time,
                                         })
                                 elif fix['class'] == 'SKY':
-                                    self.last_fix.update({
-                                        'xdop': fix.get('xdop', None),
-                                        'ydop': fix.get('ydop', None),
-                                        'vdop': fix.get('vdop', None),
-                                        'tdop': fix.get('tdop', None),
-                                        'hdop': fix.get('hdop', None),
-                                        'gdop': fix.get('gdop', None),
-                                        'pdop': fix.get('pdop', None),
+                                    self._last_fix.update({
+                                        'xdop': fix.get('xdop'),
+                                        'ydop': fix.get('ydop'),
+                                        'vdop': fix.get('vdop'),
+                                        'tdop': fix.get('tdop'),
+                                        'hdop': fix.get('hdop'),
+                                        'gdop': fix.get('gdop'),
+                                        'pdop': fix.get('pdop'),
                                         })
 
                             except json.decoder.JSONDecodeError:
-                                self.log.error("JSONDecodeError %s", line)
+                                self._log.error("JSONDecodeError %s", line)
                     except socket.timeout:
                         pass
                 else:
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     try:
-                        s.connect(self.gpsd)
+                        s.connect(self._gpsd)
                         s.settimeout(1)
                         s.recv(1024)
                         s.sendall(b'?WATCH={"enable":true,"json":true};')
@@ -85,23 +84,23 @@ class GpsPoller:
             except (StopIteration, ConnectionResetError, OSError):
                 s.close()
                 s = None
-                self.last_fix = None
+                self._last_fix = None
                 sleep(1)
 
     def fix(self):
-        return self.last_fix
+        return self._last_fix
 
     def start(self):
-        self.running = True
-        self.thread = Thread(target = self.run, name = "EVNotiPi/GPS")
-        self.thread.start()
+        self._running = True
+        self._thread = Thread(target=self.run, name="EVNotiPi/GPS")
+        self._thread.start()
 
     def stop(self):
-        self.running = False
-        self.thread.join()
+        self._running = False
+        self._thread.join()
 
     def checkWatchdog(self):
-        return self.thread.is_alive()
+        return self._thread.is_alive()
 
 if __name__ == '__main__':
     gps = GpsPoller()

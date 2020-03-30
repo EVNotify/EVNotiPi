@@ -1,5 +1,5 @@
-from time import time, sleep
 from threading import Thread
+from time import time, sleep
 import logging
 from dongle.dongle import NoData, CanError
 
@@ -113,7 +113,7 @@ class Car:
                 thresholds = self.dongle.watchdog.getThresholds()
                 volt = self.dongle.getObdVoltage()
 
-                data.update ({
+                data.update({
                     'obdVoltage':               volt,
                     'startupThreshold':         thresholds['startup'],
                     'shutdownThreshold':        thresholds['shutdown'],
@@ -128,7 +128,7 @@ class Car:
                 if self.poll_interval:
                     runtime = time() - now
                     interval = self.poll_interval - (runtime if runtime > self.poll_interval else 0)
-                    sleep(max(0,interval))
+                    sleep(max(0, interval))
 
                 elif self.skip_polling or data.get('charging', False):
                     sleep(1)
@@ -142,4 +142,3 @@ class Car:
 
     def checkWatchdog(self):
         return self.thread.is_alive()
-

@@ -1,10 +1,10 @@
 from time import sleep
-from pyroute2 import IPRoute
-import RPi.GPIO as GPIO
 import logging
 import math
 import socket
 import struct
+from pyroute2 import IPRoute
+import RPi.GPIO as GPIO
 from .dongle import *
 
 CANFMT = "<IB3x8s"
@@ -264,7 +264,8 @@ class SocketCAN:
 
                     idx = msg_data[0] & 0x0f
                     if (last_idx + 1) % 0x10 != idx:
-                        raise CanError("Bad frame order: last_idx({}) idx({})".format(last_idx, idx))
+                        raise CanError("Bad frame order: last_idx({}) idx({})"
+                                       .format(last_idx, idx))
 
                     frame_len = min(7, data_len - len(data))
                     data.extend(msg_data[1:frame_len+1])
@@ -287,7 +288,8 @@ class SocketCAN:
         if not data or data_len == 0:
             raise NoData('NO DATA')
         if data_len != len(data):
-            raise CanError("Data length mismatch {}: {} vs {} {}".format(cmd.hex(), data_len, len(data), data.hex()))
+            raise CanError("Data length mismatch {}: {} vs {} {}"
+                           .format(cmd.hex(), data_len, len(data), data.hex()))
 
         return data
 
@@ -374,4 +376,3 @@ class SocketCAN:
             return self.watchdog.getShutdownFlag() == 0
         else:
             return GPIO.input(self.pin) is False
-
