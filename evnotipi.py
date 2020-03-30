@@ -11,6 +11,8 @@ import signal
 import sdnotify
 import logging
 import evnotify
+import car
+import dongle
 
 Systemd = sdnotify.SystemdNotifier()
 
@@ -53,17 +55,10 @@ log = logging.getLogger("EVNotiPi")
 del args
 
 # Load OBD2 interface module
-if not "{}.py".format(config['dongle']['type']) in os.listdir('dongle'):
-    raise Exception('Unsupported dongle {}'.format(config['dongle']['type']))
+DONGLE = dongle.Load(config['dongle']['type'])
 
-# Init ODB2 adapter
-exec("from dongle.{0} import {0} as DONGLE".format(config['dongle']['type']))
-
-if not "{}.py".format(config['car']['type']) in os.listdir('car'):
-    raise Exception('Unsupported car {}'.format(config['car']['type']))
-
-exec("from car.{0} import {0} as CAR".format(config['car']['type']))
-
+# Load car module
+CAR = car.Load(config['car']['type'])
 
 Threads = []
 
