@@ -191,7 +191,7 @@ class EVNotify:
             if self._running:
                 runtime = time() - now
                 interval = self._poll_interval - (runtime if runtime > self._poll_interval else 0)
-                sleep(min(0, interval))
+                sleep(max(0, interval))
 
 
     def checkWatchdog(self):
