@@ -172,6 +172,14 @@ class SocketCAN:
         return data
 
     def sendCommandEx_ISOTP(self, cmd, cantx, canrx):
+        if self.log.isEnabledFor(logging.DEBUG):
+            self.log.debug("sendCommandEx_ISOTP cmd(%s) cantx(%x) canrx(%x)",
+                           cmd.hex(), canrx, cantx)
+
+        if self.is_extended:
+            cantx |= socket.CAN_EFF_FLAG
+            canrx |= socket.CAN_EFF_FLAG
+
         try:
             with socket.socket(socket.AF_CAN, socket.SOCK_DGRAM, socket.CAN_ISOTP) as sock:
                 sock.setsockopt(SOL_CAN_ISOTP, CAN_ISOTP_OPTS, self.sock_opt_isotp_opt)
@@ -199,15 +207,20 @@ class SocketCAN:
         return data
 
     def sendCommandEx_CANRAW(self, cmd, cantx, canrx):
+        if self.log.isEnabledFor(logging.DEBUG):
+            self.log.debug("sendCommandEx_CANRAW cmd(%s) cantx(%x) canrx(%x)", cmd.hex(), canrx, cantx)
+
+        if self.is_extended:
+            cantx |= socket.CAN_EFF_FLAG
+            canrx |= socket.CAN_EFF_FLAG
+
         try:
             cmd_len = len(cmd)
             assert cmd_len < 8
 
             msg_data = (bytes([cmd_len]) + cmd).ljust(8, b'\x00') # Pad cmd to 8 bytes
 
-            cmd_msg = struct.pack(CANFMT, cantx | socket.CAN_EFF_FLAG \
-                    if self.is_extended else cantx,
-                                  len(msg_data), msg_data)
+            cmd_msg = struct.pack(CANFMT, cantx, len(msg_data), msg_data)
 
             self.setFiltersEx([{
                 'id':   canrx,
@@ -250,9 +263,7 @@ class SocketCAN:
                     if self.log.isEnabledFor(logging.DEBUG):
                         self.log.debug("Send flow control message")
 
-                    flow_msg = struct.pack(CANFMT, cantx | socket.CAN_EFF_FLAG \
-                            if self.is_extended else cantx,
-                                           8, b'0\x00\x00\x00\x00\x00\x00\x00')
+                    flow_msg = struct.pack(CANFMT, cantx, 8, b'0\x00\x00\x00\x00\x00\x00\x00')
 
                     self.sock_can.send(flow_msg)
 
