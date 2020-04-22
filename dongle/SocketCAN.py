@@ -9,17 +9,27 @@ from .dongle import *
 
 CANFMT = "<IB3x8s"
 
-def canStr(msg):
-    can_id, length, data = struct.unpack(CANFMT, msg)
-    return "{:x}#{} ({})".format(can_id & socket.CAN_EFF_MASK, data.hex(), length)
+AF_CAN = getattr(socket, 'AF_CAN', 0x1d)
+PF_CAN = getattr(socket, 'PF_CAN', 0x1d)
+SOCK_DGRAM = getattr(socket, 'SOCK_DGRAM', 2)
+SOCK_RAW = getattr(socket, 'SOCK_RAW', 3)
+CAN_ISOTP = getattr(socket, 'CAN_ISOTP', 6)
+CAN_RAW = getattr(socket, 'CAN_RAW', 1)
+CAN_EFF_FLAG = 0x80000000
+CAN_EFF_MASK = 0x1fffffff
 
-SOL_CAN_BASE        = socket.SOL_CAN_BASE if hasattr(socket, 'SOL_CAN_BASE') else 100
-SOL_CAN_ISOTP       = SOL_CAN_BASE + socket.CAN_ISOTP if hasattr(socket, 'CAN_ISOTP') else None # Allow importing the module without python 3.7
+SOL_CAN_BASE        = getattr(socket, 'SOL_CAN_BASE', 0x64)
+SOL_CAN_ISOTP       = SOL_CAN_BASE + CAN_ISOTP
+SOL_CAN_RAW         = getattr(socket, 'SOL_CAN_RAW', 0x65)
 CAN_ISOTP_OPTS      = 1
 CAN_ISOTP_RECV_FC   = 2
 CAN_ISOTP_TX_STMIN  = 3
 CAN_ISOTP_RX_STMIN  = 4
 CAN_ISOTP_LL_OPTS   = 5
+
+def canStr(msg):
+    can_id, length, data = struct.unpack(CANFMT, msg)
+    return "{:x}#{} ({})".format(can_id & CAN_EFF_MASK, data.hex(), length)
 
 class SocketCAN:
     def __init__(self, config, watchdog=None):
@@ -61,7 +71,7 @@ class SocketCAN:
 
         try:
             # check if kernel supports CAN_ISOTP
-            s = socket.socket(socket.AF_CAN, socket.SOCK_DGRAM, socket.CAN_ISOTP)
+            s = socket.socket(AF_CAN, SOCK_DGRAM, CAN_ISOTP)
             s.close()
             # CAN_ISOTP_TX_PADDING CAN_ISOTP_RX_PADDING CAN_ISOTP_CHK_PAD_LEN CAN_ISOTP_CHK_PAD_DATA
             #opts = 0x004 | 0x008 | 0x010 | 0x020
@@ -78,7 +88,7 @@ class SocketCAN:
             # CAN_ISOTP not supported
             self.sendCommandEx = self.sendCommandEx_CANRAW
 
-        self.sock_can = socket.socket(socket.PF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
+        self.sock_can = socket.socket(PF_CAN, SOCK_RAW, CAN_RAW)
         try:
             self.sock_can.bind((self.config['port'],))
             self.sock_can.settimeout(0.2)
@@ -92,7 +102,7 @@ class SocketCAN:
 
             msg_data = (bytes([cmd_len]) + cmd).ljust(8, b'\x00') # Pad cmd to 8 bytes
 
-            cmd_msg = struct.pack(CANFMT, self.can_id | socket.CAN_EFF_FLAG \
+            cmd_msg = struct.pack(CANFMT, self.can_id | CAN_EFF_FLAG \
                     if self.is_extended else self.can_id, len(msg_data), msg_data)
 
             if self.log.isEnabledFor(logging.DEBUG):
@@ -106,7 +116,7 @@ class SocketCAN:
             while True:
                 msg = self.sock_can.recv(16)
                 can_id, length, msg_data = struct.unpack(CANFMT, msg)
-                can_id &= socket.CAN_EFF_MASK
+                can_id &= CAN_EFF_MASK
                 msg_data = msg_data[:length]
                 frame_type = msg_data[0] & 0xf0
 
@@ -130,7 +140,7 @@ class SocketCAN:
                     if self.log.isEnabledFor(logging.DEBUG):
                         self.log.debug("Send flow control message")
 
-                    flow_msg = struct.pack(CANFMT, self.can_id | socket.CAN_EFF_FLAG \
+                    flow_msg = struct.pack(CANFMT, self.can_id | CAN_EFF_FLAG \
                             if self.is_extended else self.can_id,
                                            8, b'0\x00\x00\x00\x00\x00\x00\x00')
 
@@ -177,11 +187,11 @@ class SocketCAN:
                            cmd.hex(), canrx, cantx)
 
         if self.is_extended:
-            cantx |= socket.CAN_EFF_FLAG
-            canrx |= socket.CAN_EFF_FLAG
+            cantx |= CAN_EFF_FLAG
+            canrx |= CAN_EFF_FLAG
 
         try:
-            with socket.socket(socket.AF_CAN, socket.SOCK_DGRAM, socket.CAN_ISOTP) as sock:
+            with socket.socket(AF_CAN, SOCK_DGRAM, CAN_ISOTP) as sock:
                 sock.setsockopt(SOL_CAN_ISOTP, CAN_ISOTP_OPTS, self.sock_opt_isotp_opt)
                 sock.setsockopt(SOL_CAN_ISOTP, CAN_ISOTP_RECV_FC, self.sock_opt_isotp_fc)
 
@@ -211,8 +221,8 @@ class SocketCAN:
             self.log.debug("sendCommandEx_CANRAW cmd(%s) cantx(%x) canrx(%x)", cmd.hex(), canrx, cantx)
 
         if self.is_extended:
-            cantx |= socket.CAN_EFF_FLAG
-            canrx |= socket.CAN_EFF_FLAG
+            cantx |= CAN_EFF_FLAG
+            canrx |= CAN_EFF_FLAG
 
         try:
             cmd_len = len(cmd)
@@ -241,7 +251,7 @@ class SocketCAN:
                 msg = self.sock_can.recv(72)
                 can_id, length, msg_data = struct.unpack(CANFMT, msg)
                 self.log.debug("Got %x %i %s", can_id, length, msg_data.hex())
-                can_id &= socket.CAN_EFF_MASK
+                can_id &= CAN_EFF_MASK
                 msg_data = msg_data[:length]
                 frame_type = msg_data[0] & 0xf0
 
@@ -310,7 +320,7 @@ class SocketCAN:
 
             msg = self.sock_can.recv(72)
             can_id, length, msg_data = struct.unpack(CANFMT, msg)
-            can_id &= socket.CAN_EFF_MASK
+            can_id &= CAN_EFF_MASK
             msg_data = msg_data[:length]
 
             data[can_id] = msg_data
