@@ -1,16 +1,16 @@
 from time import time
 from .car import *
 
-CMD_AUX_VOLTAGE  = bytes.fromhex('222005')   # PR252
-CMD_CHARGE_STATE = bytes.fromhex('225017')   # ET018
-CMD_SOC          = bytes.fromhex('229001')
-CMD_SOC_BMS      = bytes.fromhex('229002')
-CMD_VOLTAGE      = bytes.fromhex('229006')
-CMD_BMS_ENERGY   = bytes.fromhex('2291C8')   # PR155
-CMD_ODO          = bytes.fromhex('2291CF')   # PR046 ?? 0x80000225 => 17km ?
-CMD_NRG_DISCHARG = bytes.fromhex('229245')   # PR047
-CMD_CURRENT      = bytes.fromhex('229257')   # PR218
-CMD_SOH          = bytes.fromhex('22927A')   # ET148
+CMD_AUX_VOLTAGE  = bytes.fromhex('222005')  # EVC
+CMD_CHARGE_STATE = bytes.fromhex('225017')  # BCB 0:Nok;1:AC mono;2:AC tri;3:DC;4:AC bi
+CMD_SOC          = bytes.fromhex('222002')  # EVC
+CMD_SOC_BMS      = bytes.fromhex('229002')  # LBC
+CMD_VOLTAGE      = bytes.fromhex('223203')  # LBC
+CMD_BMS_ENERGY   = bytes.fromhex('2291C8')  # PR155
+CMD_ODO          = bytes.fromhex('222006')  # EVC
+CMD_NRG_DISCHARG = bytes.fromhex('229245')  # PR047
+CMD_CURRENT      = bytes.fromhex('223204')  # EVC
+CMD_SOH          = bytes.fromhex('223206')  # EVC
 
 class ZOE_ZE50(Car):
     def __init__(self, config, dongle, gps):
@@ -18,52 +18,56 @@ class ZOE_ZE50(Car):
         self.dongle.setProtocol('CAN_29_500')
 
     def readDongle(self, data):
-        def bms(cmd):
-            return self.dongle.sendCommandEx(cmd, canrx=0x18DAF1DB, cantx=0x18DADBF1)[3:]
+        def lbc(cmd):   # Lithium Battery Controller
+            return self.dongle.sendCommandEx(cmd, canrx=0x18daf1db, cantx=0x18dadbf1)[3:]
+        def evc(cmd):   # Vehicle Controle Module
+            return self.dongle.sendCommandEx(cmd, canrx=0x18daf1da, cantx=0x18dadaf1)[3:]
+        def bcb(cmd):   # Battery Charger Block
+            return self.dongle.sendCommandEx(cmd, canrx=0x18daf1de, cantx=0x18dadef1)[3:]
 
         data.update(self.getBaseData())
 
-        dc_battery_current = ifbu(bms(CMD_CURRENT)) - 32768
-        dc_battery_voltage = ifbu(bms(CMD_VOLTAGE)) / 1000
-
-        #soh_raw = bms(CMD_SOH) # returns 254 bytes of data ...
+        dc_battery_current = (ifbu(evc(CMD_CURRENT)) - 32768) / 4
+        dc_battery_voltage = ifbu(evc(CMD_VOLTAGE)) / 2
 
         cellVolts = []
         for i in range(0x21, 0x84):
             c = bytes.fromhex("2290{:02x}".format(i))
-            cellVolts.append(ifbu(bms(c)) / 1000)
+            cellVolts.append(ifbu(lbc(c)) / 1000)
 
         moduleTemps = []
         for i in range(0x31, 0x3d):
             c = bytes.fromhex("2291{:02x}".format(i))
-            moduleTemps.append(ifbu(bms(c)) / 10 - 60)
+            moduleTemps.append(ifbu(lbc(c)) / 10 - 60)
+
+        charge_state = ifbu(bcb(CMD_CHARGE_STATE))
 
         data.update({
             #Base
-            'SOC_BMS':              ifbu(bms(CMD_SOC_BMS)) / 100,
-            'SOC_DISPLAY':          ifbu(bms(CMD_SOC)) / 100,
+            'SOC_BMS':              ifbu(lbc(CMD_SOC_BMS)) / 100.0,
+            'SOC_DISPLAY':          ifbu(evc(CMD_SOC)) / 50.0,
 
             #Extended:
-            'auxBatteryVoltage':    ifbu(bms(CMD_AUX_VOLTAGE)) / 100.0,
+            'auxBatteryVoltage':    ifbu(evc(CMD_AUX_VOLTAGE)) / 100.0,
 
             #'batteryInletTemperature':
             'batteryMaxTemperature': max(moduleTemps),
             'batteryMinTemperature': min(moduleTemps),
 
-            'cumulativeEnergyCharged':  ifbu(bms(CMD_BMS_ENERGY)) / 1000.0,
-            'cumulativeEnergyDischarged': ifbu(bms(CMD_NRG_DISCHARG)) / 1000.0,
+            'cumulativeEnergyCharged':  ifbu(lbc(CMD_BMS_ENERGY)) / 1000.0,
+            'cumulativeEnergyDischarged': ifbu(lbc(CMD_NRG_DISCHARG)) / 1000.0,
 
-            'charging':             0 if ifbu(bms(CMD_CHARGE_STATE)) == 0 else 1,
-            #'normalChargePort':
-            #'rapidChargePort':
+            'charging':             int(charge_state != 0),
+            'normalChargePort':     int(charge_state in (1,2,4))
+            'rapidChargePort':      int(charge_state == 3)
 
             'dcBatteryCurrent':     dc_battery_current,
             'dcBatteryPower':       dc_battery_current * dc_battery_voltage / 1000.0,
             'dcBatteryVoltage':     dc_battery_voltage,
 
-            #'soh':
+            'soh':                  ifbu(evc(CMD_SOH)),
             #'externalTemperature':
-            #'odo':                  ifbu(bms(CMD_ODO)),
+            'odo':                  ifbu(evc(CMD_ODO)),
             })
 
         for i, cvolt in enumerate(cellVolts):
@@ -81,28 +85,3 @@ class ZOE_ZE50(Car):
             "NORMAL_SPEED": 22.0,
             "FAST_SPEED": 50.0
         }
-
-
-if __name__ == '__main__':
-    import sys
-    import logging
-    import pprint
-    pp = pprint.PrettyPrinter(indent=2)
-
-    logging.basicConfig(level=logging.DEBUG)
-
-    from ..dongle.SocketCAN import SocketCAN
-
-    config = {
-        'type': 'SocketCAN',
-        'port': 'vcan0',
-        'speed': 500000,
-        }
-
-    dongle = SocketCAN(config, watchdog=None)
-
-    car = ZOE_ZE50({'interval': 1}, dongle)
-
-    data = {}
-    car.readDongle(data)
-    pp.pprint(data)
