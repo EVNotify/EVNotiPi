@@ -58,8 +58,8 @@ class ZOE_ZE50(Car):
             'cumulativeEnergyDischarged': ifbu(lbc(CMD_NRG_DISCHARG)) / 1000.0,
 
             'charging':             int(charge_state != 0),
-            'normalChargePort':     int(charge_state in (1,2,4))
-            'rapidChargePort':      int(charge_state == 3)
+            'normalChargePort':     int(charge_state in (1,2,4)),
+            'rapidChargePort':      int(charge_state == 3),
 
             'dcBatteryCurrent':     dc_battery_current,
             'dcBatteryPower':       dc_battery_current * dc_battery_voltage / 1000.0,
