@@ -69,23 +69,26 @@ class SocketCAN:
         if self.sock_can:
             self.sock_can.close()
 
-        try:
-            # check if kernel supports CAN_ISOTP
-            s = socket.socket(AF_CAN, SOCK_DGRAM, CAN_ISOTP)
-            s.close()
-            # CAN_ISOTP_TX_PADDING CAN_ISOTP_RX_PADDING CAN_ISOTP_CHK_PAD_LEN CAN_ISOTP_CHK_PAD_DATA
-            #opts = 0x004 | 0x008 | 0x010 | 0x020
-            opts = 0x004 | 0x008 | 0x010
-            if self.is_extended:
-                # CAN_ISOTP_EXTEND_ADDR
-                opts |= 0x002
-            self.sock_opt_isotp_opt = struct.pack("=LLBBBB", opts, 0, 0, 0xAA, 0xFF, 0)
-            self.sock_opt_isotp_fc = struct.pack("=BBB", 0, 0, 0)
-            # select implementation of sendCommandEx
-            self.sendCommandEx = self.sendCommandEx_ISOTP
-            self.log.info("using ISO-TP support")
-        except OSError:
-            # CAN_ISOTP not supported
+        if not self.is_extended:
+            try:
+                # check if kernel supports CAN_ISOTP
+                s = socket.socket(AF_CAN, SOCK_DGRAM, CAN_ISOTP)
+                s.close()
+                # CAN_ISOTP_TX_PADDING CAN_ISOTP_RX_PADDING CAN_ISOTP_CHK_PAD_LEN CAN_ISOTP_CHK_PAD_DATA
+                #opts = 0x004 | 0x008 | 0x010 | 0x020
+                opts = 0x004 | 0x008 | 0x010
+                if self.is_extended:
+                    # CAN_ISOTP_EXTEND_ADDR
+                    opts |= 0x002
+                self.sock_opt_isotp_opt = struct.pack("=LLBBBB", opts, 0, 0, 0xAA, 0xFF, 0)
+                self.sock_opt_isotp_fc = struct.pack("=BBB", 0, 0, 0)
+                # select implementation of sendCommandEx
+                self.sendCommandEx = self.sendCommandEx_ISOTP
+                self.log.info("using ISO-TP support")
+            except OSError:
+                # CAN_ISOTP not supported
+                self.sendCommandEx = self.sendCommandEx_CANRAW
+        else:
             self.sendCommandEx = self.sendCommandEx_CANRAW
 
         self.sock_can = socket.socket(PF_CAN, SOCK_RAW, CAN_RAW)
