@@ -5,11 +5,11 @@ CMD_AUX_VOLTAGE  = bytes.fromhex('222005')  # EVC
 CMD_CHARGE_STATE = bytes.fromhex('225017')  # BCB 0:Nok;1:AC mono;2:AC tri;3:DC;4:AC bi
 CMD_SOC          = bytes.fromhex('222002')  # EVC
 CMD_SOC_BMS      = bytes.fromhex('229002')  # LBC
-CMD_VOLTAGE      = bytes.fromhex('223203')  # LBC
+CMD_VOLTAGE      = bytes.fromhex('229006')
 CMD_BMS_ENERGY   = bytes.fromhex('2291C8')  # PR155
 CMD_ODO          = bytes.fromhex('222006')  # EVC
 CMD_NRG_DISCHARG = bytes.fromhex('229245')  # PR047
-CMD_CURRENT      = bytes.fromhex('223204')  # EVC
+CMD_CURRENT      = bytes.fromhex('223204')  # EVC <<- BROKEN
 CMD_SOH          = bytes.fromhex('223206')  # EVC
 
 class ZOE_ZE50(Car):
@@ -27,8 +27,8 @@ class ZOE_ZE50(Car):
 
         data.update(self.getBaseData())
 
-        dc_battery_current = (ifbu(evc(CMD_CURRENT)) - 32768) / 4
-        dc_battery_voltage = ifbu(evc(CMD_VOLTAGE)) / 2
+        dc_battery_current = 0 #(ifbu(evc(CMD_CURRENT)) - 32768) / 4
+        dc_battery_voltage = ifbu(lbc(CMD_VOLTAGE)) / 1000
 
         cellVolts = []
         for i in range(0x21, 0x84):
@@ -65,7 +65,7 @@ class ZOE_ZE50(Car):
             'dcBatteryPower':       dc_battery_current * dc_battery_voltage / 1000.0,
             'dcBatteryVoltage':     dc_battery_voltage,
 
-            'soh':                  ifbu(evc(CMD_SOH)),
+            #'soh':                  100 - ifbu(evc(CMD_SOH)),
             #'externalTemperature':
             'odo':                  ifbu(evc(CMD_ODO)),
             })
