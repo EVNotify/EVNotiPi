@@ -1,4 +1,4 @@
 [submodule "EVNotifyAPI"]
 	path = EVNotifyAPI
-	url = https://github.com/EVNotify/EVNotifyAPI
-	branch = pure_python
+	url = https://github.com/EVNotify/PythonAPI
+	branch = master
