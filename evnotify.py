@@ -6,23 +6,23 @@ import EVNotifyAPI
 EVN_SETTINGS_INTERVAL = 300
 ABORT_NOTIFICATION_INTERVAL = 60
 
-EXTENDED_FIELDS = (
-        'auxBatteryVoltage',
-        'batteryInletTemperature',
-        'batteryMaxTemperature',
-        'batteryMinTemperature',
-        'cumulativeEnergyCharged',
-        'cumulativeEnergyDischarged',
-        'charging',
-        'normalChargePort',
-        'rapidChargePort',
-        'dcBatteryCurrent',
-        'dcBatteryPower',
-        'dcBatteryVoltage',
-        'soh',
-        'externalTemperature',
-        'odo'
-        )
+EXTENDED_FIELDS = {         # value is decimal places
+        'auxBatteryVoltage': 1,
+        'batteryInletTemperature': 1,
+        'batteryMaxTemperature': 1,
+        'batteryMinTemperature': 1,
+        'cumulativeEnergyCharged': 0,
+        'cumulativeEnergyDischarged': 0,
+        'charging': 0,
+        'normalChargePort': 0,
+        'rapidChargePort': 0,
+        'dcBatteryCurrent': 2,
+        'dcBatteryPower': 2,
+        'dcBatteryVoltage': 2,
+        'soh': 0,
+        'externalTemperature': 1,
+        'odo': 0
+        }
 
 ARMED = 0
 SENT = 1
@@ -142,7 +142,7 @@ class EVNotify:
                     location = {a:data[a] for a in ('latitude', 'longitude', 'speed')}
                     evn.setLocation({'location': location})
 
-                extended_data = {a:data[a] for a in EXTENDED_FIELDS if data[a] is not None}
+                extended_data = {a:round(data[a], EXTENDED_FIELDS[a]) for a in EXTENDED_FIELDS if data[a] is not None}
                 log.debug(extended_data)
                 evn.setExtended(extended_data)
 
