@@ -78,7 +78,7 @@ class EVNotify:
         soc_threshold = self.config.get('soc_threshold', 100)
 
         log.info("Get settings from backend")
-        while settings is None:
+        while self._running and settings is None:
             try:
                 settings = evn.getSettings()
             except EVNotifyAPI.CommunicationError as e:
