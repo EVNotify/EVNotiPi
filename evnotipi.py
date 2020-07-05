@@ -3,7 +3,7 @@
 from gevent.monkey import patch_all; patch_all()
 from gpspoller import GpsPoller
 from subprocess import check_call, check_output
-from time import sleep,time
+from time import sleep, time
 import os
 import sys
 import signal
@@ -91,7 +91,7 @@ EVNotify = evnotify.EVNotify(config['evnotify'], car)
 Threads.append(EVNotify)
 
 # Init WiFi control
-if 'wifi' in config and config['wifi'].get('enable') == True:
+if 'wifi' in config and config['wifi'].get('enable') is True:
     from wifi_ctrl import WiFiCtrl
     wifi = WiFiCtrl()
 else:
@@ -128,16 +128,16 @@ try:
 
         if 'system' in config and 'shutdown_delay' in config['system']:
             if now - car.last_data > config['system']['shutdown_delay'] and dongle.isCarAvailable() == False:
-                usercnt = int(check_output(['who','-q']).split(b'\n')[1].split(b'=')[1])
+                usercnt = int(check_output(['who', '-q']).split(b'\n')[1].split(b'=')[1])
                 if usercnt == 0:
                     log.info("Not charging and car off => Shutdown")
-                    check_call(['/bin/systemctl','poweroff'])
+                    check_call(['/bin/systemctl', 'poweroff'])
                     sleep(5)
                 else:
                     log.info("Not charging and car off; Not shutting down, users connected")
 
-        if wifi and config['wifi']['shutdown_delay'] != None:
-            if now - car.last_data > config['wifi']['shutdown_delay'] and dongle.isCarAvailable() == False:
+        if wifi and config['wifi']['shutdown_delay'] is not None:
+            if now - car.last_data > config['wifi']['shutdown_delay'] and dongle.isCarAvailable() is False:
                 wifi.disable()
             else:
                 wifi.enable()
@@ -145,16 +145,16 @@ try:
         sys.stdout.flush()
 
         if main_running:
-            loop_delay = 1 - (time()-now)
-            if loop_delay > 0: sleep(loop_delay)
+            loop_delay = 1 - (time() - now)
+            if loop_delay > 0:
+                sleep(loop_delay)
 
-except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
+except (KeyboardInterrupt, SystemExit):  # when you press ctrl+c
     main_running = False
     Systemd.notify("STOPPING=1")
 finally:
     Systemd.notify("STOPPING=1")
     log.info("Exiting ...")
-    for t in Threads[::-1]: # reverse Threads
+    for t in Threads[::-1]:  # reverse Threads
         t.stop()
     log.info("Bye.")
-

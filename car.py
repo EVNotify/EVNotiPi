@@ -2,14 +2,25 @@ from time import time, sleep
 from threading import Thread
 from dongle import NoData, CanError
 import logging
-from math import isnan
 
-def ifbu(in_bytes): return int.from_bytes(in_bytes, byteorder='big', signed=False)
-def ifbs(in_bytes): return int.from_bytes(in_bytes, byteorder='big', signed=True)
-def ffbu(in_bytes): return float(int.from_bytes(in_bytes, byteorder='big', signed=False))
-def ffbs(in_bytes): return float(int.from_bytes(in_bytes, byteorder='big', signed=True))
+def ifbu(in_bytes):
+    return int.from_bytes(in_bytes, byteorder='big', signed=False)
 
-class DataError(Exception): pass
+
+def ifbs(in_bytes):
+    return int.from_bytes(in_bytes, byteorder='big', signed=True)
+
+
+def ffbu(in_bytes):
+    return float(int.from_bytes(in_bytes, byteorder='big', signed=False))
+
+
+def ffbs(in_bytes):
+    return float(int.from_bytes(in_bytes, byteorder='big', signed=True))
+
+
+class DataError(Exception):
+    pass
 
 class Car:
     def __init__(self, config, dongle, gps):
@@ -26,7 +37,7 @@ class Car:
 
     def start(self):
         self.running = True
-        self.thread = Thread(target = self.pollData, name = "EVNotiPi/Car")
+        self.thread = Thread(target=self.pollData, name="EVNotiPi/Car")
         self.thread.start()
 
     def stop(self):
@@ -39,29 +50,29 @@ class Car:
 
             # initialize data with required fields; saves all those checks later
             data = {
-                    'timestamp':    now,
+                    'timestamp': now,
                     # Base:
-                    'SOC_BMS':      None,
-                    'SOC_DISPLAY':  None,
+                    'SOC_BMS': None,
+                    'SOC_DISPLAY': None,
                     # Extended:
-                    'auxBatteryVoltage':        None,
-                    'batteryInletTemperature':  None,
-                    'batteryMaxTemperature':    None,
-                    'batteryMinTemperature':    None,
-                    'cumulativeEnergyCharged':  None,
-                    'cumulativeEnergyDischarged':   None,
-                    'charging':                 None,
-                    'normalChargePort':         None,
-                    'rapidChargePort':          None,
-                    'dcBatteryCurrent':         None,
-                    'dcBatteryPower':           None,
-                    'dcBatteryVoltage':         None,
-                    'soh':                      None,
-                    'externalTemperature':      None,
+                    'auxBatteryVoltage': None,
+                    'batteryInletTemperature': None,
+                    'batteryMaxTemperature': None,
+                    'batteryMinTemperature': None,
+                    'cumulativeEnergyCharged': None,
+                    'cumulativeEnergyDischarged': None,
+                    'charging': None,
+                    'normalChargePort': None,
+                    'rapidChargePort': None,
+                    'dcBatteryCurrent': None,
+                    'dcBatteryPower': None,
+                    'dcBatteryVoltage': None,
+                    'soh': None,
+                    'externalTemperature': None,
                     # Location:
-                    'latitude':     None,
-                    'longitude':    None,
-                    'speed':        None,
+                    'latitude': None,
+                    'longitude': None,
+                    'speed': None,
                     'fix_mode':     0,
                     }
             if not self.skip_polling or self.dongle.isCarAvailable():
@@ -88,28 +99,28 @@ class Car:
                     speed = fix['speed']
 
                 data.update({
-                    'fix_mode':     fix['mode'],
-                    'latitude':     fix['latitude'],
-                    'longitude':    fix['longitude'],
-                    'speed':        speed,
-                    'gdop':         fix['gdop'],
-                    'pdop':         fix['pdop'],
-                    'hdop':         fix['hdop'],
-                    'vdop':         fix['vdop'],
-                    'tdop':         fix['tdop'],
-                    'altitude':     fix['altitude'],
-                    'gps_device':   fix['device'],
+                    'fix_mode': fix['mode'],
+                    'latitude': fix['latitude'],
+                    'longitude': fix['longitude'],
+                    'speed': speed,
+                    'gdop': fix['gdop'],
+                    'pdop': fix['pdop'],
+                    'hdop': fix['hdop'],
+                    'vdop': fix['vdop'],
+                    'tdop': fix['tdop'],
+                    'altitude': fix['altitude'],
+                    'gps_device': fix['device'],
                     })
 
             if self.dongle.watchdog:
                 thresholds = self.dongle.watchdog.getThresholds()
                 volt = self.dongle.getObdVoltage()
 
-                data.update ({
-                    'obdVoltage':               volt,
-                    'startupThreshold':         thresholds['startup'],
-                    'shutdownThreshold':        thresholds['shutdown'],
-                    'emergencyThreshold':       thresholds['emergency'],
+                data.update({
+                    'obdVoltage': volt,
+                    'startupThreshold': thresholds['startup'],
+                    'shutdownThreshold': thresholds['shutdown'],
+                    'emergencyThreshold': thresholds['emergency'],
                     })
 
             if self.last_data == now:
@@ -135,4 +146,3 @@ class Car:
 
     def checkWatchdog(self):
         return self.thread.is_alive()
-

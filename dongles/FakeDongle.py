@@ -17,7 +17,14 @@ class FakeDongle:
     def sendCommand(self, cmd):
         return data[cmd]
 
-    def setProtocol(self, protocol): pass
-    def setCANRxFilter(self, rxfilter): pass
-    def setCANRxMask(self, rxmask): pass
-    def setCanID(self, can_id): pass
+    def setProtocol(self, protocol):
+        pass
+
+    def setCANRxFilter(self, rxfilter):
+        pass
+
+    def setCANRxMask(self, rxmask):
+        pass
+
+    def setCanID(self, can_id):
+        pass

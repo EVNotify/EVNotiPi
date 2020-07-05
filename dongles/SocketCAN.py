@@ -15,14 +15,15 @@ def canStr(msg):
 
 SOL_CAN_BASE        = socket.SOL_CAN_BASE if hasattr(socket, 'SOL_CAN_BASE') else 100
 SOL_CAN_ISOTP       = SOL_CAN_BASE + socket.CAN_ISOTP if hasattr(socket, 'CAN_ISOTP') else None # Allow importing the module without python 3.7
-CAN_ISOTP_OPTS      = 1
-CAN_ISOTP_RECV_FC   = 2
-CAN_ISOTP_TX_STMIN  = 3
-CAN_ISOTP_RX_STMIN  = 4
-CAN_ISOTP_LL_OPTS   = 5
+CAN_ISOTP_OPTS = 1
+CAN_ISOTP_RECV_FC = 2
+CAN_ISOTP_TX_STMIN = 3
+CAN_ISOTP_RX_STMIN = 4
+CAN_ISOTP_LL_OPTS = 5
+
 
 class SocketCAN:
-    def __init__(self, config, watchdog = None):
+    def __init__(self, config, watchdog=None):
         self.log = logging.getLogger("EVNotiPi/SocketCAN")
         self.log.info("Initializing SocketCAN")
 
@@ -47,7 +48,7 @@ class SocketCAN:
     def initDongle(self):
         ip = IPRoute()
         ifidx = ip.link_lookup(ifname=self.config['port'])[0]
-        link = ip.link('get',index=ifidx)
+        link = ip.link('get', index=ifidx)
         if 'state' in link[0] and link[0]['state'] == 'up':
             ip.link('set', index=ifidx, state='down')
             sleep(1)
@@ -180,7 +181,7 @@ class SocketCAN:
                 sock.settimeout(0.2)
 
                 if self.log.isEnabledFor(logging.DEBUG):
-                    self.log.debug("canrx(%s) cantx(%s) cmd(%s)",hex(canrx),hex(cantx),cmd.hex())
+                    self.log.debug("canrx(%s) cantx(%s) cmd(%s)", hex(canrx), hex(cantx), cmd.hex())
                 sock.send(cmd)
                 data = sock.recv(4096)
                 if self.log.isEnabledFor(logging.DEBUG):
@@ -259,10 +260,10 @@ class SocketCAN:
 
                     idx = msg_data[0] & 0x0f
                     if (last_idx + 1) % 0x10 != idx:
-                        raise CanError("Bad frame order: last_idx({}) idx({})".format(last_idx,idx))
+                        raise CanError("Bad frame order: last_idx({}) idx({})".format(last_idx, idx))
 
                     frame_len = min(7, data_len - len(data))
-                    data.extend(msg_data[1:frame_len+1])
+                    data.extend(msg_data[1:frame_len + 1])
                     last_idx = idx
 
                     if data_len == len(data):
@@ -332,7 +333,7 @@ class SocketCAN:
         self.can_mask = mask
 
         self.setFiltersEx([{
-            'id':   self.can_filter,
+            'id': self.can_filter,
             'mask': self.can_mask,
             }])
 
@@ -343,7 +344,7 @@ class SocketCAN:
         self.can_filter = addr
 
         self.setFiltersEx([{
-            'id':   self.can_filter,
+            'id': self.can_filter,
             'mask': self.can_mask,
             }])
 

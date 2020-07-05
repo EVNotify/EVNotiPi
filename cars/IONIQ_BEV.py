@@ -99,12 +99,12 @@ class IONIQ_BEV(Car):
             'obdVoltage':               self.dongle.getObdVoltage(),
             })
 
-        for i,temp in enumerate(cellTemps):
-            key = "cellTemp{:02d}".format(i+1)
+        for i, temp in enumerate(cellTemps):
+            key = "cellTemp{:02d}".format(i + 1)
             data[key] = float(temp)
 
-        for i,cvolt in enumerate(cellVoltages):
-            key = "cellVoltage{:02d}".format(i+1)
+        for i, cvolt in enumerate(cellVoltages):
+            key = "cellVoltage{:02d}".format(i + 1)
             data[key] = float(cvolt)
 
     def getBaseData(self):
@@ -115,7 +115,9 @@ class IONIQ_BEV(Car):
             "FAST_SPEED": 50.0
         }
 
-    def getABRPModel(self): return 'hyundai:ioniq:17:28:other'
+    def getABRPModel(self):
+        return 'hyundai:ioniq:17:28:other'
 
-    def getEVNModel(self): return 'IONIQ_BEV'
+    def getEVNModel(self):
+        return 'IONIQ_BEV'
 

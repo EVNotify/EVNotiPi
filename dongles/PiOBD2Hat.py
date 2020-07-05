@@ -15,23 +15,23 @@ class PiOBD2Hat(ATBASE):
         self.voltage_multiplier = 0.694
 
     def initDongle(self):
-        cmds = (('ATRST','DIAMEX PI-OBD'),  # Cold start
-                ('ATE0','OK'),              # Disable echo
-                ('ATL1','OK'),              # Use \r\n
-                ('ATOHS0','OK'),            # Disable space between HEX bytes
-                ('ATH1','OK'),              # Display header
-                ('ATST64','OK'))            # Input timeout (10 sec)
+        cmds = (('ATRST', 'DIAMEX PI-OBD'),  # Cold start
+                ('ATE0', 'OK'),              # Disable echo
+                ('ATL1', 'OK'),              # Use \r\n
+                ('ATOHS0', 'OK'),            # Disable space between HEX bytes
+                ('ATH1', 'OK'),              # Display header
+                ('ATST64', 'OK'))            # Input timeout (10 sec)
 
-        for c,r in cmds:
+        for c, r in cmds:
             self.sendAtCmd(c, r)
 
     def setProtocol(self, prot):
         if prot == 'CAN_11_500':
-            self.sendAtCmd('ATP6','6 = ISO 15765-4, CAN (11/500)')
+            self.sendAtCmd('ATP6', '6 = ISO 15765-4, CAN (11/500)')
             self.sendAtCmd('ATONI1')   # No init sequence
             self.is_extended = False
         elif prot == 'CAN_29_500':
-            self.sendAtCmd('ATP7','7 = ISO 15765-4, CAN (29/500)')
+            self.sendAtCmd('ATP7', '7 = ISO 15765-4, CAN (29/500)')
             self.sendAtCmd('ATONI1')   # No init sequence
             self.is_extended = True
         else:
@@ -71,13 +71,12 @@ class PiOBD2Hat(ATBASE):
         if self.watchdog:
             return round(self.watchdog.getVoltage(), 2)
         else:
-            ret = self.sendAtCmd('AT!10','V')
+            ret = self.sendAtCmd('AT!10', 'V')
             return round(float(ret[:-1]) * self.voltage_multiplier, 2)
 
     def calibrateObdVoltage(self, realVoltage):
         if self.watchdog:
             self.watchdog.calibrateVoltage(realVoltage)
         else:
-            ret = self.sendAtCmd('AT!10','V')
+            ret = self.sendAtCmd('AT!10', 'V')
             self.voltage_multiplier = realVoltage / float(ret[:-1])
-

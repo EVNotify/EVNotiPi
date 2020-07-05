@@ -1,31 +1,32 @@
 from AtBaseDongle import *
 
+
 class ELM327(ATBASE):
-    def __init__(self, dongle, watchdog = None):
+    def __init__(self, dongle, watchdog=None):
         ATBASE.__init__(self, dongle, watchdog)
         self.ret_NoData = (b'NO DATA', b'DATA ERROR', b'ACT ALERT')
         self.ret_CanError = (b'BUFFER FULL', B'BUS BUSY', b'BUS ERROR', b'CAN ERROR',
-                b'ERR', b'FB ERROR', b'LP ALERT', b'LV RESET', b'STOPPED',
-                b'UNABLE TO CONNECT')
+                             b'ERR', b'FB ERROR', b'LP ALERT', b'LV RESET', b'STOPPED',
+                             b'UNABLE TO CONNECT')
 
     def initDongle(self):
-        cmds = (('ATZ','ELM327'),
-                ('ATE0','OK'),
-                ('ATL1','OK'),
-                ('ATS0','OK'),
-                ('ATH1','OK'),
-                ('ATSTFF','OK'),
-                ('ATFE','OK'))
+        cmds = (('ATZ', 'ELM327'),
+                ('ATE0', 'OK'),
+                ('ATL1', 'OK'),
+                ('ATS0', 'OK'),
+                ('ATH1', 'OK'),
+                ('ATSTFF', 'OK'),
+                ('ATFE', 'OK'))
 
-        for c,r in cmds:
+        for c, r in cmds:
             self.sendAtCmd(c, r)
 
     def setProtocol(self, prot):
         if prot == 'CAN_11_500':
-            self.sendAtCmd('ATSP6','OK')
+            self.sendAtCmd('ATSP6', 'OK')
             self.is_extended = False
         elif prot == 'CAN_29_500':
-            self.sendAtCmd('ATSP7','OK')
+            self.sendAtCmd('ATSP7', 'OK')
             self.is_extended = True
         else:
             raise Exception('Unsupported protocol %s' % prot)

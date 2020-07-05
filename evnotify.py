@@ -52,7 +52,7 @@ class EVNotify:
 
     def start(self):
         self.running = True
-        self.thread = Thread(target = self.submitData, name = "EVNotiPi/EVNotify")
+        self.thread = Thread(target=self.submitData, name="EVNotiPi/EVNotify")
         self.thread.start()
         self.car.registerData(self.dataCallback)
 
@@ -71,10 +71,10 @@ class EVNotify:
 
     def submitData(self):
         self.log.info("Get settings from backend")
-        while self.settings == None:
+        while self.settings is None:
             try:
                 self.settings = self.evnotify.getSettings()
-            except evnotifyapi.CommunicationError as e:
+            except evnotifyapi.CommunicationError:
                 self.log.info("Waiting for network connectivity")
                 sleep(3)
 
@@ -98,15 +98,15 @@ class EVNotify:
                         }
 
                 for d in self.data:
-                    for k,v in avgs.items():
-                        if k in d and d[k] != None:
+                    for k, v in avgs.items():
+                        if k in d and d[k] is not None:
                             v.append(d[k])
 
                 # Need to copy data here because we update it later
                 data = self.data[-1].copy()
                 self.data.clear()
 
-            data.update({k:sum(v)/len(v) for k,v in avgs.items() if len(v) > 0})
+            data.update({k: sum(v)/len(v) for k, v in avgs.items() if len(v) > 0})
 
             now = time()
 
@@ -122,10 +122,10 @@ class EVNotify:
                         or data['rapidChargePort'] else False
 
                 if data['fix_mode'] > 1:
-                    location = {a:data[a] for a in ('latitude', 'longitude', 'speed')}
+                    location = {a: data[a] for a in ('latitude', 'longitude', 'speed')}
                     self.evnotify.setLocation({'location': location})
 
-                extended_data = {a:data[a] for a in ExtendedFields if data[a] != None}
+                extended_data = {a: data[a] for a in ExtendedFields if data[a] != None}
                 self.log.debug(extended_data)
                 self.evnotify.setExtended(extended_data)
 
@@ -148,7 +148,7 @@ class EVNotify:
                             self.log.info("New notification threshold: {}".format(self.socThreshold))
 
                     except envotifyapi.CommunicationError as e:
-                        self.log.error("Communication error occured",e)
+                        self.log.error("Communication error occured", e)
 
                 # track charging started
                 if is_charging and self.chargingStartSOC == 0:
@@ -186,7 +186,6 @@ class EVNotify:
             except evnotifyapi.CommunicationError as e:
                 self.log.error("Sending of notificatin failed! {}".format(e))
 
-
             # Prime next loop iteration
             if self.running:
                 runtime = time() - now
@@ -196,4 +195,3 @@ class EVNotify:
 
     def checkWatchdog(self):
         return self.thread.is_alive()
-
