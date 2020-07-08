@@ -3,7 +3,10 @@ import serial
 from threading import Lock
 from time import sleep
 import math
-import RPi.GPIO as GPIO
+try:
+    import RPi.GPIO as GPIO
+except RuntimeError:
+    pass
 import logging
 
 class ATBASE:

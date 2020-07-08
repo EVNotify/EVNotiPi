@@ -5,7 +5,10 @@ import math
 from pyroute2 import IPRoute
 from time import sleep
 import logging
-import RPi.GPIO as GPIO
+try:
+    import RPi.GPIO as GPIO
+except RuntimeError:
+    pass
 
 CANFMT = "<IB3x8s"
 
