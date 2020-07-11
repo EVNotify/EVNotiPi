@@ -94,9 +94,9 @@ if __name__ == '__main__':
 
     logging.basicConfig(level=logging.DEBUG)
 
-    sys.path.insert(0, 'dongles')
+    sys.path.insert(0, 'dongle')
     from SocketCAN import SocketCAN
-    sys.path.insert(0, 'cars')
+    sys.path.insert(0, 'car')
     import ZOE_ZE50
 
     config = {
