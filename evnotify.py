@@ -145,10 +145,10 @@ class EVNotify:
 
                         if s['soc'] and s['soc'] != self.socThreshold:
                             self.socThreshold = int(s['soc'])
-                            self.log.info("New notification threshold: {}".format(self.socThreshold))
+                            self.log.info("New notification threshold: %i", self.socThreshold)
 
                     except envotifyapi.CommunicationError as e:
-                        self.log.error("Communication error occured",e)
+                        self.log.error("Communication error occured %s", e)
 
                 # track charging started
                 if is_charging and self.chargingStartSOC == 0:
@@ -184,7 +184,7 @@ class EVNotify:
                     self.abortNotificationSent = True
 
             except evnotifyapi.CommunicationError as e:
-                self.log.error("Sending of notificatin failed! {}".format(e))
+                self.log.error("Sending of notificatin failed! %s", e)
 
 
             # Prime next loop iteration
