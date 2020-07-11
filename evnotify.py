@@ -1,7 +1,7 @@
-import evnotifyapi
 from time import time, sleep
 from threading import Thread, Condition
 import logging
+import EVNotifyAPI
 
 EVN_SETTINGS_INTERVAL = 300
 ABORT_NOTIFICATION_INTERVAL = 60
@@ -41,7 +41,7 @@ class EVNotify:
         self.poll_interval = config['interval']
         self.running = False
         self.thread = None
-        self.evnotify = evnotifyapi.EVNotify(config['akey'], config['token'])
+        self.evnotify = EVNotifyAPI.EVNotify(config['akey'], config['token'])
 
         self.data = []
         self.gps_data = []
@@ -74,7 +74,7 @@ class EVNotify:
         while self.settings == None:
             try:
                 self.settings = self.evnotify.getSettings()
-            except evnotifyapi.CommunicationError as e:
+            except EVNotifyAPI.CommunicationError as e:
                 self.log.info("Waiting for network connectivity")
                 sleep(3)
 
@@ -147,7 +147,7 @@ class EVNotify:
                             self.socThreshold = int(s['soc'])
                             self.log.info("New notification threshold: %i", self.socThreshold)
 
-                    except envotifyapi.CommunicationError as e:
+                    except EVNotifyAPI.CommunicationError as e:
                         self.log.error("Communication error occured %s", e)
 
                 # track charging started
@@ -169,7 +169,7 @@ class EVNotify:
                         currentSOC >= self.socThreshold:
                     self.evnotify.sendNotification()
 
-            except evnotifyapi.CommunicationError as e:
+            except EVNotifyAPI.CommunicationError as e:
                 print(e)
             except NoData:
                 pass
@@ -183,7 +183,7 @@ class EVNotify:
                     self.evnotify.sendNotification(True)
                     self.abortNotificationSent = True
 
-            except evnotifyapi.CommunicationError as e:
+            except EVNotifyAPI.CommunicationError as e:
                 self.log.error("Sending of notificatin failed! %s", e)
 
 
