@@ -159,9 +159,9 @@ class EVNotify:
                     except evnotifyapi.CommunicationError as e:
                         self.log.error("Communication error occured %s", e)
                         self.notificationFailed = True
-
+                        
             # Detect aborted charge
-            if ((now - self.last_charging > ABORT_NOTIFICATION_INTERVAL and self.chargingStartSOC > 0 and currentSOC < self.socThreshold) or self.abortNotificationFailed):
+            if ((now - self.last_charging > ABORT_NOTIFICATION_INTERVAL and self.chargingStartSOC > 0 and self.last_charging_soc < self.socThreshold) or self.abortNotificationFailed):
                 self.log.info("Aborted charge detected, send abort notification")
                 try:
                     self.evnotify.sendNotification(True)
