@@ -150,8 +150,9 @@ class EVNotify:
                 elif not is_connected:   # Rearm notification
                     self.chargingStartSOC = 0
                     self.notificationFailed = False
-                    
-                if ((is_charging and self.last_charging_soc < self.socThreshold <= currentSOC) or self.notificationFailed:
+                
+                # soc threshold notification
+                if ((is_charging and self.last_charging_soc < self.socThreshold <= currentSOC) or self.notificationFailed):
                     try:
                         self.evnotify.sendNotification()
                         self.notificationFailed = False
