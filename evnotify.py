@@ -46,7 +46,7 @@ class EVNotify:
         self.data_lock = Condition()
 
         self.settings = None
-        self.socThreshold = self.config['soc_threshold'] or 100
+        self.socThreshold = 100
 
     def start(self):
         self.running = True
