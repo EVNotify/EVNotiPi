@@ -32,7 +32,6 @@ class EVNotify:
         self.car = car
         self.chargingStartSOC = 0
         self.config = config
-        self.self. = time()
         self.last_charging_soc = 0
         self.last_evn_settings_poll = 0
         self.notificationFailed = False
