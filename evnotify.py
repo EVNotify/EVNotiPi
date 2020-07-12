@@ -31,6 +31,7 @@ class EVNotify:
         self.abortNotificationFailed = False
         self.car = car
         self.chargingStartSOC = 0
+        self.last_charging = time()
         self.config = config
         self.last_charging_soc = 0
         self.last_evn_settings_poll = 0
@@ -128,7 +129,7 @@ class EVNotify:
                 self.evnotify.setExtended(extended_data)
 
                 # Notification handling from here on
-                if is_charging and now - last_evn_settings_poll > EVN_SETTINGS_INTERVAL:
+                if is_charging and now - self.last_evn_settings_poll > EVN_SETTINGS_INTERVAL:
 
                     try:
                         s = self.evnotify.getSettings()
@@ -141,7 +142,7 @@ class EVNotify:
                             self.socThreshold = int(s['soc'])
                             self.log.info("New notification threshold: %i", self.socThreshold)
 
-                    except envotifyapi.CommunicationError as e:
+                    except evnotifyapi.CommunicationError as e:
                         self.log.error("Communication error occured %s", e)
 
                 # track charging started
@@ -160,25 +161,28 @@ class EVNotify:
                         self.log.error("Communication error occured %s", e)
                         self.notificationFailed = True
                         
-            # Detect aborted charge
-            if ((now - self.last_charging > ABORT_NOTIFICATION_INTERVAL and self.chargingStartSOC > 0 and self.last_charging_soc < self.socThreshold) or self.abortNotificationFailed):
-                self.log.info("Aborted charge detected, send abort notification")
-                try:
-                    self.evnotify.sendNotification(True)
-                    self.abortNotificationFailed = False
-                except evnotifyapi.CommunicationError as e:
-                    self.log.error("Communication error occured %s", e)
-                    self.abortNotificationFailed = True
+                # Detect aborted charge
+                if ((now - self.last_charging > ABORT_NOTIFICATION_INTERVAL and self.chargingStartSOC > 0 and self.last_charging_soc < self.socThreshold) or self.abortNotificationFailed):
+                    self.log.info("Aborted charge detected, send abort notification")
+                    try:
+                        self.evnotify.sendNotification(True)
+                        self.abortNotificationFailed = False
+                    except evnotifyapi.CommunicationError as e:
+                        self.log.error("Communication error occured %s", e)
+                        self.abortNotificationFailed = True
+                        
+                if is_charging:
+                    self.last_charging = now
+                    self.last_charging_soc = currentSOC
                     
-            if is_charging:
-                self.last_charging = now
-                self.last_charging_soc = currentSOC
-            
-            # Prime next loop iteration
-            if self.running:
-                runtime = time() - now
-                interval = self.poll_interval - (runtime if runtime > self.poll_interval else 0)
-                sleep(min(0, interval))
+                # Prime next loop iteration
+                if self.running:
+                    runtime = time() - now
+                    interval = self.poll_interval - (runtime if runtime > self.poll_interval else 0)
+                    sleep(min(0, interval))
+
+            except evnotifyapi.CommunicationError as e:
+                self.log.error("Communication error occured %s", e)
 
 
     def checkWatchdog(self):
