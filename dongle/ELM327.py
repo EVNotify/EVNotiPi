@@ -1,8 +1,8 @@
 from AtBaseDongle import *
 
 class ELM327(ATBASE):
-    def __init__(self, dongle, watchdog = None):
-        ATBASE.__init__(self, dongle, watchdog)
+    def __init__(self, dongle):
+        ATBASE.__init__(self, dongle)
         self.ret_NoData = (b'NO DATA', b'DATA ERROR', b'ACT ALERT')
         self.ret_CanError = (b'BUFFER FULL', B'BUS BUSY', b'BUS ERROR', b'CAN ERROR',
                 b'ERR', b'FB ERROR', b'LP ALERT', b'LV RESET', b'STOPPED',
@@ -61,15 +61,8 @@ class ELM327(ATBASE):
             self.current_canfilter = addr
 
     def getObdVoltage(self):
-        if self.watchdog:
-            return round(self.watchdog.getVoltage(), 2)
-        else:
-            ret = self.sendAtCmd('ATRV', None)
-            return round(float(ret[:-1]), 2)
+        ret = self.sendAtCmd('ATRV', None)
+        return round(float(ret[:-1]), 2)
 
     def calibrateObdVoltage(self, realVoltage):
-        if self.watchdog:
-            self.watchdog.calibrateVoltage(realVoltage)
-        else:
-            self.sendAtCmd('ATCV{:04.0f}'.format(realVoltage)) # CV dddd Calibrate the Voltage to dd.dd volts
-
+        self.sendAtCmd('ATCV{:04.0f}'.format(realVoltage)) # CV dddd Calibrate the Voltage to dd.dd volts

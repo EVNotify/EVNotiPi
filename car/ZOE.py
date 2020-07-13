@@ -1,12 +1,12 @@
-from car import *
+from .car import *
 from time import time
 from threading import Thread
 
 class ZOE(Car):
 
-    def __init__(self, config, dongle, gps):
+    def __init__(self, config, dongle, watchdog, gps):
         raise Exception('Old ZOE not working yet')
-        Car.__init__(self, config, dongle, gps)
+        Car.__init__(self, config, dongle, watchdog, gps)
         self.dongle.setProtocol('CAN_11_500')
         self.dongle.setFiltersEx([
             {'id': 0x1f6, 'mask': 0x7ff},

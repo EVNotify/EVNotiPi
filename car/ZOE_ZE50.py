@@ -1,7 +1,7 @@
 if __name__ == '__main__':
     import sys
     sys.path.insert(0,'.')
-from car import *
+from .car import *
 from time import time
 
 cmd_auxVoltage  = bytes.fromhex('222005')   # PR252
@@ -16,8 +16,8 @@ cmd_current     = bytes.fromhex('229257')   # PR218
 cmd_soh         = bytes.fromhex('22927A')   # ET148
 
 class ZOE_ZE50(Car):
-    def __init__(self, config, dongle, gps):
-        Car.__init__(self, config, dongle, gps)
+    def __init__(self, config, dongle, watchdog, gps):
+        Car.__init__(self, config, dongle, watchdog, gps)
         self.dongle.setProtocol('CAN_29_500')
 
     def readDongle(self, data):

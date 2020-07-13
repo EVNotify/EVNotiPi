@@ -1,5 +1,5 @@
-from car import *
-from dongle import NoData
+from .car import Car
+from dongle.dongle import NoData
 from time import time
 
 b2101 = bytes.fromhex('2101')
@@ -12,8 +12,8 @@ b22b002 = bytes.fromhex('22b002')
 
 class IONIQ_BEV(Car):
 
-    def __init__(self, config, dongle, gps):
-        Car.__init__(self, config, dongle, gps)
+    def __init__(self, config, dongle, watchdog, gps):
+        Car.__init__(self, config, dongle, watchdog, gps)
         self.dongle.setProtocol('CAN_11_500')
 
     def readDongle(self, data):
