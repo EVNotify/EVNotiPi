@@ -17,7 +17,8 @@ import watchdog
 
 Systemd = sdnotify.SystemdNotifier()
 
-class WatchdogFailure(Exception): pass
+class ThreadFailure(Exception):
+    """ Raised when a sub thread fails """
 
 parser = ArgumentParser(description='EVNotiPi')
 parser.add_argument('-d', '--debug', dest='debug', action='store_true', default=False)
@@ -116,15 +117,15 @@ log.info("Starting main loop")
 try:
     while main_running:
         now = time()
-        watchdogs_ok = True
+        threads_ok = True
         for t in Threads:
-            status = t.checkWatchdog()
+            status = t.check_thread()
             if status == False:
-                log.error("Watchdog Failed " + str(t))
-                watchdogs_ok = False
-                raise WatchdogFailure(str(t))
+                log.error("Thread Failed (%s)", str(t))
+                threads_ok = False
+                raise ThreadFailure(str(t))
 
-        if watchdogs_ok:
+        if threads_ok:
             Systemd.notify("WATCHDOG=1")
 
         if 'system' in config and 'shutdown_delay' in config['system']:
