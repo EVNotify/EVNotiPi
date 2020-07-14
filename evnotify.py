@@ -181,6 +181,10 @@ class EVNotify:
                     log.info("Communication Error: %s", err)
                     soc_notification = FAILED
 
+            if is_charging:
+                last_charging = now
+                last_charging_soc = current_soc
+
             # Prime next loop iteration
             if self.running:
                 runtime = time() - now
