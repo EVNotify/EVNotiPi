@@ -1,8 +1,8 @@
 from AtBaseDongle import *
 
 class PiOBD2Hat(ATBASE):
-    def __init__(self, dongle, watchdog = None):
-        ATBASE.__init__(self, dongle, watchdog)
+    def __init__(self, dongle):
+        ATBASE.__init__(self, dongle)
         self.ret_NoData = (b'NO DATA', b'TIMEOUT', b'CAN NO ACK')
         self.ret_CanError = (b'INPUT TIMEOUT', b'NO INPUT CHAR', b'UNKNOWN COMMAND',
                 b'WRONG HEXCHAR COUNT', b'ILLEGAL COMMAND', b'SYNTAX ERROR',
@@ -68,16 +68,9 @@ class PiOBD2Hat(ATBASE):
             self.current_canfilter = addr
 
     def getObdVoltage(self):
-        if self.watchdog:
-            return round(self.watchdog.getVoltage(), 2)
-        else:
-            ret = self.sendAtCmd('AT!10','V')
-            return round(float(ret[:-1]) * self.voltage_multiplier, 2)
+        ret = self.sendAtCmd('AT!10','V')
+        return round(float(ret[:-1]) * self.voltage_multiplier, 2)
 
     def calibrateObdVoltage(self, realVoltage):
-        if self.watchdog:
-            self.watchdog.calibrateVoltage(realVoltage)
-        else:
-            ret = self.sendAtCmd('AT!10','V')
-            self.voltage_multiplier = realVoltage / float(ret[:-1])
-
+        ret = self.sendAtCmd('AT!10','V')
+        self.voltage_multiplier = realVoltage / float(ret[:-1])

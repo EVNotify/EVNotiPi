@@ -1,4 +1,5 @@
-from car import *
+from .car import Car
+from time import time
 
 b220100 = bytes.fromhex('220100')
 b220101 = bytes.fromhex('220101')
@@ -7,8 +8,8 @@ b22b002 = bytes.fromhex('22b002')
 
 class KONA_EV(Car):
 
-    def __init__(self, config, dongle, gps):
-        Car.__init__(self, config, dongle, gps)
+    def __init__(self, config, dongle, watchdog, gps):
+        Car.__init__(self, config, dongle, watchdog, gps)
         self.dongle.setProtocol('CAN_11_500')
 
     def readDongle(self, data):

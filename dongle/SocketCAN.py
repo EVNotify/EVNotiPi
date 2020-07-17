@@ -1,11 +1,10 @@
-from dongle import *
+from dongle.dongle import *
 import socket
 import struct
 import math
 from pyroute2 import IPRoute
 from time import sleep
 import logging
-import RPi.GPIO as GPIO
 
 CANFMT = "<IB3x8s"
 
@@ -22,17 +21,11 @@ CAN_ISOTP_RX_STMIN  = 4
 CAN_ISOTP_LL_OPTS   = 5
 
 class SocketCAN:
-    def __init__(self, config, watchdog = None):
+    def __init__(self, config):
         self.log = logging.getLogger("EVNotiPi/SocketCAN")
         self.log.info("Initializing SocketCAN")
 
         self.config = config
-
-        self.watchdog = watchdog
-        if not watchdog:
-            GPIO.setmode(GPIO.BCM)
-            self.pin = config['shutdown_pin']
-            GPIO.setup(self.pin, GPIO.IN, pull_up_down=config['pup_down'])
 
         self.sock_can = None
         self.sock_isotp = None
@@ -355,18 +348,3 @@ class SocketCAN:
                     f['mask']))
 
         self.sock_can.setsockopt(socket.SOL_CAN_RAW, socket.CAN_RAW_FILTER, flt)
-
-    def getObdVoltage(self):
-        if self.watchdog:
-            return round(self.watchdog.getVoltage(), 2)
-
-    def calibrateObdVoltage(self, realVoltage):
-        if self.watchdog:
-            self.watchdog.calibrateVoltage(realVoltage)
-
-    def isCarAvailable(self):
-        if self.watchdog:
-            return self.watchdog.getShutdownFlag() == 0
-        else:
-            return GPIO.input(self.pin) == False
-

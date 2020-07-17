@@ -11,6 +11,9 @@ import sdnotify
 import logging
 from argparse import ArgumentParser
 import evnotify
+import car
+import dongle
+import watchdog
 
 Systemd = sdnotify.SystemdNotifier()
 
@@ -50,40 +53,38 @@ log = logging.getLogger("EVNotiPi")
 
 del args
 
+# emulate old config if watchdog section is missing
+if not 'watchdog' in config or not 'type' in config['watchdog']:
+    log.warning('Old watchdog config syntax detected. Please adjust according to config.yaml.template.')
+    config['watchdog'] = {
+        'type': 'GPIO',
+        'shutdown_pin': config['dongle'].get('shutdown_pin', 24),
+        'pup_down': config['dongle'].get('pup_down', 21),
+        }
+
 # Load OBD2 interface module
-if not "{}.py".format(config['dongle']['type']) in os.listdir('dongle'):
-    raise Exception('Unsupported dongle {}'.format(config['dongle']['type']))
+DONGLE = dongle.load(config['dongle']['type'])
 
-# Init ODB2 adapter
-sys.path.insert(0, 'dongle')
-exec("from {0} import {0} as DONGLE".format(config['dongle']['type']))
-sys.path.remove('dongle')
+# Load car module
+CAR = car.load(config['car']['type'])
 
-if not "{}.py".format(config['car']['type']) in os.listdir('car'):
-    raise Exception('Unsupported car {}'.format(config['car']['type']))
-
-sys.path.insert(0, 'car')
-exec("from {0} import {0} as CAR".format(config['car']['type']))
-sys.path.remove('car')
-
+# Load watchdog module
+WATCHDOG = watchdog.Load(config['watchdog']['type'])
 
 Threads = []
 
-if 'watchdog' in config and config['watchdog'].get('enable') == True:
-    import watchdog
-    Watchdog = watchdog.Watchdog(config['watchdog'])
-else:
-    Watchdog = None
+# Init watchdog
+watchdog = WATCHDOG(config['watchdog'])
 
 # Init dongle
-dongle = DONGLE(config['dongle'], watchdog = Watchdog)
+dongle = DONGLE(config['dongle'])
 
 # Init GPS interface
 gps = GpsPoller()
 Threads.append(gps)
 
 # Init car
-car = CAR(config['car'], dongle, gps)
+car = CAR(config['car'], dongle, watchdog, gps)
 Threads.append(car)
 
 # Init EVNotify
@@ -127,7 +128,8 @@ try:
             Systemd.notify("WATCHDOG=1")
 
         if 'system' in config and 'shutdown_delay' in config['system']:
-            if now - car.last_data > config['system']['shutdown_delay'] and dongle.isCarAvailable() == False:
+            if (now - car.last_data > config['system']['shutdown_delay'] and
+                    watchdog.isCarAvailable() == False):
                 usercnt = int(check_output(['who','-q']).split(b'\n')[1].split(b'=')[1])
                 if usercnt == 0:
                     log.info("Not charging and car off => Shutdown")
@@ -137,7 +139,8 @@ try:
                     log.info("Not charging and car off; Not shutting down, users connected")
 
         if wifi and config['wifi']['shutdown_delay'] != None:
-            if now - car.last_data > config['wifi']['shutdown_delay'] and dongle.isCarAvailable() == False:
+            if (now - car.last_data > config['wifi']['shutdown_delay'] and
+                    watchdog.isCarAvailable() == False):
                 wifi.disable()
             else:
                 wifi.enable()

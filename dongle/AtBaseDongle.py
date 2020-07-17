@@ -1,13 +1,12 @@
-from dongle import *
+from dongle.dongle import *
 import serial
 from threading import Lock
 from time import sleep
 import math
-import RPi.GPIO as GPIO
 import logging
 
 class ATBASE:
-    def __init__(self, dongle, watchdog = None):
+    def __init__(self, dongle):
         self.log = logging.getLogger("EVNotiPi/{}".format(__name__))
         self.log.info("Initializing PiOBD2Hat")
 
@@ -16,11 +15,6 @@ class ATBASE:
         self.initDongle()
 
         self.config = dongle
-        self.watchdog = watchdog
-        if not watchdog:
-            GPIO.setmode(GPIO.BCM)
-            self.pin = dongle['shutdown_pin']
-            GPIO.setup(self.pin, GPIO.IN, pull_up_down=dongle['pup_down'])
 
         self.current_canid = 0
         self.current_canfilter = 0
@@ -190,11 +184,3 @@ class ATBASE:
             raise CanError("Failed Command {}\n{}".format(cmd,ret))
 
         return data
-
-    def isCarAvailable(self):
-        if self.watchdog:
-            return self.watchdog.getShutdownFlag() == 0
-        else:
-            #return self.getObdVoltage() > 13.0
-            return GPIO.input(self.pin) == False
-

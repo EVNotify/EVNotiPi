@@ -1,4 +1,4 @@
-from dongle import *
+from dongle.dongle import *
 import logging
 
 data = {
