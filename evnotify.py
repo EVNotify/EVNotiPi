@@ -193,6 +193,6 @@ class EVNotify:
                 sleep(max(0, interval))
 
 
-    def checkWatchdog(self):
+    def check_thread(self):
         return self.thread.is_alive()
 

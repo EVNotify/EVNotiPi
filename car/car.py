@@ -141,6 +141,6 @@ class Car:
     def unregisterData(self, callback):
         self.data_callbacks.remove(callback)
 
-    def checkWatchdog(self):
+    def check_thread(self):
         return self.thread.is_alive()
 

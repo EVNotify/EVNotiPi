@@ -100,7 +100,7 @@ class GpsPoller:
         self.running = False
         self.thread.join()
 
-    def checkWatchdog(self):
+    def check_thread(self):
         return self.thread.is_alive()
 
 if __name__ == '__main__':
