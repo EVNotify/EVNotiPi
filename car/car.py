@@ -65,7 +65,7 @@ class Car:
                     'speed':        None,
                     'fix_mode':     0,
                     }
-            if not self.skip_polling or self.watchdog.isCarAvailable():
+            if not self.skip_polling or self.watchdog.is_car_available():
                 if self.skip_polling:
                     self.log.info("Resume polling.")
                     self.skip_polling = False
@@ -76,7 +76,7 @@ class Car:
                     self.log.warning(e)
                 except NoData:
                     self.log.info("NO DATA")
-                    if not self.watchdog.isCarAvailable():
+                    if not self.watchdog.is_car_available():
                         self.log.info("Car off detected. Stop polling until car on.")
                         self.skip_polling = True
                     sleep(1)
@@ -106,13 +106,13 @@ class Car:
                 data.update({
                     'obdVoltage':       self.dongle.getObdVoltage(),
                     })
-            elif hasattr(self.watchdog, 'getVoltage'):
+            elif hasattr(self.watchdog, 'get_voltage'):
                 data.update({
-                    'obdVoltage':       self.watchdog.getVoltage(),
+                    'obdVoltage':       self.watchdog.get_voltage(),
                     })
 
-            if hasattr(self.watchdog, 'getThresholds'):
-                thresholds = self.watchdog.getThresholds()
+            if hasattr(self.watchdog, 'get_thresholds'):
+                thresholds = self.watchdog.get_thresholds()
 
                 data.update({
                     'startupThreshold':         thresholds['startup'],

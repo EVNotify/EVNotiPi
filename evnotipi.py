@@ -75,7 +75,7 @@ DONGLE = dongle.load(config['dongle']['type'])
 CAR = car.load(config['car']['type'])
 
 # Load watchdog module
-WATCHDOG = watchdog.Load(config['watchdog']['type'])
+WATCHDOG = watchdog.load(config['watchdog']['type'])
 
 Threads = []
 
@@ -130,7 +130,7 @@ try:
 
         if 'system' in config and 'shutdown_delay' in config['system']:
             if (now - car.last_data > config['system']['shutdown_delay'] and
-                    not watchdog.isCarAvailable()):
+                    not watchdog.is_car_available()):
                 usercnt = int(check_output(['who', '-q']).split(b'\n')[1].split(b'=')[1])
                 if usercnt == 0:
                     log.info('Not charging and car off => Shutdown')

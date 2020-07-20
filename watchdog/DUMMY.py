@@ -1,14 +1,18 @@
+""" Minimal watchdog module for testing """
 import logging
 
+
 class DUMMY:
+    """ Watchdog class for testing """
+
     def __init__(self, config=None):
         self._log = logging.getLogger("EVNotiPi/DUMMY-Watchdog")
 
-    def isCarAvailable(self):
+    def is_car_available(self):
         return True
 
-    def getVoltage(self):
+    def get_voltage(self):
         return None
 
-    def calibrateVoltage(self, realVoltage):
+    def calibrate_voltage(self, realVoltage):
         pass
