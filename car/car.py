@@ -1,6 +1,6 @@
 from time import time, sleep
 from threading import Thread
-from dongle.dongle import NoData, CanError
+from dongle import NoData, CanError
 import logging
 from math import isnan
 
@@ -102,9 +102,9 @@ class Car:
                     'gps_device':   fix['device'],
                     })
 
-            if hasattr(self.dongle, 'getObdVoltage'):
+            if hasattr(self.dongle, 'get_obd_voltage'):
                 data.update({
-                    'obdVoltage':       self.dongle.getObdVoltage(),
+                    'obdVoltage':       self.dongle.get_obd_voltage(),
                     })
             elif hasattr(self.watchdog, 'get_voltage'):
                 data.update({

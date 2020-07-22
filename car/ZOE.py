@@ -7,8 +7,8 @@ class ZOE(Car):
     def __init__(self, config, dongle, watchdog, gps):
         raise Exception('Old ZOE not working yet')
         Car.__init__(self, config, dongle, watchdog, gps)
-        self.dongle.setProtocol('CAN_11_500')
-        self.dongle.setFiltersEx([
+        self.dongle.set_protocol('CAN_11_500')
+        self.dongle.set_filters_ex([
             {'id': 0x1f6, 'mask': 0x7ff},
             {'id': 0x29a, 'mask': 0x7ff},
             {'id': 0x35c, 'mask': 0x7ff},

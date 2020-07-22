@@ -1,5 +1,5 @@
 from .car import Car
-from dongle.dongle import NoData
+from dongle import NoData
 from time import time
 
 b2101 = bytes.fromhex('2101')
@@ -14,19 +14,19 @@ class IONIQ_BEV(Car):
 
     def __init__(self, config, dongle, watchdog, gps):
         Car.__init__(self, config, dongle, watchdog, gps)
-        self.dongle.setProtocol('CAN_11_500')
+        self.dongle.set_protocol('CAN_11_500')
 
     def readDongle(self, data):
         now = time()
         raw = {}
 
         for cmd in [b2101,b2102,b2103,b2104,b2105]:
-            raw[cmd] = self.dongle.sendCommandEx(cmd, canrx=0x7ec, cantx=0x7e4)
+            raw[cmd] = self.dongle.send_command_ex(cmd, canrx=0x7ec, cantx=0x7e4)
 
-        raw[b2180] = self.dongle.sendCommandEx(b2180, canrx=0x7ee, cantx=0x7e6)
+        raw[b2180] = self.dongle.send_command_ex(b2180, canrx=0x7ee, cantx=0x7e6)
 
         try:
-            raw[b22b002] = self.dongle.sendCommandEx(b22b002, canrx=0x7ce, cantx=0x7c6)
+            raw[b22b002] = self.dongle.send_command_ex(b22b002, canrx=0x7ce, cantx=0x7c6)
         except NoData:
             # 0x7ce is only available while driving
             pass
@@ -95,8 +95,6 @@ class IONIQ_BEV(Car):
 
             'availableChargePower':     ifbu(raw[b2101][7:9]) / 100.0,
             'availableDischargePower':  ifbu(raw[b2101][9:11]) / 100.0,
-
-            'obdVoltage':               self.dongle.getObdVoltage(),
             })
 
         for i,temp in enumerate(cellTemps):

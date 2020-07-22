@@ -18,11 +18,11 @@ cmd_soh         = bytes.fromhex('22927A')   # ET148
 class ZOE_ZE50(Car):
     def __init__(self, config, dongle, watchdog, gps):
         Car.__init__(self, config, dongle, watchdog, gps)
-        self.dongle.setProtocol('CAN_29_500')
+        self.dongle.set_protocol('CAN_29_500')
 
     def readDongle(self, data):
         def bms(cmd):
-            return self.dongle.sendCommandEx(cmd, canrx=0x18DAF1DB, cantx=0x18DADBF1)[3:]
+            return self.dongle.send_command_ex(cmd, canrx=0x18DAF1DB, cantx=0x18DADBF1)[3:]
 
         data.update(self.getBaseData())
 
