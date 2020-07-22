@@ -14,14 +14,14 @@ EXTENDED_FIELDS = {
     'batteryMinTemperature': 1,
     'cumulativeEnergyCharged': 0,
     'cumulativeEnergyDischarged': 0,
-    'charging': 0 ,
+    'charging': 0,
     'normalChargePort': 0,
     'rapidChargePort': 0,
     'dcBatteryCurrent': 2,
     'dcBatteryPower': 2,
     'dcBatteryVoltage': 2,
     'soh': 0,
-    'externalTemperature: 1',
+    'externalTemperature': 1,
     'odo': 0,
     }
 
