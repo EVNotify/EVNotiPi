@@ -51,11 +51,11 @@ class EVNotify:
         self._running = True
         self._thread = Thread(target=self.submit_data, name="EVNotiPi/EVNotify")
         self._thread.start()
-        self._car.registerData(self.data_callback)
+        self._car.register_data(self.data_callback)
 
     def stop(self):
         """ Stop submit thread. """
-        self._car.unregisterData(self.data_callback)
+        self._car.unregister_data(self.data_callback)
         self._running = False
         with self._data_lock:
             self._data_lock.notify()
