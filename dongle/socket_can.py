@@ -33,7 +33,7 @@ def can_str(msg):
     return "%x#%s (%d)" % (can_id & CAN_EFF_MASK, data.hex(' '), length)
 
 
-class SocketCAN:
+class SocketCan:
     """ Socket CAN interface """
 
     def __init__(self, config):
