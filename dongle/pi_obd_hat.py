@@ -2,7 +2,7 @@
 from .at_base_dongle import AtBase
 
 
-class PiOBD2Hat(AtBase):
+class PiObd2Hat(AtBase):
     """ Implementation for Pi-OBD-Hat """
 
     def __init__(self, dongle):

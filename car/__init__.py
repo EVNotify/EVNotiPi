@@ -2,12 +2,12 @@
 from importlib import import_module
 
 Modules = {
-    'IONIQ_BEV': 'ioniq_bev',
-    'IONIQ_FL_EV': 'ioniq_fl_ev',
-    'KONA_EV': 'kona_ev',
-    'NIRO_EV': 'niro_ev',
-    'ZOE_Q210': 'zoe_q210',
-    'ZOE_ZE50': 'zoe_ze50',
+    'IONIQ_BEV': {'f': 'ioniq_bev', 'c': 'IoniqBev'},
+    'IONIQ_FL_EV': {'f': 'ioniq_fl_ev', 'c': 'IoniqFlEv'},
+    'KONA_EV': {'f': 'kona_ev', 'c': 'KonaEv'},
+    'NIRO_EV': {'f': 'niro_ev', 'c': 'NiroEv'},
+    'ZOE_Q210': {'f': 'zoe_q210', 'c': 'ZoeQ210'},
+    'ZOE_ZE50': {'f': 'zoe_ze50', 'c': 'ZoeZe50'},
 }
 
 
@@ -16,4 +16,5 @@ def load(car_type):
     if car_type not in Modules.keys():
         raise Exception('Unsupported car %s' % (car_type))
 
-    return getattr(import_module("car." + Modules[car_type]), car_type)
+    return getattr(import_module("car." + Modules[car_type])['f'],
+                   Modules[car_type]['c'])

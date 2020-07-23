@@ -20,7 +20,7 @@ class I2C:
             emergency = config['thresholds'].get('emergency')
             self.log.info("New thresholds startup(%s) shutdown(%s) emergency(%s)",
                           startup, shutdown, emergency)
-            self.setThresholds(startup, shutdown, emergency)
+            self.set_thresholds(startup, shutdown, emergency)
 
     def _bus_open(self):
         self.i2c_lock.acquire()
@@ -46,7 +46,7 @@ class I2C:
 
         return ret * self.i2c_voltage_multiplier
 
-    def calibrate_voltage(self, realVoltage):
+    def calibrate_voltage(self, real_voltage):
         """ Adjust the conversion factor by providing an
             externally measured voltage. """
         self._bus_open()
@@ -54,8 +54,8 @@ class I2C:
         ret = self.i2c_bus.read_byte(self.i2c_address)
         self._bus_close()
 
-        self.i2c_voltage_multiplier = realVoltage / ret
-        self.log.info("Calibration: %s %s %s", realVoltage,
+        self.i2c_voltage_multiplier = real_voltage / ret
+        self.log.info("Calibration: %s %s %s", real_voltage,
                       ret, self.i2c_voltage_multiplier)
 
     def get_thresholds(self):

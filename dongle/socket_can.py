@@ -1,6 +1,6 @@
 """ Module implementing an interface through Linux's socket CAN interface """
 from time import sleep
-from socket import (socket, timeout,
+from socket import (socket, timeout as sock_timeout,
                     AF_CAN, PF_CAN, SOCK_DGRAM, SOCK_RAW, CAN_ISOTP,
                     CAN_RAW, CAN_EFF_FLAG, CAN_EFF_MASK, CAN_RAW_FILTER,
                     SOL_CAN_BASE, SOL_CAN_RAW)
@@ -180,7 +180,7 @@ class SocketCAN:
                     raise CanError(
                         "Unexpected message: %s" % (can_str(msg)))
 
-        except timeout as err:
+        except sock_timeout as err:
             raise NoData("Command timed out %s: %s" % (cmd.hex(' '), err))
         except OSError as err:
             raise CanError("Failed Command %s: %s" % (cmd.hex(' '), err))
@@ -211,10 +211,10 @@ class SocketCAN:
                 data = sock.recv(4096)
                 if self._log.isEnabledFor(logging.DEBUG):
                     self._log.debug(data.hex(' '))
-        except timeout as err:
-            raise NoData("Command timed out {}: {}".format(cmd.hex(' '), err))
+        except sock_timeout as err:
+            raise NoData("Command timed out %s: %s" % (cmd.hex(' '), err))
         except OSError as err:
-            raise CanError("Failed Command {}: {}".format(cmd.hex(' '), err))
+            raise CanError("Failed Command %s: %s" % (cmd.hex(' '), err))
 
         if not data or len(data) == 0:
             raise NoData('NO DATA')
@@ -307,7 +307,7 @@ class SocketCAN:
                 else:
                     raise CanError("Unexpected message: %s" % (can_str(msg)))
 
-        except timeout as err:
+        except sock_timeout as err:
             raise NoData("Command timed out %s: %s" % (cmd.hex(' '), err))
         except OSError as err:
             raise CanError("Failed Command %s: %s" % (cmd.hex(' '), err))
@@ -333,7 +333,7 @@ class SocketCAN:
 
             data[can_id] = msg_data
 
-        except timeout as err:
+        except sock_timeout as err:
             raise CanError("Recv timed out: %s" % (err))
         except OSError as err:
             raise CanError("CAN read error: %s" % (err))

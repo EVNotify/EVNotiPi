@@ -20,6 +20,7 @@ class ZoeZe50(Car):
         self._dongle.set_protocol('CAN_29_500')
 
     def read_dongle(self, data):
+        """ Read and parse data from dongle """
         def bms(cmd):
             return self._dongle.send_command_ex(cmd, canrx=0x18DAF1DB, cantx=0x18DADBF1)[3:]
 

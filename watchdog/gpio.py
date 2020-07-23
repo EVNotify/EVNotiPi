@@ -3,7 +3,7 @@ import logging
 import RPi.GPIO
 
 
-class GPIO:
+class Gpio:
     """ Use a GPIO pin to get car status """
 
     def __init__(self, config):
@@ -17,10 +17,3 @@ class GPIO:
     def is_car_available(self):
         """ Check if the pin has been pulled to ground """
         return RPi.GPIO.input(self._shutdown_pin) == 0
-
-    def get_voltage(self):
-        """ Dummy; GPIO has no voltage sensor available """
-        return None
-
-    def calibrate_voltage(self, realVoltage):
-        """ No sensor, so no calibration """

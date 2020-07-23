@@ -2,7 +2,7 @@
 from .at_base_dongle import AtBase
 
 
-class ELM327(AtBase):
+class Elm327(AtBase):
     """ Implementation for ELM327 """
 
     def __init__(self, dongle):

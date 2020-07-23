@@ -16,6 +16,7 @@ class KonaEv(Car):
         self._dongle.set_protocol('CAN_11_500')
 
     def read_dongle(self, data):
+        """ Read and parse data from dongle """
         raw = {}
 
         for cmd in [b220101, b220105]:

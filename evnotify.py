@@ -148,7 +148,7 @@ class EVNotify:
                                 for a in ('latitude', 'longitude', 'speed')}
                     evn.setLocation({'location': location})
 
-                extended_data = {a:round(data[a], EXTENDED_FIELDS[a])
+                extended_data = {a: round(data[a], EXTENDED_FIELDS[a])
                                  for a in EXTENDED_FIELDS if data[a] is not None}
                 log.debug(extended_data)
                 evn.setExtended(extended_data)

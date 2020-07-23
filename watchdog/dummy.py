@@ -2,7 +2,7 @@
 import logging
 
 
-class DUMMY:
+class Dummy:
     """ Watchdog class for testing """
 
     def __init__(self, config=None):
@@ -10,9 +10,3 @@ class DUMMY:
 
     def is_car_available(self):
         return True
-
-    def get_voltage(self):
-        return None
-
-    def calibrate_voltage(self, realVoltage):
-        pass

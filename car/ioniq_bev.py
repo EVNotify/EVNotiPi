@@ -19,6 +19,7 @@ class IoniqBev(Car):
         self._dongle.set_protocol('CAN_11_500')
 
     def read_dongle(self, data):
+        """ Read and parse data from dongle """
         raw = {}
 
         for cmd in [b2101, b2102, b2103, b2104, b2105]:

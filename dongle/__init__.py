@@ -2,10 +2,10 @@
 from importlib import import_module
 
 Modules = {
-    'ELM327': 'elm327',
-    'PiOBD2Hat': 'pi_obd_hat',
-    'SocketCAN': 'socket_can',
-    'FakeDongle': 'fake_dongle',
+    'ELM327': {'f': 'elm327', 'c': 'Elm327'},
+    'PiOBD2Hat': {'f': 'pi_obd_hat', 'c': 'PiObd2Hat'},
+    'SocketCAN': {'f': 'socket_can', 'c': 'SocketCan'},
+    'FakeDongle': {'f': 'fake_dongle', 'c': 'FakeDongle'},
 }
 
 
@@ -22,4 +22,5 @@ def load(dongle_type):
     if dongle_type not in Modules.keys():
         raise Exception('Unsupported dongle %s' % (dongle_type))
 
-    return getattr(import_module("dongle." + Modules[dongle_type]), dongle_type)
+    return getattr(import_module("dongle." + Modules[dongle_type]['f']),
+                   Modules[dongle_type]['c'])
