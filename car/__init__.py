@@ -16,5 +16,5 @@ def load(car_type):
     if car_type not in Modules.keys():
         raise Exception('Unsupported car %s' % (car_type))
 
-    return getattr(import_module("car." + Modules[car_type])['f'],
+    return getattr(import_module("car." + Modules[car_type]['f']),
                    Modules[car_type]['c'])
