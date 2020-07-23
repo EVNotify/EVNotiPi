@@ -1,6 +1,6 @@
 """ Module for the Hyundai Kona EV """
 from .car import Car, ifbs, ifbu, ffbu
-from ..dongle import NoData
+from dongle import NoData
 
 b220100 = bytes.fromhex('220100')
 b220101 = bytes.fromhex('220101')

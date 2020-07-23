@@ -2,7 +2,7 @@
 from time import time, sleep
 from threading import Thread
 import logging
-from ..dongle import NoData, CanError
+from dongle import NoData, CanError
 
 
 def ifbu(in_bytes):

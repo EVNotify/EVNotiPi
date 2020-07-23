@@ -12,7 +12,7 @@ class AtBase:
 
     def __init__(self, dongle):
         self._log = logging.getLogger("EVNotiPi/%s" % __name__)
-        self._log.info("Initializing PiOBD2Hat")
+        self._log.info("Initializing OBD2 interface")
 
         self._serial_lock = Lock()
         self._serial = serial.Serial(dongle['port'],

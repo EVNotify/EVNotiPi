@@ -1,6 +1,6 @@
 """ Module for the Hyundai Ioniq Electric 28kWh """
 from .car import Car, ifbs, ifbu, ffbu
-from ..dongle import NoData
+from dongle import NoData
 
 b2101 = bytes.fromhex('2101')
 b2102 = bytes.fromhex('2102')
