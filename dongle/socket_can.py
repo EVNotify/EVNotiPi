@@ -13,12 +13,18 @@ from . import NoData, CanError
 if sys.version_info[0:2] <= (3, 7):
     raise NotImplementedError("SocketCAN requires at least python 3.7!")
 
+if sys.version_info[0:2] == (3, 7):
+    # Fix bug in python 3.7's socket module
+    SOL_CAN_BASE = 0x64
+    SOL_CAN_RAW = 0x65
+
 SOL_CAN_ISOTP = SOL_CAN_BASE + CAN_ISOTP
 CAN_ISOTP_OPTS = 1
 CAN_ISOTP_RECV_FC = 2
 CAN_ISOTP_TX_STMIN = 3
 CAN_ISOTP_RX_STMIN = 4
 CAN_ISOTP_LL_OPTS = 5
+CAN_ISOTP_EXTEND_ADDR = 0x2
 CAN_ISOTP_TX_PADDING = 0x4
 CAN_ISOTP_RX_PADDING = 0x8
 CAN_ISOTP_CHK_PAD_LEN = 0x10
@@ -33,6 +39,57 @@ def can_str(msg):
     return "%x#%s (%d)" % (can_id & CAN_EFF_MASK, data.hex(' '), length)
 
 
+class CanSocket(socket):
+    """ Extend socket class with some helper functions """
+
+    def __init__(self, family=-1, type=-1, proto=-1, fileno=None):
+        socket.__init__(self, family, type, proto, fileno)
+        self._can_id = None
+        self._can_mask = None
+        self._can_filter = None
+
+    def set_can_id(self, can_id):
+        """ Set the con id for transmission """
+        if not isinstance(can_id, int):
+            raise ValueError
+
+        self._can_id = can_id
+
+    def set_can_rx_mask(self, mask):
+        """ Set the can receive mask """
+        if not isinstance(mask, int):
+            raise ValueError
+
+        self._can_mask = mask
+
+        if self._can_filter is not None:
+            self.set_filters_ex([{
+                'id':   self._can_filter,
+                'mask': self._can_mask,
+            }])
+
+    def set_can_rx_filter(self, addr):
+        """ Set the can receive filter """
+        if not isinstance(addr, int):
+            raise ValueError
+
+        self._can_filter = addr
+
+        if self._can_mask is not None:
+            self.set_filters_ex([{
+                'id':   self._can_filter,
+                'mask': self._can_mask,
+            }])
+
+    def set_filters_ex(self, filters):
+        """ Set filters on the socket """
+        bin_filter = bytearray()
+        for flt in filters:
+            bin_filter.extend(pack("=II", flt['id'], flt['mask']))
+
+        self.setsockopt(SOL_CAN_RAW, CAN_RAW_FILTER, bin_filter)
+
+
 class SocketCan:
     """ Socket CAN interface """
 
@@ -42,12 +99,6 @@ class SocketCan:
 
         self._config = config
 
-        self._sock_can = None
-        self._sock_isotp = None
-
-        self._can_id = 0x7df
-        self._can_filter = None
-        self._can_mask = 0x7ff
         self._is_extended = False
 
         self.init_dongle()
@@ -66,136 +117,43 @@ class SocketCan:
         ip_route.link('set', index=ifidx, state='up')
         ip_route.close()
 
-        if self._sock_can:
-            self._sock_can.close()
-
         # test if kernel supports CAN_ISOTP
         try:
-            sock = socket(AF_CAN, SOCK_DGRAM, CAN_ISOTP)
+            sock = CanSocket(AF_CAN, SOCK_DGRAM, CAN_ISOTP)
             sock.close()
             # CAN_ISOTP_TX_PADDING CAN_ISOTP_RX_PADDING CAN_ISOTP_CHK_PAD_LEN CAN_ISOTP_CHK_PAD_DATA
             opts = CAN_ISOTP_TX_PADDING | CAN_ISOTP_RX_PADDING | CAN_ISOTP_CHK_PAD_LEN
             # if self._is_extended:
-            #    # CAN_ISOTP_EXTEND_ADDR
-            #    opts |= 0x002
-            self._sock_opt_isotp_opt = pack(
-                "=LLBBBB", opts, 0, 0, 0xAA, 0xFF, 0)
+            #    opts |= CAN_ISOTP_EXTEND_ADDR
+            self._sock_opt_isotp_opt = pack("=LLBBBB", opts, 0, 0, 0xAA, 0xFF, 0)
             self._sock_opt_isotp_fc = pack("=BBB", 0, 0, 0)
             # select implementation of send_command_ex
             self.send_command_ex = self.send_command_ex_isotp
             self._log.info("using ISO-TP support")
-        except OSError:
-            # CAN_ISOTP not supported
-            self.send_command_ex = self.send_command_ex_canraw
-
-        self._sock_can = socket(PF_CAN, SOCK_RAW, CAN_RAW)
-        try:
-            self._sock_can.bind((self._config['port'],))
-            self._sock_can.settimeout(0.2)
-        except OSError:
-            self._log.error("Could not bind to %s", self._config['port'])
-
-    def send_command(self, cmd):
-        """ Send a command and return the response """
-        try:
-            cmd_len = len(cmd)
-            assert cmd_len < 8
-
-            msg_data = (bytes([cmd_len]) + cmd).ljust(8, b'\x00')  # Pad cmd to 8 bytes
-
-            can_id = self._can_id | CAN_EFF_FLAG if self._is_extended else self._can_id
-            cmd_msg = pack(CANFMT, can_id, len(msg_data), msg_data)
-
-            if self._log.isEnabledFor(logging.DEBUG):
-                self._log.debug("%s send message", can_str(cmd_msg))
-
-            self._sock_can.send(cmd_msg)
-
-            data = {}
-            data_len = {}
-            last_idx = {}
-
-            while True:
-                self._log.debug("waiting recv msg")
-                msg = self._sock_can.recv(16)
-                can_id, length, msg_data = unpack(CANFMT, msg)
-
-                if self._log.isEnabledFor(logging.DEBUG):
-                    self._log.debug("Got %x %i %s", can_id, length, msg_data.hex(' '))
-
-                can_id &= CAN_EFF_MASK
-                msg_data = msg_data[:length]
-                frame_type = msg_data[0] & 0xf0
-
-                if frame_type == 0x00:
-                    if self._log.isEnabledFor(logging.DEBUG):
-                        self._log.debug("%s single frame", can_str(msg))
-
-                    data_len[can_id] = msg_data[0] & 0x0f
-                    data[can_id] = bytes(msg_data[1:])
-                    break
-
-                elif frame_type == 0x10:
-                    if self._log.isEnabledFor(logging.DEBUG):
-                        self._log.debug("%s first frame", can_str(msg))
-
-                    data_len[can_id] = (msg_data[0] & 0x0f) + msg_data[1]
-                    data[can_id] = bytearray(msg_data[2:])
-
-                    if self._log.isEnabledFor(logging.DEBUG):
-                        self._log.debug("Send flow control message")
-
-                    flow_msg = pack(CANFMT, can_id, 8, b'\x00\x00\x00\x00\x00\x00\x00')
-
-                    self._sock_can.send(flow_msg)
-
-                    last_idx[can_id] = 0
-
-                elif frame_type == 0x20:
-                    if self._log.isEnabledFor(logging.DEBUG):
-                        self._log.debug("%s consecutive frame", can_str(msg))
-
-                    idx = msg_data[0] & 0x0f
-                    if (last_idx + 1) % 0x10 != idx:
-                        raise CanError("Bad frame order: last_idx(%d) idx(%d)" %
-                                       (last_idx[can_id], idx))
-
-                    frame_len = min(7, data_len[can_id] - len(data[can_id]))
-                    data[can_id].extend(msg_data[1:frame_len+1])
-                    last_idx[can_id] = idx
-
-                    all_data_seen = True
-                    for cid, dlen in data_len.items():
-                        if dlen != len(data[cid]):
-                            all_data_seen = False
-
-                    if all_data_seen:
-                        # All frames seen, exit loop
-                        break
-
-                elif frame_type == 0x30:
-                    raise CanError(
-                        "Unexpected flow control: %s" % (can_str(msg)))
-                else:
-                    raise CanError(
-                        "Unexpected message: %s" % (can_str(msg)))
-
-        except sock_timeout as err:
-            raise NoData("Command timed out %s: %s" % (cmd.hex(' '), err))
         except OSError as err:
-            raise CanError("Failed Command %s: %s" % (cmd.hex(' '), err))
+            if err.errno == 93:
+                # CAN_ISOTP not supported
+                self.send_command_ex = self.send_command_ex_canraw
+            else:
+                raise
 
-        if len(data) == 0:
-            raise NoData('Empty data')
-
-        return data
+        self._can_raw_sock = CanSocket(PF_CAN, SOCK_RAW, CAN_RAW)
+        self._can_raw_sock.bind((self._config['port'],))
 
     def send_command_ex_isotp(self, cmd, cantx, canrx):
         """ Send a command using specified can tx id and
             return response from can rx id.
             Implemented using kernel level iso-tp. """
+        if self._log.isEnabledFor(logging.DEBUG):
+            self._log.debug("sendCommandEx_ISOTP cmd(%s) cantx(%x) canrx(%x)",
+                            cmd.hex(' '), canrx, cantx)
+
+        if self._is_extended:
+            cantx |= CAN_EFF_FLAG
+            canrx |= CAN_EFF_FLAG
+
         try:
-            with socket(AF_CAN, SOCK_DGRAM, CAN_ISOTP) as sock:
+            with CanSocket(AF_CAN, SOCK_DGRAM, CAN_ISOTP) as sock:
                 sock.setsockopt(SOL_CAN_ISOTP, CAN_ISOTP_OPTS,
                                 self._sock_opt_isotp_opt)
                 sock.setsockopt(SOL_CAN_ISOTP, CAN_ISOTP_RECV_FC,
@@ -224,88 +182,98 @@ class SocketCan:
     def send_command_ex_canraw(self, cmd, cantx, canrx):
         """ Send a command using specified can tx id and
             return response from can rx id. """
+        if self._log.isEnabledFor(logging.DEBUG):
+            self._log.debug("sendCommandEx_CANRAW cmd(%s) cantx(%x) canrx(%x)",
+                            cmd.hex(' '), canrx, cantx)
+
+        if self._is_extended:
+            cantx |= CAN_EFF_FLAG
+            canrx |= CAN_EFF_FLAG
+
         try:
             cmd_len = len(cmd)
             assert cmd_len < 8
 
             msg_data = (bytes([cmd_len]) + cmd).ljust(8, b'\x00')  # Pad cmd to 8 bytes
 
-            if self._is_extended:
-                cantx |= CAN_EFF_FLAG
-
             cmd_msg = pack(CANFMT, cantx, len(msg_data), msg_data)
-
-            self.set_filters_ex([{
-                'id':   canrx,
-                'mask': 0x1fffffff if self._is_extended else 0x7ff
-            }])
 
             if self._log.isEnabledFor(logging.DEBUG):
                 self._log.debug("%s send messsage", can_str(cmd_msg))
 
-            self._sock_can.send(cmd_msg)
+            with CanSocket(PF_CAN, SOCK_RAW, CAN_RAW) as sock:
+                sock.bind((self._config['port'],))
+                sock.settimeout(0.2)
 
-            data = None
-            data_len = 0
-            last_idx = 0
+                sock.setFiltersEx([{
+                    'id':   canrx,
+                    'mask': 0x1fffffff if self._is_extended else 0x7ff
+                    }])
 
-            while True:
-                self._log.debug("waiting recv msg")
-                msg = self._sock_can.recv(72)
-                can_id, length, msg_data = unpack(CANFMT, msg)
+                sock.send(cmd_msg)
 
-                if self._log.isEnabledFor(logging.DEBUG):
-                    self._log.debug("Got %x %i %s", can_id, length, msg_data.hex(' '))
+                data = None
+                data_len = 0
+                last_idx = 0
 
-                can_id &= CAN_EFF_MASK
-                msg_data = msg_data[:length]
-                frame_type = msg_data[0] & 0xf0
-
-                if frame_type == 0x00:
-                    if self._log.isEnabledFor(logging.DEBUG):
-                        self._log.debug("%s single frame", can_str(msg))
-
-                    data_len = msg_data[0] & 0x0f
-                    data = bytes(msg_data[1:data_len+1])
-                    break
-
-                elif frame_type == 0x10:
-                    if self._log.isEnabledFor(logging.DEBUG):
-                        self._log.debug("%s first frame", can_str(msg))
-
-                    data_len = (msg_data[0] & 0x0f) + msg_data[1]
-                    data = bytearray(msg_data[2:])
+                while True:
+                    self._log.debug("waiting recv msg")
+                    msg = sock.recv(72)
+                    can_id, length, msg_data = unpack(CANFMT, msg)
 
                     if self._log.isEnabledFor(logging.DEBUG):
-                        self._log.debug("Send flow control message")
+                        self._log.debug("Got %x %i %s", can_id,
+                                        length, msg_data.hex(' '))
 
-                    flow_msg = pack(CANFMT, cantx, 8, b'\x00\x00\x00\x00\x00\x00\x00')
+                    can_id &= CAN_EFF_MASK
+                    msg_data = msg_data[:length]
+                    frame_type = msg_data[0] & 0xf0
 
-                    self._sock_can.send(flow_msg)
+                    if frame_type == 0x00:
+                        if self._log.isEnabledFor(logging.DEBUG):
+                            self._log.debug("%s single frame", can_str(msg))
 
-                    last_idx = 0
-
-                elif frame_type == 0x20:
-                    if self._log.isEnabledFor(logging.DEBUG):
-                        self._log.debug("%s consecutive frame", can_str(msg))
-
-                    idx = msg_data[0] & 0x0f
-                    if (last_idx + 1) % 0x10 != idx:
-                        raise CanError("Bad frame order: last_idx(%d) idx(%d)" %
-                                       (last_idx, idx))
-
-                    frame_len = min(7, data_len - len(data))
-                    data.extend(msg_data[1:frame_len+1])
-                    last_idx = idx
-
-                    if data_len == len(data):
-                        # All frames seen, exit loop
+                        data_len = msg_data[0] & 0x0f
+                        data = bytes(msg_data[1:data_len+1])
                         break
 
-                elif frame_type == 0x30:
-                    raise CanError("Unexpected flow control: %s" % (can_str(msg)))
-                else:
-                    raise CanError("Unexpected message: %s" % (can_str(msg)))
+                    elif frame_type == 0x10:
+                        if self._log.isEnabledFor(logging.DEBUG):
+                            self._log.debug("%s first frame", can_str(msg))
+
+                        data_len = (msg_data[0] & 0x0f) + msg_data[1]
+                        data = bytearray(msg_data[2:])
+
+                        if self._log.isEnabledFor(logging.DEBUG):
+                            self._log.debug("Send flow control message")
+
+                        flow_msg = pack(CANFMT, cantx, 8, b'\x00\x00\x00\x00\x00\x00\x00')
+
+                        sock.send(flow_msg)
+
+                        last_idx = 0
+
+                    elif frame_type == 0x20:
+                        if self._log.isEnabledFor(logging.DEBUG):
+                            self._log.debug("%s consecutive frame", can_str(msg))
+
+                        idx = msg_data[0] & 0x0f
+                        if (last_idx + 1) % 0x10 != idx:
+                            raise CanError("Bad frame order: last_idx(%d) idx(%d)" %
+                                           (last_idx, idx))
+
+                        frame_len = min(7, data_len - len(data))
+                        data.extend(msg_data[1:frame_len+1])
+                        last_idx = idx
+
+                        if data_len == len(data):
+                            # All frames seen, exit loop
+                            break
+
+                    elif frame_type == 0x30:
+                        raise CanError("Unexpected flow control: %s" % (can_str(msg)))
+                    else:
+                        raise CanError("Unexpected message: %s" % (can_str(msg)))
 
         except sock_timeout as err:
             raise NoData("Command timed out %s: %s" % (cmd.hex(' '), err))
@@ -320,72 +288,51 @@ class SocketCan:
 
         return data
 
-    def read_data_simple(self, timeout=None):
+    def read_raw_frame(self, timeout=None):
         """ Read a single frame. """
         try:
-            data = {}
+            self._can_raw_sock.settimeout(timeout)
 
-            self._sock_can.settimeout(timeout)
-            msg = self._sock_can.recv(72)
+            msg = self._can_raw_sock.recv(72)
+
             can_id, length, msg_data = unpack(CANFMT, msg)
             can_id &= CAN_EFF_MASK
-            msg_data = msg_data[:length]
 
-            data[can_id] = msg_data
+            if len(msg_data) == 0:
+                raise NoData(b'NO DATA')
+
+            data = {
+                'can_id': can_id,
+                'data_len': length,
+                'data': msg_data[:length]
+                }
+
+            return data
 
         except sock_timeout as err:
             raise CanError("Recv timed out: %s" % (err))
         except OSError as err:
             raise CanError("CAN read error: %s" % (err))
 
-        if len(data) == 0:
-            raise NoData(b'NO DATA')
+    def set_raw_mask(self, mask):
+        """ Set the can receive mask of the raw socket"""
+        self._can_raw_sock.set_can_rx_mask(mask)
 
-        return data
+    def set_raw_filter(self, addr):
+        """ Set the can receive filter of the raw socket """
+        self._can_raw_sock.set_can_rx_filter(addr)
+
+    def set_raw_filters_es(self, filters):
+        """ Set filters on the socket of the raw socket """
+        self._can_raw_sock.set_filters_ex(filters)
 
     def set_protocol(self, prot):
-        """ select the CAN falvour """
+        """ select the CAN flavor """
         if prot == 'CAN_11_500':
             self._is_extended = False
         elif prot == 'CAN_29_500':
             self._is_extended = True
         else:
-            raise Exception('Unsupported protocol %s' % prot)
+            raise ValueError('Unsupported protocol %s' % prot)
 
         self.init_dongle()
-
-    def set_can_id(self, can_id):
-        """ Set the can tx id for send_command """
-        assert isinstance(can_id, int)
-
-        self._can_id = can_id
-
-    def set_can_rx_mask(self, mask):
-        """ Set can rx mask for send_command and read_data_simple """
-        assert isinstance(mask, int)
-
-        self._can_mask = mask
-
-        self.set_filters_ex([{
-            'id':   self._can_filter,
-            'mask': self._can_mask,
-        }])
-
-    def set_can_rx_filter(self, addr):
-        """ Set can rx filter for send_command and read_data_simple """
-        assert isinstance(addr, int)
-
-        self._can_filter = addr
-
-        self.set_filters_ex([{
-            'id':   self._can_filter,
-            'mask': self._can_mask,
-        }])
-
-    def set_filters_ex(self, filters):
-        """ Set filters on  the socket """
-        filter_bin = bytearray()
-        for flt in filters:
-            filter_bin.extend(pack("=II", flt['id'], flt['mask']))
-
-        self._sock_can.setsockopt(SOL_CAN_RAW, CAN_RAW_FILTER, filter_bin)
