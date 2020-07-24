@@ -34,7 +34,7 @@ class Elm327(AtBase):
             self.send_at_cmd('ATSP7', 'OK')
             self._is_extended = True
         else:
-            raise Exception('Unsupported protocol %s' % prot)
+            raise ValueError('Unsupported protocol %s' % prot)
 
     def set_can_id(self, can_id):
         """ Set CAN id to use for sent frames """
