@@ -41,7 +41,7 @@ class PiObd2Hat(AtBase):
             self.send_at_cmd('ATONI1')   # No init sequence
             self._is_extended = True
         else:
-            raise Exception('Unsupported protocol %s' % prot)
+            raise ValueError('Unsupported protocol %s' % prot)
 
     def set_can_id(self, can_id):
         """ Set CAN id to use for sent frames """
