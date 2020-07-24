@@ -47,8 +47,7 @@ class IsoTpDecoder:
                     # Non power of two types are hard as is. For now those can
                     # not be used in patterned fields.
                     if field.get('cnt', 1) > 1 and not is_power_of_two(field['width']):
-                        raise ValueError(
-                            'Non power of two field in patterned field not allowed')
+                        raise ValueError('Non power of two field in patterned field not allowed')
 
                     if not field.get('width', 0) in FormatMap.keys():
                         raise ValueError('Unsupported field length')
@@ -71,7 +70,7 @@ class IsoTpDecoder:
 
                         if not is_power_of_two(field['width']):
                             if 'lanbda' in field:
-                                self._log.warnng('defining lambda on non power ow two length fields may give unexpected results!')
+                                self._log.warning('defining lambda on non power ow two length fields may give unexpected results!')
                             else:
                                 field['lambda'] = FormatMap[field['width']]['l']
 
@@ -95,8 +94,7 @@ class IsoTpDecoder:
                                 new_field['name'] %= field_idx
 
                             new_field['fmt_idx'] = fmt_idx
-                            new_field['fmt_len'] = len(
-                                FormatMap[field['width']])
+                            new_field['fmt_len'] = len(FormatMap[field['width']])
                             fmt_idx += new_field['fmt_len']
 
                             new_fields.append(new_field)
@@ -134,8 +132,7 @@ class IsoTpDecoder:
                         fmt_len = field['fmt_len']
 
                         if 'lambda' in field:
-                            value = field['lambda'](
-                                raw_fields[fmt_idx:fmt_idx+fmt_len])
+                            value = field['lambda'](raw_fields[fmt_idx:fmt_idx+fmt_len])
                         else:
                             value = raw_fields[fmt_idx]
 
