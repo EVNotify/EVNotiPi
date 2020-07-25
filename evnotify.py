@@ -197,9 +197,7 @@ class EVNotify:
 
             # Prime next loop iteration
             if self._running:
-                runtime = time() - now
-                interval = self._poll_interval - \
-                    (runtime if runtime > self._poll_interval else 0)
+                interval = self._poll_interval - (time() - now)
                 sleep(max(0, interval))
 
     def check_thread(self):
