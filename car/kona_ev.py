@@ -94,7 +94,7 @@ class KonaEv(Car):
 
     def read_dongle(self, data):
         """ Read and parse data from dongle """
-        data.update(self.getBaseData())
+        data.update(self.get_base_data())
         data.update(self._isotp.get_data())
 
     def get_base_data(self):

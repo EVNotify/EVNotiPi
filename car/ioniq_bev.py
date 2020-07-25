@@ -118,7 +118,7 @@ class IoniqBev(Car):
             "data" needs to be a dictionary that will
             be modified with decoded data """
 
-        data.update(self.getBaseData())
+        data.update(self.get_base_data())
         data.update(self._isotp.get_data())
 
     def get_base_data(self):
