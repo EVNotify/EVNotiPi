@@ -36,7 +36,7 @@ CANFMT = Struct("<IB3x8s")
 def can_str(msg):
     """ Returns a text representation of a CAN frame """
     can_id, length, data = CANFMT.unpack(msg)
-    return "%x#%s (%d)" % (can_id & CAN_EFF_MASK, data.hex(' '), length)
+    return "%x#%s (%d)" % (can_id & CAN_EFF_MASK, data.hex(), length)
 
 
 class CanSocket(socket):
@@ -146,7 +146,7 @@ class SocketCan:
             Implemented using kernel level iso-tp. """
         if self._log.isEnabledFor(logging.DEBUG):
             self._log.debug("sendCommandEx_ISOTP cmd(%s) cantx(%x) canrx(%x)",
-                            cmd.hex(' '), canrx, cantx)
+                            cmd.hex(), canrx, cantx)
 
         if self._is_extended:
             cantx |= CAN_EFF_FLAG
@@ -164,15 +164,15 @@ class SocketCan:
 
                 if self._log.isEnabledFor(logging.DEBUG):
                     self._log.debug("canrx(%s) cantx(%s) cmd(%s)",
-                                    hex(canrx), hex(cantx), cmd.hex(' '))
+                                    hex(canrx), hex(cantx), cmd.hex())
                 sock.send(cmd)
                 data = sock.recv(4096)
                 if self._log.isEnabledFor(logging.DEBUG):
-                    self._log.debug(data.hex(' '))
+                    self._log.debug(data.hex())
         except sock_timeout as err:
-            raise NoData("Command timed out %s: %s" % (cmd.hex(' '), err))
+            raise NoData("Command timed out %s: %s" % (cmd.hex(), err))
         except OSError as err:
-            raise CanError("Failed Command %s: %s" % (cmd.hex(' '), err))
+            raise CanError("Failed Command %s: %s" % (cmd.hex(), err))
 
         if not data or len(data) == 0:
             raise NoData('NO DATA')
@@ -184,7 +184,7 @@ class SocketCan:
             return response from can rx id. """
         if self._log.isEnabledFor(logging.DEBUG):
             self._log.debug("sendCommandEx_CANRAW cmd(%s) cantx(%x) canrx(%x)",
-                            cmd.hex(' '), canrx, cantx)
+                            cmd.hex(), canrx, cantx)
 
         if self._is_extended:
             cantx |= CAN_EFF_FLAG
@@ -223,7 +223,7 @@ class SocketCan:
 
                     if self._log.isEnabledFor(logging.DEBUG):
                         self._log.debug("Got %x %i %s", can_id,
-                                        length, msg_data.hex(' '))
+                                        length, msg_data.hex())
 
                     can_id &= CAN_EFF_MASK
                     msg_data = msg_data[:length]
@@ -276,15 +276,15 @@ class SocketCan:
                         raise CanError("Unexpected message: %s" % (can_str(msg)))
 
         except sock_timeout as err:
-            raise NoData("Command timed out %s: %s" % (cmd.hex(' '), err))
+            raise NoData("Command timed out %s: %s" % (cmd.hex(), err))
         except OSError as err:
-            raise CanError("Failed Command %s: %s" % (cmd.hex(' '), err))
+            raise CanError("Failed Command %s: %s" % (cmd.hex(), err))
 
         if not data or data_len == 0:
             raise NoData('NO DATA')
         if data_len != len(data):
             raise CanError("Data length mismatch %s: %d vs %d %s" %
-                           (cmd.hex(' '), data_len, len(data), data.hex(' ')))
+                           (cmd.hex(), data_len, len(data), data.hex()))
 
         return data
 
