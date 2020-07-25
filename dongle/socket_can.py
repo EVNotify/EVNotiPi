@@ -10,7 +10,7 @@ import sys
 from pyroute2 import IPRoute
 from . import NoData, CanError
 
-if sys.version_info[0:2] <= (3, 7):
+if sys.version_info[0:2] < (3, 7):
     raise NotImplementedError("SocketCAN requires at least python 3.7!")
 
 if sys.version_info[0:2] == (3, 7):
