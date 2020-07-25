@@ -121,9 +121,9 @@ class IsoTpDecoder:
                     # bytearray using unpack. The format for unpack was generated
                     # in the preprocessor. Extracted values are scaled, shifted
                     # and a lambda function is executed if provided
-                    raw = self._dongle.sendCommandEx(cmd_data['cmd'],
-                                                     canrx=cmd_data['canrx'],
-                                                     cantx=cmd_data['cantx'])
+                    raw = self._dongle.send_command_ex(cmd_data['cmd'],
+                                                       canrx=cmd_data['canrx'],
+                                                       cantx=cmd_data['cantx'])
                     raw_fields = cmd_data['struct'].unpack(raw)
 
                     for field in cmd_data['fields']:
