@@ -4,7 +4,7 @@ from socket import (socket, timeout as sock_timeout,
                     AF_CAN, PF_CAN, SOCK_DGRAM, SOCK_RAW, CAN_ISOTP,
                     CAN_RAW, CAN_EFF_FLAG, CAN_EFF_MASK, CAN_RAW_FILTER,
                     SOL_CAN_BASE, SOL_CAN_RAW)
-from struct import pack, unpack
+from struct import Struct, pack
 import logging
 import sys
 from pyroute2 import IPRoute
@@ -30,12 +30,12 @@ CAN_ISOTP_RX_PADDING = 0x8
 CAN_ISOTP_CHK_PAD_LEN = 0x10
 CAN_ISOTP_CHK_PAD_DATA = 0x20
 
-CANFMT = "<IB3x8s"
+CANFMT = Struct("<IB3x8s")
 
 
 def can_str(msg):
     """ Returns a text representation of a CAN frame """
-    can_id, length, data = unpack(CANFMT, msg)
+    can_id, length, data = CANFMT.unpack(msg)
     return "%x#%s (%d)" % (can_id & CAN_EFF_MASK, data.hex(' '), length)
 
 
@@ -196,7 +196,7 @@ class SocketCan:
 
             msg_data = (bytes([cmd_len]) + cmd).ljust(8, b'\x00')  # Pad cmd to 8 bytes
 
-            cmd_msg = pack(CANFMT, cantx, len(msg_data), msg_data)
+            cmd_msg = CANFMT.pack(cantx, len(msg_data), msg_data)
 
             if self._log.isEnabledFor(logging.DEBUG):
                 self._log.debug("%s send messsage", can_str(cmd_msg))
@@ -219,7 +219,7 @@ class SocketCan:
                 while True:
                     self._log.debug("waiting recv msg")
                     msg = sock.recv(72)
-                    can_id, length, msg_data = unpack(CANFMT, msg)
+                    can_id, length, msg_data = CANFMT.unpack(msg)
 
                     if self._log.isEnabledFor(logging.DEBUG):
                         self._log.debug("Got %x %i %s", can_id,
@@ -247,7 +247,7 @@ class SocketCan:
                         if self._log.isEnabledFor(logging.DEBUG):
                             self._log.debug("Send flow control message")
 
-                        flow_msg = pack(CANFMT, cantx, 8, b'\x00\x00\x00\x00\x00\x00\x00')
+                        flow_msg = CANFMT.pack(cantx, 8, b'\x00\x00\x00\x00\x00\x00\x00')
 
                         sock.send(flow_msg)
 
@@ -295,7 +295,7 @@ class SocketCan:
 
             msg = self._can_raw_sock.recv(72)
 
-            can_id, length, msg_data = unpack(CANFMT, msg)
+            can_id, length, msg_data = CANFMT.unpack(msg)
             can_id &= CAN_EFF_MASK
 
             if len(msg_data) == 0:
