@@ -100,7 +100,7 @@ class IsoTpDecoder:
                             new_fields.append(new_field)
 
                 self._log.debug("fmt(%s)", fmt)
-                cmd_data['cmd_format'] = fmt
+                cmd_data['struct'] = struct.Struct(fmt)
                 cmd_data['fields'] = new_fields
 
     def get_data(self):
@@ -124,7 +124,7 @@ class IsoTpDecoder:
                     raw = self._dongle.sendCommandEx(cmd_data['cmd'],
                                                      canrx=cmd_data['canrx'],
                                                      cantx=cmd_data['cantx'])
-                    raw_fields = struct.unpack(cmd_data['cmd_format'], raw)
+                    raw_fields = cmd_data['struct'].unpack(raw)
 
                     for field in cmd_data['fields']:
                         name = field['name']
