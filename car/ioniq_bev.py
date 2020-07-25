@@ -111,7 +111,7 @@ class IoniqBev(Car):
     def __init__(self, config, dongle, watchdog, gps):
         Car.__init__(self, config, dongle, watchdog, gps)
         self._dongle.set_protocol('CAN_11_500')
-        self._isotp = IsoTpDecoder(self.dongle, Fields)
+        self._isotp = IsoTpDecoder(self._dongle, Fields)
 
     def read_dongle(self, data):
         """ Fetch data from CAN-bus and decode it.
