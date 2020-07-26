@@ -143,7 +143,7 @@ class IsoTpDecoder:
                     raise
             except struct.error as err:
                 self._log.error("err(%s) cmd(%s) fmt(%s):%d raw(%s):%d", err, cmd_data['cmd'].hex(),
-                                cmd_data['cmd_format'], struct.calcsize(cmd_data['cmd_format']),
+                                cmd_data['struct'].format, cmd_data['struct'].size,
                                 raw.hex(), len(raw))
                 raise
 
