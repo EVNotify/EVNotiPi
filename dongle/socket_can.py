@@ -42,8 +42,8 @@ def can_str(msg):
 class CanSocket(socket):
     """ Extend socket class with some helper functions """
 
-    def __init__(self, family=-1, type=-1, proto=-1, fileno=None):
-        socket.__init__(self, family, type, proto, fileno)
+    def __init__(self, family=-1, sock_type=-1, proto=-1, fileno=None):
+        socket.__init__(self, family, sock_type, proto, fileno)
         self._can_id = None
         self._can_mask = None
         self._can_filter = None
@@ -322,7 +322,7 @@ class SocketCan:
         """ Set the can receive filter of the raw socket """
         self._can_raw_sock.set_can_rx_filter(addr)
 
-    def set_raw_filters_es(self, filters):
+    def set_raw_filters_ex(self, filters):
         """ Set filters on the socket of the raw socket """
         self._can_raw_sock.set_filters_ex(filters)
 
