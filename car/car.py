@@ -154,8 +154,7 @@ class Car:
 
             if self._running:
                 if self._poll_interval:
-                    runtime = time() - now
-                    interval = self._poll_interval - runtime
+                    interval = self._poll_interval - (time() - now)
                     sleep(max(0, interval))
 
                 elif self._skip_polling:
