@@ -111,47 +111,51 @@ class EVNotify:
                 if len(self._data) == 0:
                     continue
 
-                log.debug("Transmit...")
-
-                avgs = {
-                    'dcBatteryCurrent': [],
-                    'dcBatteryPower': [],
-                    'dcBatteryVoltage': [],
-                    'speed': [],
-                    'latitude': [],
-                    'longitude': [],
-                    'altitude': [],
-                }
-
-                for data in self._data:
-                    for key, values in avgs.items():
-                        if data.get(key, None) is not None:
-                            values.append(data[key])
-
-                # Need to copy data here because we update it later
-                data = self._data[-1].copy()
+                new_data = self._data.copy()
                 self._data.clear()
+
+            log.debug("Transmit...")
+
+            avgs = {
+                'dcBatteryCurrent': [],
+                'dcBatteryPower': [],
+                'dcBatteryVoltage': [],
+                'speed': [],
+                'latitude': [],
+                'longitude': [],
+                'altitude': [],
+            }
+
+            for data in new_data:
+                for key, values in avgs.items():
+                    if data.get(key, None) is not None:
+                        values.append(data[key])
+
+            # Need to copy data here because we update it later
+            data = new_data[-1]
 
             data.update({k: sum(v)/len(v)
                          for k, v in avgs.items() if len(v) > 0})
 
             try:
-                evn.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
+                if (data['SOC_DISPLAY'] is not None or
+                        data['SOC_BMS'] is not None):
+                    evn.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
 
-                current_soc = data['SOC_DISPLAY'] or data['SOC_BMS']
+                    current_soc = data['SOC_DISPLAY'] or data['SOC_BMS']
 
-                is_charging = bool(data['charging'])
-                is_connected = bool(data['normalChargePort'] or data['rapidChargePort'])
+                    is_charging = bool(data['charging'])
+                    is_connected = bool(data['normalChargePort'] or data['rapidChargePort'])
+
+                    extended_data = {a: round(data[a], EXTENDED_FIELDS[a])
+                                     for a in EXTENDED_FIELDS if data[a] is not None}
+                    log.debug(extended_data)
+                    evn.setExtended(extended_data)
 
                 if data['fix_mode'] > 1:
                     location = {a: data[a]
                                 for a in ('latitude', 'longitude', 'speed')}
                     evn.setLocation({'location': location})
-
-                extended_data = {a: round(data[a], EXTENDED_FIELDS[a])
-                                 for a in EXTENDED_FIELDS if data[a] is not None}
-                log.debug(extended_data)
-                evn.setExtended(extended_data)
 
             except EVNotifyAPI.CommunicationError as err:
                 log.info("Communication Error: %s", err)
