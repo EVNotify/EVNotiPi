@@ -20,7 +20,7 @@ class NoData(Exception):
 def load(dongle_type):
     """ import a specific OBD2 module """
     if dongle_type not in Modules.keys():
-        raise Exception('Unsupported dongle %s' % (dongle_type))
+        raise ValueError('Unsupported dongle %s' % (dongle_type))
 
     return getattr(import_module("dongle." + Modules[dongle_type]['f']),
                    Modules[dongle_type]['c'])

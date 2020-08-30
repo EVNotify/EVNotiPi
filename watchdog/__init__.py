@@ -11,7 +11,7 @@ Modules = {
 def load(watchdog_type):
     """ Loader for watchdog modules. """
     if watchdog_type not in Modules.keys():
-        raise Exception('Unsupported watchdog %s' % (watchdog_type))
+        raise ValueError('Unsupported watchdog %s' % (watchdog_type))
 
     return getattr(import_module("watchdog." + Modules[watchdog_type]['f']),
                    Modules[watchdog_type]['c'])
