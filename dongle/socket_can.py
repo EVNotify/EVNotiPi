@@ -14,7 +14,7 @@ if sys.version_info[0:2] < (3, 7):
     raise NotImplementedError("SocketCAN requires at least python 3.7!")
 
 if sys.version_info[0:2] == (3, 7):
-    # Fix bug in python 3.7's socket module
+    # Work around bug in python 3.7's socket module
     SOL_CAN_BASE = 0x64
     SOL_CAN_RAW = 0x65
 
@@ -123,8 +123,6 @@ class SocketCan:
             sock.close()
             # CAN_ISOTP_TX_PADDING CAN_ISOTP_RX_PADDING CAN_ISOTP_CHK_PAD_LEN CAN_ISOTP_CHK_PAD_DATA
             opts = CAN_ISOTP_TX_PADDING | CAN_ISOTP_RX_PADDING | CAN_ISOTP_CHK_PAD_LEN
-            # if self._is_extended:
-            #    opts |= CAN_ISOTP_EXTEND_ADDR
             self._sock_opt_isotp_opt = pack("=LLBBBB", opts, 0, 0, 0xAA, 0xFF, 0)
             self._sock_opt_isotp_fc = pack("=BBB", 0, 0, 0)
             # select implementation of send_command_ex

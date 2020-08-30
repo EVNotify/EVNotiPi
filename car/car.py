@@ -1,4 +1,4 @@
-""" Generic implementation of a car module """
+""" The car polling loop and associated infrastructure """
 from time import time, sleep
 from threading import Thread
 import logging
