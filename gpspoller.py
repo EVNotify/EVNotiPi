@@ -84,8 +84,9 @@ class GpsPoller:
                     gps_sock.settimeout(1)
                     gps_sock.recv(1024)
                     gps_sock.sendall(b'?WATCH={"enable":true,"json":true};')
-            except (StopIteration, ConnectionResetError, OSError,
-                    socket.timeout) as err:
+            except socket.timeout:
+                sleep(0.1)
+            except (StopIteration, ConnectionResetError, OSError) as err:
                 self._log.info('Problem encountered. Resetting socket. (%s)', err)
                 gps_sock.close()
                 gps_sock = None

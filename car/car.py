@@ -42,7 +42,7 @@ class Car:
         self._thread = None
         self._skip_polling = False
         self._running = False
-        self._last_data = 0
+        self.last_data = 0
         self._data_callbacks = []
 
     def read_dongle(self, data):
@@ -98,7 +98,7 @@ class Car:
                     self._skip_polling = False
                 try:
                     self.read_dongle(data)  # readDongle updates data inplace
-                    self._last_data = now
+                    self.last_data = now
                 except CanError as err:
                     self._log.warning(err)
                 except NoData:

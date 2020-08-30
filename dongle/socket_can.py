@@ -14,7 +14,7 @@ if sys.version_info[0:2] <= (3, 7):
     raise NotImplementedError("SocketCAN requires at least python 3.7!")
 
 if sys.version_info[0:2] == (3, 7):
-    # Fix bug in python 3.7's socket module
+    # Work around bug in python 3.7's socket module
     SOL_CAN_BASE = 0x64
     SOL_CAN_RAW = 0x65
 
@@ -36,7 +36,7 @@ CANFMT = "<IB3x8s"
 def can_str(msg):
     """ Returns a text representation of a CAN frame """
     can_id, length, data = unpack(CANFMT, msg)
-    return "%x#%s (%d)" % (can_id & CAN_EFF_MASK, data.hex(' '), length)
+    return "%x#%s (%d)" % (can_id & CAN_EFF_MASK, data.hex(), length)
 
 
 class CanSocket(socket):
@@ -123,8 +123,6 @@ class SocketCan:
             sock.close()
             # CAN_ISOTP_TX_PADDING CAN_ISOTP_RX_PADDING CAN_ISOTP_CHK_PAD_LEN CAN_ISOTP_CHK_PAD_DATA
             opts = CAN_ISOTP_TX_PADDING | CAN_ISOTP_RX_PADDING | CAN_ISOTP_CHK_PAD_LEN
-            # if self._is_extended:
-            #    opts |= CAN_ISOTP_EXTEND_ADDR
             self._sock_opt_isotp_opt = pack("=LLBBBB", opts, 0, 0, 0xAA, 0xFF, 0)
             self._sock_opt_isotp_fc = pack("=BBB", 0, 0, 0)
             # select implementation of send_command_ex
@@ -146,7 +144,7 @@ class SocketCan:
             Implemented using kernel level iso-tp. """
         if self._log.isEnabledFor(logging.DEBUG):
             self._log.debug("sendCommandEx_ISOTP cmd(%s) cantx(%x) canrx(%x)",
-                            cmd.hex(' '), canrx, cantx)
+                            cmd.hex(), canrx, cantx)
 
         if self._is_extended:
             cantx |= CAN_EFF_FLAG
@@ -164,15 +162,15 @@ class SocketCan:
 
                 if self._log.isEnabledFor(logging.DEBUG):
                     self._log.debug("canrx(%s) cantx(%s) cmd(%s)",
-                                    hex(canrx), hex(cantx), cmd.hex(' '))
+                                    hex(canrx), hex(cantx), cmd.hex())
                 sock.send(cmd)
                 data = sock.recv(4096)
                 if self._log.isEnabledFor(logging.DEBUG):
-                    self._log.debug(data.hex(' '))
+                    self._log.debug(data.hex())
         except sock_timeout as err:
-            raise NoData("Command timed out %s: %s" % (cmd.hex(' '), err))
+            raise NoData("Command timed out %s: %s" % (cmd.hex(), err))
         except OSError as err:
-            raise CanError("Failed Command %s: %s" % (cmd.hex(' '), err))
+            raise CanError("Failed Command %s: %s" % (cmd.hex(), err))
 
         if not data or len(data) == 0:
             raise NoData('NO DATA')
@@ -184,7 +182,7 @@ class SocketCan:
             return response from can rx id. """
         if self._log.isEnabledFor(logging.DEBUG):
             self._log.debug("sendCommandEx_CANRAW cmd(%s) cantx(%x) canrx(%x)",
-                            cmd.hex(' '), canrx, cantx)
+                            cmd.hex(), canrx, cantx)
 
         if self._is_extended:
             cantx |= CAN_EFF_FLAG
@@ -223,7 +221,7 @@ class SocketCan:
 
                     if self._log.isEnabledFor(logging.DEBUG):
                         self._log.debug("Got %x %i %s", can_id,
-                                        length, msg_data.hex(' '))
+                                        length, msg_data.hex())
 
                     can_id &= CAN_EFF_MASK
                     msg_data = msg_data[:length]
@@ -276,15 +274,15 @@ class SocketCan:
                         raise CanError("Unexpected message: %s" % (can_str(msg)))
 
         except sock_timeout as err:
-            raise NoData("Command timed out %s: %s" % (cmd.hex(' '), err))
+            raise NoData("Command timed out %s: %s" % (cmd.hex(), err))
         except OSError as err:
-            raise CanError("Failed Command %s: %s" % (cmd.hex(' '), err))
+            raise CanError("Failed Command %s: %s" % (cmd.hex(), err))
 
         if not data or data_len == 0:
             raise NoData('NO DATA')
         if data_len != len(data):
             raise CanError("Data length mismatch %s: %d vs %d %s" %
-                           (cmd.hex(' '), data_len, len(data), data.hex(' ')))
+                           (cmd.hex(), data_len, len(data), data.hex()))
 
         return data
 
@@ -322,7 +320,7 @@ class SocketCan:
         """ Set the can receive filter of the raw socket """
         self._can_raw_sock.set_can_rx_filter(addr)
 
-    def set_raw_filters_es(self, filters):
+    def set_raw_filters_ex(self, filters):
         """ Set filters on the socket of the raw socket """
         self._can_raw_sock.set_filters_ex(filters)
 

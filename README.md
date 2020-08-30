@@ -6,7 +6,7 @@ Python Version of EVNotify
 - small wires in different colors: https://www.amazon.de/AZDelivery-Jumper-Arduino-Raspberry-Breadboard/dp/B07KYHBVR7?tag=gplay97-21
 - 4 screws M2,5x15 (to fix the OBD-Hat into the case)
 - 5 screws M2,5x8 self-cutting (for the case)
-- LTE Stick Huawai E3372 https://www.amazon.de/gp/product/B011BRKPLE?tag=gplay97-21
+- LTE Stick Huawai E8372 https://amzn.to/3hCsMmW
 - A case, for example https://github.com/noradtux/evnotipi-case
 - The i2c watchdog and power supply, https://github.com/noradtux/evnotipi-watchdog
 ### Variant 1 (MCP2515 based adapter with GPS); Recommended:
