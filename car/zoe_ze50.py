@@ -1,81 +1,135 @@
 """ Module for the Renault Zoe Z.E.50 """
-from .car import Car, ifbu
+from .car import Car
+from .isotp_decoder import IsoTpDecoder
 
-cmd_auxVoltage = bytes.fromhex('222005')   # PR252
-cmd_chargeState = bytes.fromhex('225017')   # ET018
-cmd_soc = bytes.fromhex('229001')
-cmd_soc_bms = bytes.fromhex('229002')
-cmd_voltage = bytes.fromhex('229006')
-cmd_bms_energy = bytes.fromhex('2291C8')   # PR155
-cmd_odo = bytes.fromhex('2291CF')   # PR046 ?? 0x80000225 => 17km ?
-cmd_nrg_discharg = bytes.fromhex('229245')   # PR047
-cmd_current = bytes.fromhex('229257')   # PR218
-cmd_soh = bytes.fromhex('22927A')   # ET148
+LBC_RX = 0x18daf1db
+LBC_TX = 0x18dadbf1
+EVC_RX = 0x18daf1da
+EVC_TX = 0x18dadaf1
+BCB_RX = 0x18daf1de
+BCB_TX = 0x18dadef1
+
+CMD_AUX_VOLTAGE = bytes.fromhex('222005')  # EVC
+CMD_CHARGE_STATE = bytes.fromhex('225017')  # BCB 0:Nok;1:AC mono;2:AC tri;3:DC;4:AC bi
+CMD_SOC = bytes.fromhex('222002')  # EVC
+CMD_SOC_BMS = bytes.fromhex('229002')  # LBC
+CMD_VOLTAGE = bytes.fromhex('229006')
+CMD_BMS_ENERGY = bytes.fromhex('2291C8')  # PR155
+CMD_ODO = bytes.fromhex('222006')  # EVC
+CMD_NRG_DISCHARG = bytes.fromhex('229245')  # PR047
+CMD_CURRENT = bytes.fromhex('223204')  # EVC <<- BROKEN
+CMD_SOH = bytes.fromhex('223206')  # EVC
+
+Fields = [
+    {'cmd': CMD_AUX_VOLTAGE, 'canrx': EVC_RX, 'cantx': EVC_TX,
+     'fields': (
+         {'padding': 3},
+         {'name': 'auxBatteryVoltage', 'width': 1, 'scale': .01},
+     )
+     },
+    {'cmd': CMD_CHARGE_STATE, 'canrx': BCB_RX, 'cantx': BCB_TX,
+     'fields': (
+         {'padding': 3},
+         {'name': 'charge_state', 'width': 1},
+     )
+     },
+    {'cmd': CMD_SOC, 'canrx': EVC_RX, 'cantx': EVC_TX,
+     'fields': (
+         {'padding': 3},
+         {'name': 'SOC_DISPLAY', 'width': 1, 'scale': .02},
+     )
+     },
+    {'cmd': CMD_SOC_BMS, 'canrx': LBC_RX, 'cantx': LBC_TX,
+     'fields': (
+         {'padding': 3},
+         {'name': 'SOC_BMS', 'width': 1, 'scale': .01},
+     )
+     },
+    {'cmd': CMD_VOLTAGE, 'canrx': LBC_RX, 'cantx': LBC_TX,
+     'fields': (
+         {'padding': 3},
+         {'name': 'dcBatteryVoltage', 'width': 1, 'scale': .001},
+     )
+     },
+    {'cmd': CMD_BMS_ENERGY, 'canrx': LBC_RX, 'cantx': LBC_TX,
+     'fields': (
+         {'padding': 3},
+         {'name': 'cumulativeEnergyCharged', 'width': 1, 'scale': .001},
+     )
+     },
+    {'cmd': CMD_ODO, 'canrx': EVC_RX, 'cantx': EVC_TX,
+     'fields': (
+         {'padding': 3},
+         {'name': 'odo', 'width': 2},
+     )
+     },
+    {'cmd': CMD_NRG_DISCHARG, 'canrx': LBC_RX, 'cantx': LBC_TX,
+     'fields': (
+         {'padding': 3},
+         {'name': 'cumulativeEnergyDischarged', 'width': 1, 'scale': .001},
+     )
+     },
+    {'cmd': CMD_CURRENT, 'canrx': EVC_RX, 'cantx': EVC_TX,
+     'fields': (
+         {'padding': 3},
+         {'name': 'dcBatteryCurrent', 'width': 1, 'scale': 1},
+     )
+     },
+    # {'cmd': CMD_SOH, 'canrx': EVC_RX, 'cantx': EVC_TX,
+    #    'fields': (
+    #        {'padding': 3},
+    #        {'name': 'soh', 'format': 'b'},
+    #        )
+    #    },
+    {'computed': True,
+     'fields': (
+         {'name': 'dcBatteryPower',
+          'lambda': lambda d: d['dcBatteryCurrent'] * d['dcBatteryVoltage'] / 1000.0},
+         {'name': 'charging',
+          'lambda': lambda d: int(d['charge_state'] != 0)},
+         {'name': 'normalChargePort',
+          'lambda': lambda d: int(d['charge_state'] in (1, 2, 4))},
+         {'name': 'rapidChargePort',
+          'lambda': lambda d: int(d['charge_state'] == 3)},
+     )
+     },
+]
 
 
 class ZoeZe50(Car):
     """ Class for Zoe ZE50 """
+
     def __init__(self, config, dongle, watchdog, gps):
         Car.__init__(self, config, dongle, watchdog, gps)
         self._dongle.set_protocol('CAN_29_500')
 
-    def read_dongle(self, data):
-        """ Read and parse data from dongle """
-        def bms(cmd):
-            return self._dongle.send_command_ex(cmd, canrx=0x18DAF1DB, cantx=0x18DADBF1)[3:]
-
-        data.update(self.get_base_data())
-
-        dc_battery_current = ifbu(bms(cmd_current)) - 32768
-        dc_battery_voltage = ifbu(bms(cmd_voltage)) / 1000
-
-        # soh_raw = bms(cmd_soh) # returns 254 bytes of data ...
-
-        cell_volts = []
+        idx = 1
         for i in range(0x21, 0x84):
             cmd = bytes.fromhex("2290%02x" % (i))
-            cell_volts.append(ifbu(bms(cmd)) / 1000)
+            Fields.append({'cmd': cmd, 'canrx': 0x18daf1db, 'cantx': 0x18dadbf1,
+                           'fields': ({'format': '3x'},
+                                      {'name': 'cellVolt%02d' % (idx),
+                                       'width': 1, 'scale': .001})
+                           })
+            idx += 1
 
-        module_temps = []
+        idx = 1
         for i in range(0x31, 0x3d):
             cmd = bytes.fromhex("2291%02x" % (i))
-            module_temps.append(ifbu(bms(cmd)) / 10 - 60)
+            Fields.append({'cmd': cmd, 'canrx': 0x18daf1db, 'cantx': 0x18dadbf1,
+                           'fields': ({'format': '3x'},
+                                      {'name': 'cellTemp%02d' % (idx),
+                                       'width': 1, 'scale': .1, 'offset': -60})
+                           })
+            idx += 1
 
-        data.update({
-            # Base
-            'SOC_BMS':              ifbu(bms(cmd_soc_bms)) / 100,
-            'SOC_DISPLAY':          ifbu(bms(cmd_soc)) / 100,
+        self._isotp = IsoTpDecoder(self._dongle, Fields)
 
-            # Extended:
-            'auxBatteryVoltage':    ifbu(bms(cmd_auxVoltage)) / 100.0,
+    def read_dongle(self, data):
+        """ Read and parse data from dongle """
+        data.update(self.get_base_data())
+        data.update(self._isotp.get_data())
 
-            # 'batteryInletTemperature':
-            'batteryMaxTemperature': max(module_temps),
-            'batteryMinTemperature': min(module_temps),
-
-            'cumulativeEnergyCharged':  ifbu(bms(cmd_bms_energy)) / 1000.0,
-            'cumulativeEnergyDischarged': ifbu(bms(cmd_nrg_discharg)) / 1000.0,
-
-            'charging':             0 if ifbu(bms(cmd_chargeState)) == 0 else 1,
-            # 'normalChargePort':
-            # 'rapidChargePort':
-
-            'dcBatteryCurrent':     dc_battery_current,
-            'dcBatteryPower':       dc_battery_current * dc_battery_voltage / 1000.0,
-            'dcBatteryVoltage':     dc_battery_voltage,
-
-            # 'soh':
-            # 'externalTemperature':
-            # 'odo':                  ifbu(bms(cmd_odo)),
-        })
-
-        for i, cvolt in enumerate(cell_volts):
-            key = "cellVoltage%02d" % (i+1)
-            data[key] = float(cvolt)
-
-        for i, temp in enumerate(module_temps):
-            key = "cellTemp%02d" % (i+1)
-            data[key] = float(temp)
 
     def get_base_data(self):
         return {

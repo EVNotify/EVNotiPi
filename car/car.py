@@ -1,4 +1,4 @@
-""" Generic implementation of a car module """
+""" The car polling loop and associated infrastructure """
 from time import time, sleep
 from threading import Thread
 import logging
@@ -25,12 +25,13 @@ def ffbs(in_bytes):
     return float(int.from_bytes(in_bytes, byteorder='big', signed=True))
 
 
-class DataError(Exception):
+class DataError(ValueError):
     """ Problem with data occured """
 
 
 class Car:
-    """ Generic car class """
+    """ Abstract class implementing the car polling loop.
+        Subclasses need to implement read_dongle """
 
     def __init__(self, config, dongle, watchdog, gps):
         self._log = logging.getLogger("EVNotiPi/Car")
@@ -46,7 +47,7 @@ class Car:
         self._data_callbacks = []
 
     def read_dongle(self, data):
-        """ Get raw data from dongle and parse it. """
+        """ Get data from CAN bus and put it into "data" dictionary """
         raise NotImplementedError()
 
     def start(self):
@@ -86,6 +87,7 @@ class Car:
                 'dcBatteryVoltage':         None,
                 'soh':                      None,
                 'externalTemperature':      None,
+                'odo':                      None,
                 # Location:
                 'latitude':     None,
                 'longitude':    None,
@@ -147,18 +149,16 @@ class Car:
                     'emergencyThreshold':       thresholds['emergency'],
                 })
 
-            if self._last_data == now:
-                for call_back in self._data_callbacks:
-                    call_back(data)
+            for call_back in self._data_callbacks:
+                call_back(data)
 
             if self._running:
                 if self._poll_interval:
-                    runtime = time() - now
-                    interval = self._poll_interval - \
-                        (runtime if runtime > self._poll_interval else 0)
+                    interval = self._poll_interval - (time() - now)
                     sleep(max(0, interval))
 
                 elif self._skip_polling:
+                    # Limit poll rate while charging if interval is zero
                     sleep(1)
 
     def register_data(self, callback):

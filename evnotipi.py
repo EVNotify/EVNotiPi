@@ -113,6 +113,10 @@ for t in Threads:
 Systemd.notify('READY=1')
 log.info('Starting main loop')
 
+# Suppress duplicate logs
+LOG_USER = 1
+log_flags = 0
+
 main_running = True
 try:
     while main_running:
@@ -136,8 +140,11 @@ try:
                     log.info('Not charging and car off => Shutdown')
                     check_call(['/bin/systemctl', 'poweroff'])
                     sleep(5)
-                else:
+                elif not log_flags & LOG_USER:
                     log.info('Not charging and car off; Not shutting down, users connected')
+                    log_flags |= LOG_USER
+            elif log_flags & LOG_USER:
+                log_flags &= ~LOG_USER
 
         # Ensure messages get printed to the console.
         sys.stdout.flush()
