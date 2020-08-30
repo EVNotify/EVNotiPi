@@ -1,14 +1,15 @@
-from .car import *
+""" Module for the Renault Zoe Z.E.40 """
 from time import time
 from threading import Thread
+from .car import Car, ifbu, ifbs
 
-class ZOE(Car):
+class Zoe(Car):
 
     def __init__(self, config, dongle, watchdog, gps):
         raise Exception('Old ZOE not working yet')
         Car.__init__(self, config, dongle, watchdog, gps)
-        self.dongle.setProtocol('CAN_11_500')
-        self.dongle.setFiltersEx([
+        self._dongle.set_protocol('CAN_11_500')
+        self._dongle.set_filters_ex([
             {'id': 0x1f6, 'mask': 0x7ff},
             {'id': 0x29a, 'mask': 0x7ff},
             {'id': 0x35c, 'mask': 0x7ff},
@@ -24,7 +25,7 @@ class ZOE(Car):
             {'id': 0x6f8, 'mask': 0x7ff},
             {'id': 0x7bb, 'mask': 0x7ff},
             ])
-        self.data = self.getBaseData()
+        self.data = self.get_base_data()
         self.data = {}
         self.readerthread = Thread(name="Zoe-Reader-Thread", target=self.readerThread)
 
@@ -41,13 +42,13 @@ class ZOE(Car):
         while self.running:
             now = time()
             self.watchdog = now
-            raw = self.dongle.readDataSimple(1)
+            raw = self._dongle.readDataSimple(1)
 
-            if raw == None:
+            if raw is None:
                 continue
 
             with self.datalock.gen_wlock():
-                for sid,line in raw.items():
+                for sid, line in raw.items():
                     if sid == 0x42e:
                         self.data.update({
                             'SOC_DISPLAY':                  (ifbu(line[0:2]) >> 3 & 0x1fff) * 0.02,
@@ -106,7 +107,7 @@ class ZOE(Car):
                     #        '
 
 
-    def getBaseData(self):
+    def get_base_data(self):
         return {
             "CAPACITY": 22,
             "SLOW_SPEED": 2.3,
@@ -114,7 +115,8 @@ class ZOE(Car):
             "FAST_SPEED": 43.0
         }
 
-    def getABRPModel(self): return 'renault:zoe:q210:22:other'
+    def get_abrp_model(self):
+        return 'renault:zoe:q210:22:other'
 
-    def getEVNModel(self): return 'ZOE'
-
+    def get_evn_model(self):
+        return 'ZOE'

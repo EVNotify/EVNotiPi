@@ -1,10 +1,26 @@
 """ Helper functions for dongle modules """
-import os
 from importlib import import_module
+
+Modules = {
+    'ELM327': {'f': 'elm327', 'c': 'Elm327'},
+    'PiOBD2Hat': {'f': 'pi_obd_hat', 'c': 'PiObd2Hat'},
+    'SocketCAN': {'f': 'socket_can', 'c': 'SocketCan'},
+    'FakeDongle': {'f': 'fake_dongle', 'c': 'FakeDongle'},
+}
+
+
+class CanError(Exception):
+    """ CAN communication failed """
+
+
+class NoData(Exception):
+    """ CAN did not return any data in time """
+
 
 def load(dongle_type):
     """ import a specific OBD2 module """
-    if not "%s.py" % (dongle_type) in os.listdir('dongle'):
+    if dongle_type not in Modules.keys():
         raise Exception('Unsupported dongle %s' % (dongle_type))
 
-    return getattr(import_module("dongle." + dongle_type), dongle_type)
+    return getattr(import_module("dongle." + Modules[dongle_type]['f']),
+                   Modules[dongle_type]['c'])
