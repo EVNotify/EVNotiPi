@@ -130,7 +130,6 @@ class ZoeZe50(Car):
         data.update(self.get_base_data())
         data.update(self._isotp.get_data())
 
-
     def get_base_data(self):
         return {
             "CAPACITY": 50,
