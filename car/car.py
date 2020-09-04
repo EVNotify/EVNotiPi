@@ -153,12 +153,12 @@ class Car:
                 call_back(data)
 
             if self._running:
-                if self._poll_interval:
+                if self._poll_interval > 0:
                     interval = self._poll_interval - (time() - now)
                     sleep(max(0, interval))
 
-                elif self._skip_polling:
-                    # Limit poll rate while charging if interval is zero
+                elif self._skip_polling or data.get('charging'):
+                    # Limit poll rate while charging or if polling shall be skipped
                     sleep(1)
 
     def register_data(self, callback):

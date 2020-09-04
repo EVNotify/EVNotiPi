@@ -7,7 +7,7 @@ import EVNotifyAPI
 EVN_SETTINGS_INTERVAL = 300
 ABORT_NOTIFICATION_INTERVAL = 60
 
-EXTENDED_FIELDS = {
+EXTENDED_FIELDS = {         # value is decimal places
     'auxBatteryVoltage': 1,
     'batteryInletTemperature': 1,
     'batteryMaxTemperature': 1,
@@ -22,7 +22,7 @@ EXTENDED_FIELDS = {
     'dcBatteryVoltage': 2,
     'soh': 0,
     'externalTemperature': 1,
-    'odo': 0,
+    'odo': 0
     }
 
 ARMED = 0
@@ -32,6 +32,7 @@ FAILED = -1
 
 class EVNotify:
     """ Interface to EVNotify. """
+
     def __init__(self, config, car):
         self._log = logging.getLogger("EVNotiPi/EVNotify")
         self._log.info("Initializing EVNotify")

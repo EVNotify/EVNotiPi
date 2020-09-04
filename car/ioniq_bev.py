@@ -27,7 +27,7 @@ Fields = (
          {'name': 'batteryInletTemperature', 'width': 1, 'signed': True},
          {'padding': 4},
          {'name': 'fanStatus', 'width': 1},
-         {'name': 'fanFeedback', 'width': 1},
+         {'name': 'fanFeedback', 'width': 1, 'scale': 100},
          {'name': 'auxBatteryVoltage', 'width': 1, 'scale': .1},
          {'name': 'cumulativeChargeCurrent', 'width': 4, 'scale': .1},
          {'name': 'cumulativeDischargeCurrent', 'width': 4, 'scale': .1},

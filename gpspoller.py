@@ -1,9 +1,9 @@
 """ Interface to gpsd """
-import socket
 from threading import Thread
 from time import sleep, strptime, mktime
 import json
 import logging
+import socket
 
 
 def empty_fix():
