@@ -158,47 +158,47 @@ class EVNotify:
                                 for a in ('latitude', 'longitude', 'speed')}
                     evn.setLocation({'location': location})
 
+                # Notification handling from here on
+                if is_charging and now - last_evn_settings_poll > EVN_SETTINGS_INTERVAL:
+                    try:
+                        settings = evn.getSettings()
+                        last_evn_settings_poll = now
+
+                        if 'soc' in settings:
+                            new_soc = int(settings['soc'])
+                            if new_soc != soc_threshold:
+                                soc_threshold = new_soc
+                                log.info("New notification threshold: %i",
+                                         soc_threshold)
+
+                    except EVNotifyAPI.CommunicationError as err:
+                        log.error("Communication error occured %s", err)
+
+                # track charging started
+                if is_charging and charging_start_soc == 0:
+                    charging_start_soc = current_soc or 0
+                elif not is_connected:   # Rearm abort notification
+                    charging_start_soc = 0
+                    abort_notification = ARMED
+
+                # SoC threshold notification
+                if ((is_charging and 0 < last_charging_soc < soc_threshold <= current_soc)
+                        or soc_notification is FAILED):
+                    log.info("Notification threshold(%i) reached: %i",
+                             soc_threshold, current_soc)
+                    try:
+                        evn.sendNotification()
+                        soc_notification = ARMED
+                    except EVNotifyAPI.CommunicationError as err:
+                        log.info("Communication Error: %s", err)
+                        soc_notification = FAILED
+
+                if is_charging:
+                    last_charging = now
+                    last_charging_soc = current_soc
+
             except EVNotifyAPI.CommunicationError as err:
                 log.info("Communication Error: %s", err)
-
-            # Notification handling from here on
-            if is_charging and now - last_evn_settings_poll > EVN_SETTINGS_INTERVAL:
-                try:
-                    settings = evn.getSettings()
-                    last_evn_settings_poll = now
-
-                    if 'soc' in settings:
-                        new_soc = int(settings['soc'])
-                        if new_soc != soc_threshold:
-                            soc_threshold = new_soc
-                            log.info("New notification threshold: %i",
-                                     soc_threshold)
-
-                except EVNotifyAPI.CommunicationError as err:
-                    log.error("Communication error occured %s", err)
-
-            # track charging started
-            if is_charging and charging_start_soc == 0:
-                charging_start_soc = current_soc or 0
-            elif not is_connected:   # Rearm abort notification
-                charging_start_soc = 0
-                abort_notification = ARMED
-
-            # SoC threshold notification
-            if ((is_charging and 0 < last_charging_soc < soc_threshold <= current_soc)
-                    or soc_notification is FAILED):
-                log.info("Notification threshold(%i) reached: %i",
-                         soc_threshold, current_soc)
-                try:
-                    evn.sendNotification()
-                    soc_notification = ARMED
-                except EVNotifyAPI.CommunicationError as err:
-                    log.info("Communication Error: %s", err)
-                    soc_notification = FAILED
-
-            if is_charging:
-                last_charging = now
-                last_charging_soc = current_soc
 
             # Prime next loop iteration
             if self._running:
