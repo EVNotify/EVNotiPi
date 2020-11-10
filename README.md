@@ -62,4 +62,5 @@ This pinout should be compatible to most DB9 to OBD2 cables. One can always buil
 - sudo cp config.yaml.template config.yaml
 #### Edit config, follow comments in the file
 - sudo nano config.yaml # nano or any other editor
-
+#### Optionally: Set up a GPS receiver
+Set up gpsd, see a tutorial here: https://maker.pro/raspberry-pi/tutorial/how-to-use-a-gps-receiver-with-raspberry-pi-4. Once the "sudo cgps -s" command works, you are done.
