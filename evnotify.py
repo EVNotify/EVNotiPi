@@ -79,6 +79,8 @@ class EVNotify:
         last_charging = time()
         last_charging_soc = 0
         last_evn_settings_poll = 0
+        is_charging = 0
+        is_connected = 0
         settings = None
         soc_notification = ARMED
         soc_threshold = self._config.get('soc_threshold', 100)
