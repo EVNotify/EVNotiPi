@@ -100,6 +100,7 @@ class IsoTpDecoder:
                             new_fields.append(new_field)
 
                 self._log.debug("fmt(%s)", fmt)
+                cmd_data['autopad'] = cmd_data.get('autopad', False)
                 cmd_data['struct'] = struct.Struct(fmt)
                 cmd_data['fields'] = new_fields
 
@@ -124,6 +125,15 @@ class IsoTpDecoder:
                     raw = self._dongle.send_command_ex(cmd_data['cmd'],
                                                        canrx=cmd_data['canrx'],
                                                        cantx=cmd_data['cantx'])
+                    # Learn how much to pad a block on first encounter if autopadding is active
+                    if cmd_data['autopad']:
+                        pad = len(raw) - len(cmd_data['struct'].size)
+                        if pad > 0:
+                            fmt = cmd_data['struct'].format
+                            fmt += str(pad) + 'x'
+                            cmd_data['struct'] = struct.Struct(fmt)
+                        cmd_data['autopad'] = False
+
                     raw_fields = cmd_data['struct'].unpack(raw)
 
                     for field in cmd_data['fields']:
