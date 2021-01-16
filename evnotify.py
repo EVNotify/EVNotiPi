@@ -145,13 +145,16 @@ class EVNotify:
             try:
                 if (data['SOC_DISPLAY'] is not None or
                         data['SOC_BMS'] is not None):
-                    evn.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
 
                     current_soc = data['SOC_DISPLAY'] or data['SOC_BMS']
-
                     is_charging = bool(data['charging'])
                     is_connected = bool(data['normalChargePort'] or data['rapidChargePort'])
 
+                    if is_charging:
+                        last_charging = now
+                        last_charging_soc = current_soc
+
+                    evn.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
                     extended_data = {a: round(data[a], EXTENDED_FIELDS[a])
                                      for a in EXTENDED_FIELDS if data[a] is not None}
                     log.debug(extended_data)
@@ -196,10 +199,6 @@ class EVNotify:
                     except EVNotifyAPI.CommunicationError as err:
                         log.info("Communication Error: %s", err)
                         soc_notification = FAILED
-
-                if is_charging:
-                    last_charging = now
-                    last_charging_soc = current_soc
 
             except EVNotifyAPI.CommunicationError as err:
                 log.info("Communication Error: %s", err)
