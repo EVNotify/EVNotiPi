@@ -103,7 +103,9 @@ class EVNotify:
                 if ((now - last_charging > ABORT_NOTIFICATION_INTERVAL and
                      charging_start_soc > 0 and 0 < last_charging_soc < soc_threshold and
                      abort_notification is ARMED) or abort_notification is FAILED):
-                    log.info("Aborted charge detected, send abort notification")
+                    log.info("Aborted charge detected, send abort notification now-last_charging(%i) charging_start_soc(%i) last_charging_soc(%i) soc_threshold(%i) abort_notification(%i)",
+                             now - last_charging, charging_start_soc, last_charging_soc,
+                             soc_threshold, abort_notification)
                     try:
                         evn.sendNotification(True)
                         abort_notification = SENT
