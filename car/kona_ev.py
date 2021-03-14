@@ -62,6 +62,14 @@ Fields = (
          {'padding': 11},
      )
      },
+    {'cmd': b220100, 'canrx': 0x7bb, 'cantx': 0x7b3,
+     'fields': (
+         {'padding': 8},
+         {'name': 'internalTemperature', 'width': 1, 'scale': .5, 'offset': -40},
+         {'name': 'externalTemperature', 'width': 1, 'scale': .5, 'offset': -40},
+         {'padding': 28},
+     )
+     },
     {'cmd': b22b002, 'canrx': 0x7ce, 'cantx': 0x7c6, 'optional': True,
      'fields': (
          {'padding': 9},
