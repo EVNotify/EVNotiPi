@@ -103,7 +103,9 @@ class EVNotify:
                 if ((now - last_charging > ABORT_NOTIFICATION_INTERVAL and
                      charging_start_soc > 0 and 0 < last_charging_soc < soc_threshold and
                      abort_notification is ARMED) or abort_notification is FAILED):
-                    log.info("Aborted charge detected, send abort notification")
+                    log.info("Aborted charge detected, send abort notification now-last_charging(%i) charging_start_soc(%i) last_charging_soc(%i) soc_threshold(%i) abort_notification(%i)",
+                             now - last_charging, charging_start_soc, last_charging_soc,
+                             soc_threshold, abort_notification)
                     try:
                         evn.sendNotification(True)
                         abort_notification = SENT
@@ -143,13 +145,16 @@ class EVNotify:
             try:
                 if (data['SOC_DISPLAY'] is not None or
                         data['SOC_BMS'] is not None):
-                    evn.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
 
                     current_soc = data['SOC_DISPLAY'] or data['SOC_BMS']
-
                     is_charging = bool(data['charging'])
                     is_connected = bool(data['normalChargePort'] or data['rapidChargePort'])
 
+                    if is_charging:
+                        last_charging = now
+                        last_charging_soc = current_soc
+
+                    evn.setSOC(data['SOC_DISPLAY'], data['SOC_BMS'])
                     extended_data = {a: round(data[a], EXTENDED_FIELDS[a])
                                      for a in EXTENDED_FIELDS if data[a] is not None}
                     log.debug(extended_data)
@@ -194,10 +199,6 @@ class EVNotify:
                     except EVNotifyAPI.CommunicationError as err:
                         log.info("Communication Error: %s", err)
                         soc_notification = FAILED
-
-                if is_charging:
-                    last_charging = now
-                    last_charging_soc = current_soc
 
             except EVNotifyAPI.CommunicationError as err:
                 log.info("Communication Error: %s", err)
