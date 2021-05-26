@@ -127,11 +127,14 @@ class IsoTpDecoder:
                                                        cantx=cmd_data['cantx'])
                     # Learn how much to pad a block on first encounter if autopadding is active
                     if cmd_data['autopad']:
-                        pad = len(raw) - len(cmd_data['struct'].size)
+                        pad = len(raw) - cmd_data['struct'].size
                         if pad > 0:
                             fmt = cmd_data['struct'].format
                             fmt += str(pad) + 'x'
                             cmd_data['struct'] = struct.Struct(fmt)
+                            self._log.info("canid(0x%x) cmd(%s) len(%i) pad(%i)", 
+                                           cmd_data['cantx'], cmd_data['cmd'].hex(),
+                                           len(raw), pad)
                         cmd_data['autopad'] = False
 
                     raw_fields = cmd_data['struct'].unpack(raw)
